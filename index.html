@@ -1,87 +1,62 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0f7b5b">
-  <title>Leader Pharma Manager Pro Web V1.4 DG SECURE</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b6b4f" />
+  <title>Leader Pharma Manager Pro Web V10.2 DG SECURE</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <section id="loginView" class="login-screen">
+  <div id="loginView" class="center-screen">
     <div class="login-card">
-      <div class="medical-mark" aria-hidden="true">+</div>
+      <div class="brand-mark">✚</div>
       <h1>Leader Pharma</h1>
-      <img class="official-logo" src="leader-pharma-logo.png" alt="Logo officiel Leader Pharma" onerror="this.style.display='none'">
-      <h2>Manager Pro Web V1.4 DG SECURE</h2>
-
-      <div class="legal-box">
-        <div>N° Impôt : <b>A2311751Z</b></div>
-        <div>RCCM : <b>CD/KNA/RCCM/25-A-593</b></div>
-        <div>Adresse : Route Kanyama, Réf. HGR Kamina – Kamina</div>
-      </div>
-
-      <div class="field login-field">
-        <label for="loginAgency">Agence</label>
-        <select id="loginAgency"></select>
-      </div>
-
-      <div class="field login-field">
-        <label for="username">Utilisateur</label>
-        <input id="username" autocomplete="username" value="leader.fr">
-      </div>
-
-      <div class="field login-field">
-        <label for="password">Mot de passe</label>
-        <input id="password" type="password" autocomplete="off">
-      </div>
-
-      <button id="loginBtn" class="btn login-btn">Se connecter</button>
-      <div id="loginError" class="login-error" role="alert"></div>
-      <p class="secure-note">Connexion sécurisée Leader Pharma</p>
+      <img src="leader-pharma-logo.png" alt="Logo Leader Pharma" class="brand-logo login-logo">
+<p class="subtitle">Manager Pro Web V10.2 DG SECURE</p>
+      <div class="legal-id">N° Impôt : A2311751Z<br>RCCM : CD/KNA/RCCM/25-A-593<br>Adresse : Route Kanyama, Réf. HGR Kamina — Kamina</div>
+      <label>Agence</label>
+      <select id="loginAgency"></select>
+      <label>Utilisateur</label>
+      <input id="username" value="leader.fr" autocomplete="username" />
+      <label>Mot de passe</label>
+      <input id="password" type="password" value="" autocomplete="current-password" />
+      <button id="loginBtn">Se connecter</button>
+      <p id="loginError" class="error"></p>
+      <small>Connexion sécurisée Leader Pharma</small>
     </div>
-  </section>
+  </div>
 
-  <div id="appView" class="app-shell hidden">
+  <div id="appView" class="app hidden">
     <aside class="sidebar">
-      <div class="side-brand">
-        <div class="side-mark">+</div>
-        <div>
-          <strong>Leader Pharma</strong>
-          <small>Manager Pro Web</small>
-        </div>
+      <div class="logo-wrap">
+        <div class="brand-mark small">✚</div>
+        <img src="leader-pharma-logo.png" alt="Logo Leader Pharma" class="brand-logo sidebar-logo"><div><strong>LEADER PHARMA</strong><span>Manager Pro</span><small class="sidebar-legal">Impôt A2311751Z<br>RCCM CD/KNA/RCCM/25-A-593</small></div>
       </div>
-
-      <div class="side-agency">
-        <label for="agencySwitcher">Agence</label>
-        <select id="agencySwitcher"></select>
-      </div>
-
-      <nav id="nav" class="nav"></nav>
-
+      <nav id="nav"></nav>
       <div class="side-footer">
-        <div id="currentAgencyLabel" class="agency-label"></div>
-        <div class="side-tools">
-          <button id="backupBtn" class="secondary">Sauvegarder</button>
-          <label class="secondary file-label" for="restoreInput">Restaurer</label>
-          <input id="restoreInput" type="file" accept="application/json,.json" hidden>
-        </div>
-        <button id="logoutBtn" class="secondary logout-btn">Déconnexion / Changer d’utilisateur</button>
+        <span id="currentAgencyLabel"></span>
+        <button id="logoutBtn" class="ghost">Déconnexion / Changer d’utilisateur</button>
       </div>
     </aside>
 
-    <main class="main-area">
+    <main class="main">
       <header class="topbar">
         <div>
           <h2 id="pageTitle">Tableau de bord</h2>
-          <p id="pageHint" class="muted"></p>
+          <p id="pageHint">Vue synthétique de votre pharmacie</p>
+        </div>
+        <div class="top-actions">
+          <select id="agencySwitcher"></select>
+          <button id="backupBtn" class="secondary">Sauvegarder</button>
+          <label class="restore-label">Restaurer<input id="restoreInput" type="file" accept="application/json" /></label>
         </div>
       </header>
-      <section id="content" class="content"></section>
+      <section id="content"></section>
     </main>
   </div>
 
-  <div id="toast" class="toast" aria-live="polite"></div>
+  <div id="toast" class="toast"></div>
   <script src="app.js"></script>
 </body>
 </html>
