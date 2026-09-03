@@ -114235,6 +114235,135 @@ console.log(
     }catch(error){}
   }
 
+  /* LP_DG_OFFLINE_SECURE_V6_HELPERS_START */
+
+  function lpDGNetworkFailureV6(error){
+
+    const message =
+      String(
+        error && error.message
+          ? error.message
+          : error || ""
+      )
+      .trim()
+      .toLowerCase();
+
+    try{
+      if(
+        typeof navigator !== "undefined"
+        &&
+        navigator.onLine === false
+      ){
+        return true;
+      }
+    }catch(e){}
+
+    return (
+      (
+        typeof TypeError !== "undefined"
+        &&
+        error instanceof TypeError
+      )
+      ||
+      message.includes("failed to fetch")
+      ||
+      message.includes("network")
+      ||
+      message.includes("internet")
+      ||
+      message.includes("reseau")
+      ||
+      message.includes("réseau")
+    );
+  }
+
+  function lpDGOfflinePasswordOKV6(
+    password
+  ){
+
+    try{
+
+      const cached =
+        localStorage.getItem(
+          "leader_pharma_dg_password_v15"
+        );
+
+      if(
+        !cached
+        ||
+        cached !== String(
+          password || ""
+        )
+      ){
+        return false;
+      }
+
+      const dg =
+        lpLocalDGV5();
+
+      if(
+        !dg
+        ||
+        dg.active === false
+      ){
+        return false;
+      }
+
+      return true;
+
+    }catch(error){
+
+      console.error(
+        "DG OFFLINE CACHE:",
+        error
+      );
+
+      return false;
+    }
+  }
+
+  function lpDGContinueOfflineV6(
+    button
+  ){
+
+    try{
+      window.lpDGOfflineMode = true;
+    }catch(e){}
+
+    lpShowDGMessageV5(
+      "Mode hors ligne sécurisé."
+    );
+
+    lpDGLegacyPassV5 =
+      true;
+
+    setTimeout(
+      function(){
+
+        try{
+
+          button.click();
+
+        }finally{
+
+          setTimeout(
+            function(){
+
+              lpDGLegacyPassV5 =
+                false;
+
+            },
+            500
+          );
+        }
+
+      },
+      50
+    );
+  }
+
+  /* LP_DG_OFFLINE_SECURE_V6_HELPERS_END */
+
   function lpFindLoginButtonV5(
     eventTarget
   ){
@@ -114398,14 +114527,39 @@ console.log(
 
     }catch(error){
 
-      lpShowDGMessageV5(
-        error &&
-        error.message
-          ?
+      /*
+       * HORS LIGNE :
+       * uniquement si la verification Supabase
+       * a echoue pour une raison reseau.
+       *
+       * Une reponse Supabase "mot de passe DG incorrect"
+       * ne passe pas par ce secours.
+       */
+      if(
+        lpDGNetworkFailureV6(
+          error
+        )
+        &&
+        lpDGOfflinePasswordOKV6(
+          password
+        )
+      ){
+
+        lpDGContinueOfflineV6(
+          button
+        );
+
+      }else{
+
+        lpShowDGMessageV5(
+          error &&
           error.message
-          :
-          "Connexion DG refusée."
-      );
+            ?
+            error.message
+            :
+            "Connexion DG refusée."
+        );
+      }
 
     }finally{
 
@@ -114520,6 +114674,12 @@ console.log(
 })();
 
 /* LP_DG_PASSWORD_SUPABASE_V5_END */
+
+/* LP_DG_OFFLINE_SECURE_V6_START */
+console.log(
+  "LEADER PHARMA DG ONLINE + HORS LIGNE SECURISE V6 ACTIF"
+);
+/* LP_DG_OFFLINE_SECURE_V6_END */
 
 
 
