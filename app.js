@@ -1,7 +1,7 @@
 const ID={name:'LEADER PHARMA',slogan:'Ensemble pour la meilleure santé',tax:'A2311751Z',rccm:'CD/KNA/RCCM/25-A-593',nationalId:'XXXXXXXXXX',address:'Route Kanyama, Réf. HGR',city:'Kamina',phone:'0998312615 / 0816727060',website:'www.leader-pharma.org'};
 const SUPABASE={url:'https://dinainghufmsykambkyv.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpbmFpbmdodWZtc3lrYW1ia3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0Njk4OTAsImV4cCI6MjEwMjA0NTg5MH0.LV_020TN1MNQXTKP62b7_Hvu7qMSVj0V7zwSh0LULJg',table:'donnees_application'};
 const $=s=>document.querySelector(s), money=n=>new Intl.NumberFormat('fr-CD').format(Number(n||0))+' FC', today=()=>new Date().toISOString().slice(0,10), uid=()=>Date.now()+Math.floor(Math.random()*1000);
-const seed={version:'1.4',agencies:[{id:'kamina',name:'Leader Pharma Kamina'},{id:'centre',name:'Leader Pharma Centre'}],users:[{id:1,username:'leader.fr',password:'',name:'Direction Générale',role:'DG',active:true}],roles:{DG:['*'],Gérant:['dashboard','sales','stock','clients','purchases','suppliers','inventory','transfers','expenses','treasury','reports','alerts'],Vendeur:['dashboard','sales','clients'],Stockiste:['dashboard','stock','purchases','suppliers','inventory','transfers','alerts'],Comptable:['dashboard','expenses','treasury','accounting','receivables','payroll','reports']},products:[{id:1,name:'Amoxicilline 500mg',price:800,cost:520,stock:120,min:20,expiry:'2027-03-31',lot:'AMX-001',agency:'kamina'},{id:2,name:'Doliprane',price:1000,cost:650,stock:80,min:15,expiry:'2027-06-30',lot:'DOL-001',agency:'kamina'},{id:3,name:'Vitamine C',price:1000,cost:600,stock:140,min:20,expiry:'2027-01-31',lot:'VITC-001',agency:'kamina'},{id:4,name:'Ibuprofène',price:500,cost:300,stock:95,min:15,expiry:'2026-12-31',lot:'IBU-001',agency:'kamina'},{id:5,name:'Tensiomètre numérique',price:55000,cost:41000,stock:10,min:3,expiry:'',lot:'MAT-001',agency:'kamina'}],sales:[],expenses:[],clients:[{id:1,name:'Client comptoir',phone:'',points:0}],suppliers:[],purchases:[],inventories:[],transfers:[],prescriptions:[],treasury:[],receivables:[],debts:[],employees:[],payroll:[],audit:[],invoiceSeq:1,purchaseSeq:1};
+const seed={version:'1.4',agencies:[{id:'kamina',name:'Leader Pharma Kamina'},{id:'centre',name:'Leader Pharma Centre'}],users:[{id:1,username:'leader.fr',password:'1234',name:'Direction Générale',role:'DG',active:true}],roles:{DG:['*'],Gérant:['dashboard','sales','stock','clients','purchases','suppliers','inventory','transfers','expenses','treasury','reports','alerts'],Vendeur:['dashboard','sales','clients'],Stockiste:['dashboard','stock','purchases','suppliers','inventory','transfers','alerts'],Comptable:['dashboard','expenses','treasury','accounting','receivables','payroll','reports']},products:[{id:1,name:'Amoxicilline 500mg',price:800,cost:520,stock:120,min:20,expiry:'2027-03-31',lot:'AMX-001',agency:'kamina'},{id:2,name:'Doliprane',price:1000,cost:650,stock:80,min:15,expiry:'2027-06-30',lot:'DOL-001',agency:'kamina'},{id:3,name:'Vitamine C',price:1000,cost:600,stock:140,min:20,expiry:'2027-01-31',lot:'VITC-001',agency:'kamina'},{id:4,name:'Ibuprofène',price:500,cost:300,stock:95,min:15,expiry:'2026-12-31',lot:'IBU-001',agency:'kamina'},{id:5,name:'Tensiomètre numérique',price:55000,cost:41000,stock:10,min:3,expiry:'',lot:'MAT-001',agency:'kamina'}],sales:[],expenses:[],clients:[{id:1,name:'Client comptoir',phone:'',points:0}],suppliers:[],purchases:[],inventories:[],transfers:[],prescriptions:[],treasury:[],receivables:[],debts:[],employees:[],payroll:[],audit:[],invoiceSeq:1,purchaseSeq:1};
 function migrate(d){d={...structuredClone(seed),...d};for(const k of ['suppliers','purchases','inventories','transfers','prescriptions','treasury','receivables','debts','employees','payroll','audit'])if(!Array.isArray(d[k]))d[k]=[];if(!d.roles)d.roles=structuredClone(seed.roles);d.version='1.4';return d}
 function load(){try{return migrate(JSON.parse(localStorage.getItem('lpmp_v13')||localStorage.getItem('lpmp_v12'))||structuredClone(seed))}catch{return structuredClone(seed)}}
 let db=load();
@@ -158,7 +158,23 @@ function __lpMergeDb(remote,local){
 
   for(const k of keys){
     if(Array.isArray(r[k])||Array.isArray(l[k])){
-      out[k]=__lpMergeArray(r[k],l[k],k);
+      if (
+    k === 'users' &&
+    window.lpV5PrepareRemoteUsers
+  ) {
+    out[k] =
+      window.lpV5PrepareRemoteUsers(
+        r[k],
+        l[k]
+      );
+  } else {
+    out[k] =
+      __lpMergeArray(
+        r[k],
+        l[k],
+        k
+      );
+  }
     }
   }
 
@@ -241,6 +257,36 @@ async function syncPull(){
         remote,
         localSnapshot
       );
+
+  /*
+   * LP V5 PULL :
+   * Supabase gagne uniquement
+   * pour utilisateurs NON-DG.
+   */
+  try {
+    if (
+      window.lpV5ApplyRemoteUsers
+    ) {
+      window.lpV5ApplyRemoteUsers(
+        remote &&
+        Array.isArray(remote.users)
+          ? remote.users
+          : [],
+        localSnapshot &&
+        Array.isArray(
+          localSnapshot.users
+        )
+          ? localSnapshot.users
+          : []
+      );
+    }
+  } catch (e) {
+    console.warn(
+      'LP V5 PULL USERS ERROR',
+      e
+    );
+  }
+
 
     localStorage.setItem(
       'lpmp_v13',
@@ -463,7 +509,22 @@ async function syncPush(){
     console.warn(e);
   }
 }
-function save(){localStorage.setItem('lpmp_v13',JSON.stringify(db));clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,900)} function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200)} function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function save(){
+
+      if (
+        typeof window.lpV6StampChangedUsers ===
+          'function'
+      ) {
+        try {
+          window.lpV6StampChangedUsers();
+        } catch (e) {
+          console.warn(
+            'LP V6 STAMP ERROR',
+            e
+          );
+        }
+      }
+    localStorage.setItem('lpmp_v13',JSON.stringify(db));clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,900)} function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200)} function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 const navItems=[['dashboard','▦ Tableau de bord'],['sales','🛒 Ventes / Factures'],['stock','📦 Stock / Lots'],['purchases','🧾 Achats'],['suppliers','🚚 Fournisseurs'],['inventory','📋 Inventaires'],['transfers','🔁 Transferts'],['clients','👥 Clients / Ordonnances'],['expenses','💸 Dépenses'],['treasury','💰 Trésorerie'],['accounting','📚 Comptabilité'],['receivables','🤝 Créances / Dettes'],['payroll','👥 RH / Pointage'],['reports','📊 Rapports'],['alerts','🔔 Alertes'],['agencies','🏪 Multi-agences'],['users','🔐 Utilisateurs'],['audit','🛡 Surveillance'],['updates','⬆ Mises à jour'],['settings','⚙ Paramètres']];
 function allowed(id){
   if(!currentUser)return true;
@@ -478,7 +539,7 @@ function allowed(id){
     'dashboard',
     'sales',
     'stock',
-    'inventory',
+    'inventory','expenses',
     'reports',
     'alerts',
     'settings',
@@ -843,7 +904,7 @@ function buildNav(){
     'dashboard',
     'sales',
     'stock',
-    'inventory',
+    'inventory','expenses',
     'reports',
     'alerts',
     'settings',
@@ -1309,31 +1370,51 @@ function lpSellerPasswordGet(
   username,
   fallback
 ){
-
   const key =
-    String(username||'')
+    String(username || '')
       .trim()
       .toLowerCase();
 
-  const all =
-    lpSellerPasswordsRead();
+  const syncedPassword =
+    String(fallback || '');
 
-  if(
-    Object.prototype
-      .hasOwnProperty
-      .call(
-        all,
-        key
-      )
-  ){
-    return String(
-      all[key] || ''
-    );
+  if (syncedPassword !== '') {
+    try {
+      const all =
+        lpSellerPasswordsRead();
+
+      if (
+        String(all[key] || '') !==
+        syncedPassword
+      ) {
+        all[key] = syncedPassword;
+
+        localStorage.setItem(
+          LP_SELLER_PASSWORD_KEY,
+          JSON.stringify(all)
+        );
+      }
+    } catch (e) {}
+
+    return syncedPassword;
   }
 
-  return String(
-    fallback || ''
-  );
+  try {
+    const all =
+      lpSellerPasswordsRead();
+
+    if (
+      Object.prototype
+        .hasOwnProperty
+        .call(all, key)
+    ) {
+      return String(
+        all[key] || ''
+      );
+    }
+  } catch (e) {}
+
+  return '';
 }
 
 function lpSellerPasswordSave(
@@ -1664,6 +1745,15 @@ function lpSellerProtectCurrentPage(){
 document.addEventListener(
   'click',
   function(e){
+    var lpV14Action =
+      e.target && e.target.closest
+      ? e.target.closest('#lpV11SavePrescription,#lpV13SaveNote')
+      : null;
+
+    if(lpV14Action){
+      return;
+    }
+
 
     const btn =
       e.target.closest(
@@ -7581,7 +7671,14 @@ function lp169ApplySensitive(){
     .forEach(
       el=>{
 
-        const text =
+            if(
+      target.id === 'lpV11SavePrescription' ||
+      target.id === 'lpV13SaveNote'
+    ){
+      return;
+    }
+
+const text =
           lp169Norm(
             el.textContent ||
             el.value ||
@@ -8262,6 +8359,15 @@ function lp178Restore(){
 document.addEventListener(
   'click',
   function(){
+    var lpV14AuthorizedAction =
+      event && event.target && event.target.closest
+      ? event.target.closest('#lpV11SavePrescription,#lpV13SaveNote')
+      : null;
+
+    if(lpV14AuthorizedAction){
+      return;
+    }
+
 
     setTimeout(
       function(){
@@ -8548,7 +8654,14 @@ document.addEventListener(
       return;
     }
 
-    const text=
+        if(
+      el.id === 'lpV11SavePrescription' ||
+      el.id === 'lpV13SaveNote'
+    ){
+      return;
+    }
+
+const text=
       lp1787Norm(
         el.textContent ||
         el.value ||
@@ -8816,7 +8929,14 @@ document.addEventListener(
       return;
     }
 
-    const text =
+        if(
+      el.id === 'lpV11SavePrescription' ||
+      el.id === 'lpV13SaveNote'
+    ){
+      return;
+    }
+
+const text =
       lp1788Text(el);
 
     const deny =
@@ -35072,7 +35192,20 @@ function lp171032ReadOnly(){
       }
 
 
-      const txt =
+            if(
+        el.id === 'lpV11SavePrescription' ||
+        el.id === 'lpV13SaveNote'
+      ){
+        el.disabled = false;
+        el.removeAttribute('disabled');
+        el.removeAttribute('data-lp171032-readonly');
+        el.style.pointerEvents = 'auto';
+        el.style.opacity = '';
+        el.title = '';
+        return;
+      }
+
+const txt =
         String(
           el.textContent ||
           el.value ||
@@ -35364,6 +35497,17 @@ document.addEventListener(
     if(
       target.closest &&
       target.closest('#nav')
+    ){
+      return;
+    }
+
+    /*
+     * FIX4 : actions utilisateur autorisees.
+     * Elles gardent leurs gestionnaires natifs.
+     */
+    if(
+      target.id === 'lpV11SavePrescription' ||
+      target.id === 'lpV13SaveNote'
     ){
       return;
     }
@@ -95765,6 +95909,39 @@ console.log(
 
   function c31Render(){
 
+    const lpC31Role = String(
+      (typeof currentUser !== 'undefined' && currentUser)
+        ? (currentUser.role || '')
+        : ''
+    ).trim().toLowerCase();
+
+    const lpC31Page = String(
+      typeof page !== 'undefined'
+        ? (page || '')
+        : ''
+    ).trim().toLowerCase();
+
+    if(
+      lpC31Role !== 'dg'
+      ||
+      lpC31Page !== 'accounting'
+    ){
+      const existing =
+        document.getElementById(
+          'lpC31FinalAccounting'
+        );
+
+      if(
+        existing
+        &&
+        existing.parentNode
+      ){
+        existing.remove();
+      }
+
+      return false;
+    }
+
     const host =
       c31FindHost();
 
@@ -107322,30 +107499,399 @@ console.log(
   }
 
   function lpU3PersonalDashboard(role){
-    const sales = lpU3MySalesToday();
-    const total = lpU3SalesTotal(sales);
-    const qty = lpU3SoldQty(sales);
-    const clients = lpU3ClientsServed(sales);
-    const title = lpU3RoleTitle(role);
 
-    lpU3Header(
-      'Tableau de bord '+title,
-      'Activité personnelle du jour • '+lpU3Agency()
+  const sales =
+    lpU3MySalesToday();
+
+  const total =
+    lpU3SalesTotal(sales);
+
+  const qty =
+    lpU3SoldQty(sales);
+
+  const clients =
+    lpU3ClientsServed(sales);
+
+  const title =
+    lpU3RoleTitle(role);
+
+
+  /*
+   * IDENTIFIANTS DE
+   * L'UTILISATEUR CONNECTE
+   */
+
+  const myKeys = [
+    currentUser &&
+      currentUser.username,
+
+    currentUser &&
+      currentUser.id,
+
+    currentUser &&
+      currentUser.name
+  ]
+  .map(lpU3Norm)
+  .filter(Boolean);
+
+
+  /*
+   * DEPENSES DEJA ENREGISTREES
+   * DANS RH / POINTAGE
+   */
+
+  const expenseRows =
+    db &&
+    Array.isArray(db.expenses)
+      ? db.expenses
+      : [];
+
+
+  /*
+   * UNIQUEMENT LES DEPENSES
+   * DE CET UTILISATEUR
+   * POUR AUJOURD'HUI
+   */
+
+  const myExpensesToday =
+    expenseRows.filter(
+      function(x){
+
+        if(!x){
+          return false;
+        }
+
+
+        if(
+          x.date &&
+          String(x.date) !==
+            String(lpU3Today())
+        ){
+          return false;
+        }
+
+
+        if(
+          currentAgency &&
+          x.agency &&
+          String(x.agency) !==
+            String(currentAgency)
+        ){
+          return false;
+        }
+
+
+        const ownerKeys = [
+          x.rhUser,
+          x.user,
+          x.username
+        ]
+        .map(lpU3Norm)
+        .filter(Boolean);
+
+
+        if(
+          !ownerKeys.length
+        ){
+          return false;
+        }
+
+
+        return ownerKeys.some(
+          function(k){
+
+            return myKeys.includes(
+              k
+            );
+          }
+        );
+      }
     );
 
-    lpU3Content(`
+
+  /*
+   * TOTAL DES DEPENSES
+   */
+
+  const expensesTotal =
+    myExpensesToday.reduce(
+      function(sum,x){
+
+        return (
+          sum +
+          (
+            Number(
+              x &&
+              x.amount
+            ) || 0
+          )
+        );
+      },
+      0
+    );
+
+
+  /*
+   * SOLDE PERSONNEL
+   */
+
+  const balance =
+    total -
+    expensesTotal;
+
+
+  lpU3Header(
+    'Tableau de bord ' + title,
+    'Activité personnelle du jour • ' +
+      lpU3Agency()
+  );
+
+
+  lpU3Content(`
+
+    <div class="grid kpis">
+
+      <div class="card kpi">
+
+        <div class="label">
+          Mes ventes du jour
+        </div>
+
+        <div class="value">
+          ${lpU3Money(total)}
+        </div>
+
+      </div>
+
+
+      <div class="card kpi">
+
+        <div class="label">
+          Mes factures
+        </div>
+
+        <div class="value">
+          ${sales.length}
+        </div>
+
+      </div>
+
+
+      <div class="card kpi">
+
+        <div class="label">
+          Produits vendus
+        </div>
+
+        <div class="value">
+          ${qty}
+        </div>
+
+      </div>
+
+
+      <div class="card kpi">
+
+        <div class="label">
+          Clients servis
+        </div>
+
+        <div class="value">
+          ${clients}
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div
+      class="card"
+      id="lpV8UserCash"
+      style="margin-top:16px"
+    >
+
+      <h3>
+        💰 Ma caisse du jour
+      </h3>
+
+
       <div class="grid kpis">
-        <div class="card kpi"><div class="label">Mes ventes du jour</div><div class="value">${lpU3Money(total)}</div></div>
-        <div class="card kpi"><div class="label">Mes factures</div><div class="value">${sales.length}</div></div>
-        <div class="card kpi"><div class="label">Produits vendus</div><div class="value">${qty}</div></div>
-        <div class="card kpi"><div class="label">Clients servis</div><div class="value">${clients}</div></div>
+
+
+        <div class="card kpi">
+
+          <div class="label">
+            Encaissements
+          </div>
+
+          <div class="value">
+            ${lpU3Money(total)}
+          </div>
+
+        </div>
+
+
+        <div class="card kpi">
+
+          <div class="label">
+            Mes dépenses
+          </div>
+
+          <div class="value">
+            ${lpU3Money(expensesTotal)}
+          </div>
+
+        </div>
+
+
+        <div class="card kpi">
+
+          <div class="label">
+            Solde du jour
+          </div>
+
+          <div class="value">
+            ${lpU3Money(balance)}
+          </div>
+
+        </div>
+
+
       </div>
-      <div class="card" style="margin-top:16px">
-        <h3>Mes dernières ventes</h3>
-        ${lpU3LastSales(sales)}
+
+
+      <div
+        class="muted"
+        style="margin-top:12px"
+      >
+        Solde personnel :
+        encaissements moins dépenses
+        enregistrées dans RH / Pointage.
       </div>
-    `);
-  }
+
+    </div>
+
+
+    <div
+      class="card"
+      id="lpV9DailyReport"
+      style="margin-top:16px"
+    >
+
+      <h3>
+        📋 Rapport du jour
+      </h3>
+
+      <div class="grid kpis">
+
+        <div class="card kpi">
+          <div class="label">
+            Ventes du jour
+          </div>
+          <div class="value">
+            ${lpU3Money(total)}
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="label">
+            Factures
+          </div>
+          <div class="value">
+            ${sales.length}
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="label">
+            Produits vendus
+          </div>
+          <div class="value">
+            ${qty}
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="label">
+            Clients servis
+          </div>
+          <div class="value">
+            ${clients}
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="label">
+            Encaissements
+          </div>
+          <div class="value">
+            ${lpU3Money(total)}
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="label">
+            Mes dépenses
+          </div>
+          <div class="value">
+            ${lpU3Money(expensesTotal)}
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="label">
+            Solde du jour
+          </div>
+          <div class="value">
+            ${lpU3Money(balance)}
+          </div>
+        </div>
+
+        <div class="card kpi">
+          <div class="label">
+            Panier moyen
+          </div>
+          <div class="value">
+            ${
+              lpU3Money(
+                sales.length
+                  ? total / sales.length
+                  : 0
+              )
+            }
+          </div>
+        </div>
+
+      </div>
+
+      <div
+        class="muted"
+        style="margin-top:12px"
+      >
+        Synthèse personnelle automatique
+        de l'activité du jour.
+      </div>
+
+    </div>
+
+
+    <div
+      class="card"
+      style="margin-top:16px"
+    >
+
+      <h3>
+        Mes dernières ventes
+      </h3>
+
+      ${lpU3LastSales(sales)}
+
+    </div>
+
+  `);
+
+}
 
   function lpU3Pharmacien(){
     const sales = lpU3MySalesToday();
@@ -117249,218 +117795,8071 @@ console.log(
 );
 /* LP_FINAL_SOUPLESSE_STABILITE_RAPIDITE_V102_END */
 
-
-/* ============================================================
-   LEADER PHARMA WEB V10.2 - DG SUPABASE CENTRAL + WEB FINAL
-   ============================================================ */
-/* LP_WEB_V102_DG_SECURE_START */
+/* LP_SECURITY_NO_LONGPRESS_COPY_SHARE_V1_START */
+/*
+ * LEADER PHARMA MANAGER PRO
+ * SECURITE AFFICHAGE : APPUI LONG / COPIER / PARTAGER
+ *
+ * Objectif :
+ * - bloquer la selection et le menu contextuel sur les donnees affichees ;
+ * - conserver copier/coller et selection dans les zones de saisie ;
+ * - ne modifier aucune fonction metier.
+ */
 (function(){
   'use strict';
 
-  const LP_WEB_DG_LOGIN='leader.fr';
-  const LP_WEB_DG_EMAIL='fr.ilunga@gmail.com';
+  const STYLE_ID = 'lpSecurityNoLongPressCopyShareV1';
+  const EDITABLE_SELECTOR = [
+    'input',
+    'textarea',
+    'select',
+    '[contenteditable="true"]',
+    '[contenteditable=""]',
+    '[contenteditable="plaintext-only"]'
+  ].join(',');
 
-  function lpWebNorm(v){ return String(v||'').trim().toLowerCase(); }
-
-  function lpWebEnsureAgency(){
-    try{
-      if(!Array.isArray(db.agencies) || !db.agencies.length){
-        db.agencies=[{id:'kamina',name:'Leader Pharma Kamina'}];
-      }
-      if(!db.agencies.some(a=>String(a.id||'')==='kamina')){
-        db.agencies.unshift({id:'kamina',name:'Leader Pharma Kamina'});
-      }
-      if(!currentAgency || !db.agencies.some(a=>String(a.id)===String(currentAgency))){
-        currentAgency='kamina';
-      }
-    }catch(e){}
+  function isEditableTarget(target){
+    if(!target || !target.closest){
+      return false;
+    }
+    return !!target.closest(EDITABLE_SELECTOR);
   }
 
-  function lpWebRemoveDGLocalPassword(){
-    try{
-      if(!Array.isArray(db.users)) return;
-      let changed=false;
-      db.users=db.users.map(function(u){
-        if(lpWebNorm(u&&u.username)===LP_WEB_DG_LOGIN || lpWebNorm(u&&u.role)==='dg'){
-          if(String(u.password||'')!=='') changed=true;
-          return Object.assign({},u,{password:''});
+  function installStyle(){
+    if(document.getElementById(STYLE_ID)){
+      return;
+    }
+
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      body * {
+        -webkit-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+      }
+
+      input,
+      textarea,
+      select,
+      [contenteditable="true"],
+      [contenteditable="true"] *,
+      [contenteditable=""],
+      [contenteditable=""] *,
+      [contenteditable="plaintext-only"],
+      [contenteditable="plaintext-only"] * {
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        -webkit-touch-callout: default !important;
+      }
+    `;
+
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function blockReadOnlyInteraction(event){
+    if(isEditableTarget(event.target)){
+      return;
+    }
+    event.preventDefault();
+  }
+
+  installStyle();
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', installStyle, { once:true });
+  }
+
+  document.addEventListener('selectstart', blockReadOnlyInteraction, true);
+  document.addEventListener('contextmenu', blockReadOnlyInteraction, true);
+  document.addEventListener('copy', blockReadOnlyInteraction, true);
+  document.addEventListener('cut', blockReadOnlyInteraction, true);
+
+  console.log('LEADER PHARMA SECURITE APPUI LONG COPIER PARTAGER V1 ACTIF');
+})();
+/* LP_SECURITY_NO_LONGPRESS_COPY_SHARE_V1_END */
+
+
+/* LP_SECURITY_LONG_PRESS_V2_START */
+(function () {
+  'use strict';
+
+  if (window.__LP_SECURITY_LONG_PRESS_V2__) return;
+  window.__LP_SECURITY_LONG_PRESS_V2__ = true;
+
+  function lpEditable(el) {
+    if (!el || !el.closest) return false;
+
+    return !!el.closest(
+      'input, textarea, ' +
+      '[contenteditable="true"], ' +
+      '[contenteditable=""]'
+    );
+  }
+
+  var style = document.createElement('style');
+  style.id = 'lpSecurityLongPressV2Style';
+
+  style.textContent = `
+    html,
+    body,
+    body *:not(input):not(textarea):not([contenteditable="true"]):not([contenteditable=""]) {
+      -webkit-user-select: none !important;
+      user-select: none !important;
+      -webkit-touch-callout: none !important;
+    }
+
+    input,
+    textarea,
+    [contenteditable="true"],
+    [contenteditable=""] {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+    }
+  `;
+
+  function lpInstallStyle() {
+    if (
+      document.head &&
+      !document.getElementById(
+        'lpSecurityLongPressV2Style'
+      )
+    ) {
+      document.head.appendChild(style);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      lpInstallStyle,
+      { once: true }
+    );
+  } else {
+    lpInstallStyle();
+  }
+
+  document.addEventListener(
+    'contextmenu',
+    function (e) {
+      if (lpEditable(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true
+  );
+
+  document.addEventListener(
+    'selectstart',
+    function (e) {
+      if (lpEditable(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true
+  );
+
+  document.addEventListener(
+    'dragstart',
+    function (e) {
+      if (lpEditable(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true
+  );
+
+  document.addEventListener(
+    'selectionchange',
+    function () {
+      var active = document.activeElement;
+
+      if (lpEditable(active)) return;
+
+      var sel = window.getSelection
+        ? window.getSelection()
+        : null;
+
+      if (sel && sel.rangeCount) {
+        sel.removeAllRanges();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'touchend',
+    function (e) {
+      if (lpEditable(e.target)) return;
+
+      var sel = window.getSelection
+        ? window.getSelection()
+        : null;
+
+      if (sel && sel.rangeCount) {
+        sel.removeAllRanges();
+      }
+    },
+    {
+      capture: true,
+      passive: true
+    }
+  );
+
+  console.log(
+    'LEADER PHARMA SECURITE APPUI LONG V2 ACTIF'
+  );
+})();
+/* LP_SECURITY_LONG_PRESS_V2_END */
+
+
+/* LP_AUTH_USERS_SYNC_V5_START */
+(function () {
+  'use strict';
+
+  if (window.__LP_AUTH_USERS_SYNC_V5__) {
+    return;
+  }
+
+  window.__LP_AUTH_USERS_SYNC_V5__ = true;
+
+  function lpV5IsDG(user) {
+    return (
+      String(
+        user && user.role
+          ? user.role
+          : ''
+      )
+        .trim()
+        .toLowerCase()
+      === 'dg'
+    );
+  }
+
+  function lpV5CloneUsers(users) {
+    return (
+      Array.isArray(users)
+        ? users
+        : []
+    ).map(
+      function (user) {
+        return {
+          ...user
+        };
+      }
+    );
+  }
+
+  function lpV5NonDG(users) {
+    return lpV5CloneUsers(users)
+      .filter(
+        function (user) {
+          return !lpV5IsDG(user);
         }
-        return u;
-      });
-      if(changed && typeof save==='function') save();
-    }catch(e){}
+      );
   }
 
-  function lpWebFindLocalDG(){
-    try{
-      return (db.users||[]).find(function(u){
-        return (lpWebNorm(u.username)===LP_WEB_DG_LOGIN || lpWebNorm(u.role)==='dg') && u.active!==false;
-      }) || null;
-    }catch(e){ return null; }
+  function lpV5DG(users) {
+    return lpV5CloneUsers(users)
+      .filter(lpV5IsDG);
   }
 
-  async function lpWebDGSignIn(password){
-    if(typeof SUPABASE==='undefined' || !SUPABASE || !SUPABASE.url || !SUPABASE.key){
-      throw new Error('Configuration Supabase introuvable');
+  function lpV5SaveLocal() {
+    try {
+      localStorage.setItem(
+        'lpmp_v13',
+        JSON.stringify(db)
+      );
+    } catch (e) {
+      console.warn(
+        'LP V5 LOCAL SAVE ERROR',
+        e
+      );
     }
-    if(!navigator.onLine){
-      throw new Error('Connexion Internet requise pour le compte DG');
-    }
-    const response=await fetch(SUPABASE.url+'/auth/v1/token?grant_type=password',{
-      method:'POST',
-      headers:{
-        'apikey':SUPABASE.key,
-        'Authorization':'Bearer '+SUPABASE.key,
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({email:LP_WEB_DG_EMAIL,password:String(password||'')})
-    });
-    let data={};
-    try{ data=await response.json(); }catch(e){}
-    if(!response.ok || !data || !data.access_token || !data.user){
-      throw new Error('Mot de passe DG incorrect ou connexion Internet indisponible');
-    }
-    const metadata=data.user.user_metadata||{};
-    if(metadata.login && lpWebNorm(metadata.login)!==LP_WEB_DG_LOGIN){
-      throw new Error('Compte DG non autorisé');
-    }
-    if(metadata.role && lpWebNorm(metadata.role)!=='dg'){
-      throw new Error('Compte DG non autorisé');
-    }
-    return data;
   }
 
-  const lpWebOriginalLogin=login;
-  login=async function(){
-    const usernameEl=document.querySelector('#username');
-    const passwordEl=document.querySelector('#password');
-    const errorBox=document.querySelector('#loginError');
-    const username=lpWebNorm(usernameEl?usernameEl.value:'');
+  function lpV5RefreshSellerCache() {
+    try {
+      const passwords =
+        lpSellerPasswordsRead();
 
-    if(username!==LP_WEB_DG_LOGIN){
-      return lpWebOriginalLogin.apply(this,arguments);
-    }
+      lpV5NonDG(db.users)
+        .forEach(
+          function (user) {
+            const username =
+              String(
+                user &&
+                user.username
+                  ? user.username
+                  : ''
+              )
+                .trim()
+                .toLowerCase();
 
-    if(errorBox) errorBox.textContent='Vérification sécurisée DG...';
-    try{
-      const auth=await lpWebDGSignIn(passwordEl?passwordEl.value:'');
-      const localDG=lpWebFindLocalDG();
-      if(!localDG) throw new Error('Compte DG local introuvable ou désactivé');
+            const password =
+              String(
+                user &&
+                user.password
+                  ? user.password
+                  : ''
+              );
 
-      window.lpWebDGAccessToken=auth.access_token;
-      currentUser=localDG;
-      lpWebEnsureAgency();
-      const agency=document.querySelector('#loginAgency');
-      if(agency && agency.value) currentAgency=agency.value;
-      if(passwordEl) passwordEl.value='';
+            if (
+              username &&
+              password
+            ) {
+              passwords[username] =
+                password;
+            }
+          }
+        );
 
-      const loginView=document.querySelector('#loginView');
-      const appView=document.querySelector('#appView');
-      if(loginView) loginView.classList.add('hidden');
-      if(appView) appView.classList.remove('hidden');
+      localStorage.setItem(
+        LP_SELLER_PASSWORD_KEY,
+        JSON.stringify(passwords)
+      );
+    } catch (e) {}
+  }
 
-      const label=document.querySelector('#currentAgencyLabel');
-      if(label){
-        let n='Leader Pharma Kamina';
-        try{ n=agencyName()||n; }catch(e){}
-        label.textContent=n+' • '+(localDG.role||'DG');
+  window.lpV5ApplyRemoteUsers =
+    function (
+      remoteUsers,
+      localUsers
+    ) {
+      if (
+        !Array.isArray(remoteUsers)
+      ) {
+        return false;
       }
-      if(errorBox) errorBox.textContent='';
-      if(typeof buildNav==='function') buildNav();
-      try{ if(typeof audit==='function') audit('Connexion','DG authentifié par Supabase - Web V10.2'); }catch(e){}
-      if(typeof render==='function') render();
-    }catch(error){
-      window.lpWebDGAccessToken=null;
-      if(errorBox) errorBox.textContent=error&&error.message?error.message:'Connexion DG refusée';
+
+      const localDG =
+        lpV5DG(localUsers);
+
+      const remoteNonDG =
+        lpV5NonDG(remoteUsers);
+
+      db.users = [
+        ...localDG,
+        ...remoteNonDG
+      ];
+
+      lpV5RefreshSellerCache();
+      lpV5SaveLocal();
+
+      console.log(
+        'LP V5 USERS PULL OK',
+        remoteNonDG.length
+      );
+
+      return true;
+    };
+
+  window.lpV5PrepareRemoteUsers =
+    function (
+      remoteUsers,
+      localUsers
+    ) {
+      const remoteDG =
+        lpV5DG(remoteUsers);
+
+      const localNonDG =
+        lpV5NonDG(localUsers);
+
+      return [
+        ...remoteDG,
+        ...localNonDG
+      ];
+    };
+
+  console.log(
+    'LEADER PHARMA AUTH USERS SYNC V5 ACTIF'
+  );
+})();
+/* LP_AUTH_USERS_SYNC_V5_END */
+
+
+/* LP_USERS_AUTO_SYNC_MENU_CLEAN_START */
+
+(function () {
+
+  'use strict';
+
+  if (
+    window.__LP_USERS_AUTO_SYNC_MENU_CLEAN__
+  ) {
+    return;
+  }
+
+  window.__LP_USERS_AUTO_SYNC_MENU_CLEAN__ =
+    true;
+
+  /*
+   * =====================================
+   * MENU PROPRE
+   *
+   * - masque les petites observations
+   *   sous le titre des rubriques
+   * - masque le texte ajouté au-dessus
+   *   de la recherche rapide Vente
+   * - conserve les champs et fonctions
+   * =====================================
+   */
+
+  function lpMenuCleanInstallStyle() {
+
+    if (
+      document.getElementById(
+        'lpMenuCleanFinalStyle'
+      )
+    ) {
+      return;
     }
-  };
 
-  const lpWebOriginalLogout=logout;
-  logout=function(){
-    window.lpWebDGAccessToken=null;
-    return lpWebOriginalLogout.apply(this,arguments);
-  };
+    var style =
+      document.createElement(
+        'style'
+      );
 
-  const lpWebOriginalSettings=settings;
-  settings=function(){
-    const isDG=!!(currentUser && (lpWebNorm(currentUser.username)===LP_WEB_DG_LOGIN || lpWebNorm(currentUser.role)==='dg'));
-    if(!isDG) return lpWebOriginalSettings.apply(this,arguments);
+    style.id =
+      'lpMenuCleanFinalStyle';
 
-    setHeader('Paramètres','Sécurité DG centralisée');
-    $('#content').innerHTML=`
-      <div class="grid two-col">
-        <div class="card">
-          <h3>🔐 Sécurité Direction Générale</h3>
-          <p class="muted">Identifiant : <b>leader.fr</b></p>
-          <p class="muted">Mot de passe DG centralisé et sécurisé par Supabase.</p>
-          <div class="field"><label>Mot de passe actuel</label><input id="lpDGCurrentPass" type="password" autocomplete="current-password"></div>
-          <div class="field"><label>Nouveau mot de passe</label><input id="lpDGNewPass" type="password" autocomplete="new-password"></div>
-          <div class="field"><label>Confirmer le nouveau mot de passe</label><input id="lpDGConfirmPass" type="password" autocomplete="new-password"></div>
-          <button id="lpDGChangePass" class="btn" style="margin-top:12px">Modifier le mot de passe DG</button>
-          <p class="muted" style="margin-top:12px">Aucun mot de passe DG n’est enregistré dans le site Web.</p>
-        </div>
-        <div class="card">
-          <h3>Données locales</h3>
-          <p>Utilisez régulièrement <b>Sauvegarder</b> avant toute opération importante.</p>
-          <p class="muted">La sécurité du compte DG est indépendante des données locales.</p>
-        </div>
-      </div>`;
+    style.textContent = `
+      #pageHint {
+        display: none !important;
+      }
 
-    $('#lpDGChangePass').onclick=async function(){
-      const oldPass=String($('#lpDGCurrentPass').value||'');
-      const newPass=String($('#lpDGNewPass').value||'');
-      const confirmPass=String($('#lpDGConfirmPass').value||'');
-      if(!oldPass) return toast('Entrez le mot de passe actuel');
-      if(newPass.length<8) return toast('Nouveau mot de passe : 8 caractères minimum');
-      if(newPass!==confirmPass) return toast('Les deux nouveaux mots de passe ne correspondent pas');
-      try{
-        const auth=await lpWebDGSignIn(oldPass);
-        const r=await fetch(SUPABASE.url+'/auth/v1/user',{
-          method:'PUT',
-          headers:{
-            'apikey':SUPABASE.key,
-            'Authorization':'Bearer '+auth.access_token,
-            'Content-Type':'application/json'
+      #lp153-fast-title {
+        display: none !important;
+      }
+    `;
+
+    if (document.head) {
+      document.head.appendChild(
+        style
+      );
+    }
+  }
+
+  function lpMenuCleanApply() {
+
+    lpMenuCleanInstallStyle();
+
+    var hint =
+      document.getElementById(
+        'pageHint'
+      );
+
+    if (hint) {
+      hint.style.display =
+        'none';
+    }
+
+    var salesHelp =
+      document.getElementById(
+        'lp153-fast-title'
+      );
+
+    if (salesHelp) {
+      salesHelp.style.display =
+        'none';
+    }
+  }
+
+  /*
+   * =====================================
+   * AUTO SYNC UTILISATEURS
+   *
+   * save() de Leader Pharma effectue
+   * déjà le PUSH automatique.
+   *
+   * Ici on ajoute le PULL automatique
+   * sur les autres appareils.
+   *
+   * DG reste exclu grâce au moteur V5.
+   * =====================================
+   */
+
+  var lpUsersAutoSyncBusy =
+    false;
+
+  var lpUsersLastPull =
+    0;
+
+  function lpUsersEditing() {
+
+    var active =
+      document.activeElement;
+
+    if (!active) {
+      return false;
+    }
+
+    if (
+      active.isContentEditable
+    ) {
+      return true;
+    }
+
+    var tag =
+      String(
+        active.tagName || ''
+      )
+        .toLowerCase();
+
+    return (
+      tag === 'input' ||
+      tag === 'textarea' ||
+      tag === 'select'
+    );
+  }
+
+  async function lpUsersAutoPull(
+    force
+  ) {
+
+    if (
+      lpUsersAutoSyncBusy
+    ) {
+      return;
+    }
+
+    if (
+      document.hidden
+    ) {
+      return;
+    }
+
+    if (
+      typeof currentUser !==
+        'undefined' &&
+      !currentUser
+    ) {
+      return;
+    }
+
+    if (
+      !force &&
+      lpUsersEditing()
+    ) {
+      return;
+    }
+
+    if (
+      typeof syncPull !==
+      'function'
+    ) {
+      return;
+    }
+
+    var now =
+      Date.now();
+
+    if (
+      !force &&
+      now - lpUsersLastPull <
+        7000
+    ) {
+      return;
+    }
+
+    lpUsersAutoSyncBusy =
+      true;
+
+    try {
+
+      await window.lpUsersOnlyRemotePull();
+
+      lpUsersLastPull =
+        Date.now();
+
+      lpMenuCleanApply();
+
+      /*
+       * Si la page Utilisateurs
+       * est déjà ouverte :
+       * actualiser son affichage.
+       */
+      if (
+        typeof page !==
+          'undefined' &&
+        String(page) ===
+          'users' &&
+        typeof render ===
+          'function' &&
+        !lpUsersEditing()
+      ) {
+        render();
+        lpMenuCleanApply();
+      }
+
+      console.log(
+        'LEADER PHARMA USERS AUTO PULL OK'
+      );
+
+    } catch (e) {
+
+      console.warn(
+        'LEADER PHARMA USERS AUTO PULL ERROR',
+        e
+      );
+
+    } finally {
+
+      lpUsersAutoSyncBusy =
+        false;
+    }
+  }
+
+  /*
+   * À l'ouverture / retour application.
+   */
+
+  document.addEventListener(
+    'visibilitychange',
+    function () {
+
+      lpMenuCleanApply();
+
+      if (
+        !document.hidden
+      ) {
+        setTimeout(
+          function () {
+            lpUsersAutoPull(
+              true
+            );
           },
-          body:JSON.stringify({password:newPass})
-        });
-        if(!r.ok){
-          let m='Modification refusée';
-          try{ const e=await r.json(); m=e.message||e.msg||e.error_description||m; }catch(x){}
-          throw new Error(m);
+          500
+        );
+      }
+    }
+  );
+
+  window.addEventListener(
+    'focus',
+    function () {
+
+      lpMenuCleanApply();
+
+      setTimeout(
+        function () {
+          lpUsersAutoPull(
+            true
+          );
+        },
+        500
+      );
+    }
+  );
+
+  /*
+   * Dès que Internet revient.
+   */
+
+  window.addEventListener(
+    'online',
+    function () {
+
+      setTimeout(
+        function () {
+          lpUsersAutoPull(
+            true
+          );
+        },
+        500
+      );
+    }
+  );
+
+  /*
+   * Vérification automatique régulière.
+   * Aucun rafraîchissement pendant
+   * la saisie dans un formulaire.
+   */
+
+  setInterval(
+    function () {
+      lpUsersAutoPull(
+        false
+      );
+    },
+    12000
+  );
+
+  /*
+   * Le menu pouvant être reconstruit,
+   * le nettoyage est réappliqué
+   * automatiquement.
+   */
+
+  var observer =
+    new MutationObserver(
+      function () {
+        lpMenuCleanApply();
+      }
+    );
+
+  function lpStart() {
+
+    lpMenuCleanApply();
+
+    if (
+      document.documentElement
+    ) {
+      observer.observe(
+        document.documentElement,
+        {
+          childList: true,
+          subtree: true
         }
-        try{ audit('Sécurité','Mot de passe DG central modifié'); }catch(e){}
-        window.lpWebDGAccessToken=null;
-        alert('Mot de passe DG modifié avec succès. Reconnectez-vous avec le nouveau mot de passe.');
-        logout();
-      }catch(error){
-        toast(error&&error.message?error.message:'Modification impossible');
+      );
+    }
+
+    setTimeout(
+      function () {
+        lpUsersAutoPull(
+          true
+        );
+      },
+      1500
+    );
+  }
+
+  if (
+    document.readyState ===
+    'loading'
+  ) {
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      lpStart,
+      {
+        once: true
+      }
+    );
+
+  } else {
+
+    lpStart();
+  }
+
+  console.log(
+    'LEADER PHARMA USERS AUTO SYNC MENU CLEAN ACTIF'
+  );
+
+})();
+
+/* LP_USERS_AUTO_SYNC_MENU_CLEAN_END */
+
+/* LP_FIX_MENU_FRAME_AUTO_USERS_FINAL_START */
+
+(function () {
+
+  'use strict';
+
+  if (
+    window.__LP_FIX_MENU_FRAME_AUTO_USERS_FINAL__
+  ) {
+    return;
+  }
+
+  window.__LP_FIX_MENU_FRAME_AUTO_USERS_FINAL__ =
+    true;
+
+
+  /*
+   * =========================================
+   * CORRECTION 1
+   * MENU SANS GROS CADRE GRIS
+   *
+   * On ne change PAS :
+   * - les boutons
+   * - les clics
+   * - les rubriques
+   * - la navigation
+   *
+   * On retire seulement l'effet visuel
+   * autour de la rubrique sélectionnée.
+   * =========================================
+   */
+
+  function lpInstallMenuFrameFix() {
+
+    if (
+      document.getElementById(
+        'lpMenuFrameFixFinalStyle'
+      )
+    ) {
+      return;
+    }
+
+    var style =
+      document.createElement(
+        'style'
+      );
+
+    style.id =
+      'lpMenuFrameFixFinalStyle';
+
+    style.textContent = `
+
+      #nav .nav-btn.active,
+      #nav .nav-btn:hover,
+      #nav .nav-btn:focus,
+      #nav .nav-btn:focus-visible,
+      #nav .nav-btn:active {
+
+        background:
+          transparent !important;
+
+        background-color:
+          transparent !important;
+
+        box-shadow:
+          none !important;
+
+        outline:
+          none !important;
+
+        border-color:
+          transparent !important;
+
+        -webkit-tap-highlight-color:
+          transparent !important;
+
+      }
+
+    `;
+
+    if (
+      document.head
+    ) {
+      document.head.appendChild(
+        style
+      );
+    }
+  }
+
+
+  /*
+   * =========================================
+   * CORRECTION 2
+   * AUTO SYNC UTILISATEURS UNIQUEMENT
+   *
+   * Le PUSH existe déjà dans save().
+   *
+   * Ici on récupère uniquement :
+   * remote.users
+   *
+   * AUCUNE modification automatique de :
+   * stock
+   * ventes
+   * comptabilité
+   * caisse
+   * transferts
+   * RH
+   * autres modules
+   *
+   * Le DG reste protégé par le moteur V5.
+   * =========================================
+   */
+
+  var lpUsersOnlyBusy =
+    false;
+
+  window.lpUsersOnlyRemotePull =
+    async function () {
+
+      if (
+        lpUsersOnlyBusy
+      ) {
+        return false;
+      }
+
+      if (
+        typeof __lpRemoteMeta !==
+        'function'
+      ) {
+        console.warn(
+          'AUTO USERS : __lpRemoteMeta absent'
+        );
+        return false;
+      }
+
+      if (
+        typeof window.lpV5ApplyRemoteUsers !==
+        'function'
+      ) {
+        console.warn(
+          'AUTO USERS : moteur V5 absent'
+        );
+        return false;
+      }
+
+      lpUsersOnlyBusy =
+        true;
+
+      try {
+
+        const meta =
+          await __lpRemoteMeta();
+
+        if (
+          !meta ||
+          !Array.isArray(meta.rows)
+        ) {
+          return false;
+        }
+
+        const remote =
+          meta.rows[0]?.[
+            meta.dataCol
+          ];
+
+        if (
+          !remote ||
+          !Array.isArray(
+            remote.users
+          )
+        ) {
+          return false;
+        }
+
+        /*
+         * Moteur V5 déjà validé :
+         *
+         * - DG local conservé
+         * - utilisateurs non-DG distants
+         *   appliqués localement
+         * - cache vendeur actualisé
+         * - localStorage actualisé
+         */
+        window.lpV5ApplyRemoteUsers(
+          remote.users,
+          Array.isArray(db?.users)
+            ? db.users
+            : []
+        );
+
+        console.log(
+          'LEADER PHARMA AUTO USERS ONLY OK'
+        );
+
+        return true;
+
+      } catch (e) {
+
+        console.warn(
+          'LEADER PHARMA AUTO USERS ONLY ERROR',
+          e
+        );
+
+        return false;
+
+      } finally {
+
+        lpUsersOnlyBusy =
+          false;
       }
     };
-  };
 
-  // Web-specific version card: do not show an obsolete APK version.
-  updates=function(){
-    setHeader('Mises à jour','Leader Pharma Web V10.2 + Supabase');
-    $('#content').innerHTML=`<div class="grid two-col"><div class="card"><h3>Version Web installée</h3><div class="kpi"><div class="value">V10.2</div></div><p>Base fonctionnelle récente Leader Pharma, adaptée au Web avec sécurité DG centralisée.</p></div><div class="card"><h3>Synchronisation Supabase</h3><p><b>${esc(syncState)}</b></p><p class="muted">Les données restent utilisables localement et sont synchronisées avec Supabase lorsque la connexion est disponible.</p><button class="btn" id="syncNow">Synchroniser maintenant</button></div></div>`;
-    $('#syncNow').onclick=async()=>{await syncPush();updates();toast(syncState)};
-  };
 
-  function lpWebRebind(){
-    lpWebEnsureAgency();
-    lpWebRemoveDGLocalPassword();
-    try{ if(typeof fillAgencies==='function') fillAgencies(); }catch(e){}
-    const u=document.querySelector('#username'); if(u) u.value=LP_WEB_DG_LOGIN;
-    const p=document.querySelector('#password'); if(p) p.value='';
-    const b=document.querySelector('#loginBtn'); if(b) b.onclick=login;
-    const o=document.querySelector('#logoutBtn'); if(o) o.onclick=logout;
+  lpInstallMenuFrameFix();
+
+  /*
+   * Le menu peut être reconstruit.
+   * Le CSS reste actif en permanence.
+   */
+
+  document.addEventListener(
+    'DOMContentLoaded',
+    lpInstallMenuFrameFix,
+    {
+      once: true
+    }
+  );
+
+  console.log(
+    'LEADER PHARMA FIX CADRE MENU AUTO USERS FINAL ACTIF'
+  );
+
+})();
+
+/* LP_FIX_MENU_FRAME_AUTO_USERS_FINAL_END */
+
+/* LP_AUTO_USERS_LOGIN_FINAL_START */
+
+(function () {
+
+  'use strict';
+
+  if (
+    window.__LP_AUTO_USERS_LOGIN_FINAL__
+  ) {
+    return;
   }
 
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',lpWebRebind,{once:true});
-  else lpWebRebind();
-  setTimeout(lpWebRebind,100);
-  setTimeout(lpWebRebind,700);
+  window.__LP_AUTO_USERS_LOGIN_FINAL__ =
+    true;
 
-  console.log('LEADER PHARMA WEB V10.2 DG SUPABASE CENTRAL ACTIVE');
+  /*
+   * ==========================================
+   * AUTO USERS - ECRAN DE CONNEXION
+   *
+   * Correction unique :
+   *
+   * récupérer les utilisateurs Supabase
+   * même lorsqu'aucun utilisateur
+   * n'est encore connecté.
+   *
+   * Ainsi le deuxième appareil reçoit
+   * le nouveau mot de passe AVANT login.
+   *
+   * AUCUNE modification du menu.
+   * AUCUNE synchronisation automatique
+   * Stock/Ventes/Compta/RH/etc.
+   * ==========================================
+   */
+
+  var lpLoginUsersBusy =
+    false;
+
+  var lpLoginUsersLast =
+    0;
+
+  async function lpLoginUsersPull(
+    force
+  ) {
+
+    if (
+      lpLoginUsersBusy
+    ) {
+      return false;
+    }
+
+    if (
+      typeof window.lpUsersOnlyRemotePull !==
+      'function'
+    ) {
+      return false;
+    }
+
+    if (
+      document.hidden &&
+      !force
+    ) {
+      return false;
+    }
+
+    var now =
+      Date.now();
+
+    if (
+      !force &&
+      now - lpLoginUsersLast <
+        4000
+    ) {
+      return false;
+    }
+
+    lpLoginUsersBusy =
+      true;
+
+    try {
+
+      var ok =
+        await window.lpUsersOnlyRemotePull();
+
+      lpLoginUsersLast =
+        Date.now();
+
+      if (ok) {
+
+        console.log(
+          'LEADER PHARMA AUTO USERS LOGIN PULL OK'
+        );
+
+      }
+
+      return !!ok;
+
+    } catch (e) {
+
+      console.warn(
+        'LEADER PHARMA AUTO USERS LOGIN PULL ERROR',
+        e
+      );
+
+      return false;
+
+    } finally {
+
+      lpLoginUsersBusy =
+        false;
+    }
+  }
+
+
+  /*
+   * Au démarrage de l'application.
+   */
+
+  function lpLoginUsersStart() {
+
+    setTimeout(
+      function () {
+        lpLoginUsersPull(
+          true
+        );
+      },
+      800
+    );
+
+    setTimeout(
+      function () {
+        lpLoginUsersPull(
+          true
+        );
+      },
+      2500
+    );
+
+  }
+
+
+  if (
+    document.readyState ===
+    'loading'
+  ) {
+
+    document.addEventListener(
+      'DOMContentLoaded',
+      lpLoginUsersStart,
+      {
+        once: true
+      }
+    );
+
+  } else {
+
+    lpLoginUsersStart();
+  }
+
+
+  /*
+   * Vérification régulière,
+   * y compris sur l'écran Login.
+   */
+
+  setInterval(
+    function () {
+
+      lpLoginUsersPull(
+        false
+      );
+
+    },
+    6000
+  );
+
+
+  /*
+   * Dès que l'application revient
+   * au premier plan.
+   */
+
+  window.addEventListener(
+    'focus',
+    function () {
+
+      setTimeout(
+        function () {
+          lpLoginUsersPull(
+            true
+          );
+        },
+        300
+      );
+
+    }
+  );
+
+
+  document.addEventListener(
+    'visibilitychange',
+    function () {
+
+      if (
+        !document.hidden
+      ) {
+
+        setTimeout(
+          function () {
+            lpLoginUsersPull(
+              true
+            );
+          },
+          300
+        );
+
+      }
+
+    }
+  );
+
+
+  /*
+   * Dès que Internet revient.
+   */
+
+  window.addEventListener(
+    'online',
+    function () {
+
+      setTimeout(
+        function () {
+          lpLoginUsersPull(
+            true
+          );
+        },
+        300
+      );
+
+    }
+  );
+
+
+  /*
+   * Très important :
+   *
+   * quand l'utilisateur touche
+   * un champ mot de passe,
+   * on récupère immédiatement
+   * les utilisateurs distants.
+   *
+   * Cela laisse le temps au nouveau
+   * mot de passe d'arriver avant
+   * l'appui sur Connexion.
+   */
+
+  document.addEventListener(
+    'focusin',
+    function (event) {
+
+      var el =
+        event.target;
+
+      if (!el) {
+        return;
+      }
+
+      var type =
+        String(
+          el.type || ''
+        )
+          .toLowerCase();
+
+      if (
+        type === 'password'
+      ) {
+
+        lpLoginUsersPull(
+          true
+        );
+
+      }
+
+    },
+    true
+  );
+
+
+  /*
+   * On peut aussi déclencher
+   * la récupération dès qu'un utilisateur
+   * commence à écrire dans le login.
+   *
+   * Aucun blocage de saisie.
+   */
+
+  document.addEventListener(
+    'input',
+    function (event) {
+
+      var el =
+        event.target;
+
+      if (!el) {
+        return;
+      }
+
+      var type =
+        String(
+          el.type || ''
+        )
+          .toLowerCase();
+
+      if (
+        type === 'password'
+      ) {
+
+        lpLoginUsersPull(
+          false
+        );
+
+      }
+
+    },
+    true
+  );
+
+
+  console.log(
+    'LEADER PHARMA AUTO USERS LOGIN FINAL ACTIF'
+  );
+
 })();
-/* LP_WEB_V102_DG_SECURE_END */
+
+/* LP_AUTO_USERS_LOGIN_FINAL_END */
+
+/* LP_USERS_V6_ANTI_ECRASEMENT_START */
+
+(function () {
+
+  'use strict';
+
+  if (
+    window.__LP_USERS_V6_ANTI_ECRASEMENT__
+  ) {
+    return;
+  }
+
+  window.__LP_USERS_V6_ANTI_ECRASEMENT__ =
+    true;
+
+
+  /*
+   * ==========================================
+   * LEADER PHARMA USERS V6
+   *
+   * BUT :
+   * - anti-écrasement
+   * - multi-appareils
+   * - fusion utilisateur par utilisateur
+   * - le plus récent gagne
+   * - un ancien appareil ne supprime pas
+   *   les comptes absents de sa liste
+   * ==========================================
+   */
+
+
+  function lpV6IsDG(
+    user
+  ) {
+
+    return (
+      String(
+        user?.role || ''
+      )
+        .trim()
+        .toLowerCase() ===
+      'dg'
+    );
+  }
+
+
+  function lpV6Key(
+    user
+  ) {
+
+    var username =
+      String(
+        user?.username || ''
+      )
+        .trim()
+        .toLowerCase();
+
+    if (username) {
+      return (
+        'username:' +
+        username
+      );
+    }
+
+    if (
+      user &&
+      user.id !== undefined &&
+      user.id !== null
+    ) {
+      return (
+        'id:' +
+        String(user.id)
+      );
+    }
+
+    return '';
+  }
+
+
+  function lpV6Clone(
+    value
+  ) {
+
+    try {
+
+      return JSON.parse(
+        JSON.stringify(value)
+      );
+
+    } catch (e) {
+
+      return value;
+    }
+  }
+
+
+  function lpV6UpdatedAt(
+    user
+  ) {
+
+    var n =
+      Number(
+        user?._lpUserUpdatedAt ||
+        0
+      );
+
+    return Number.isFinite(n)
+      ? n
+      : 0;
+  }
+
+
+  /*
+   * Signature fonctionnelle.
+   *
+   * Le timestamp de synchronisation
+   * lui-même est ignoré.
+   */
+  function lpV6NormaliseForSignature(
+    value
+  ) {
+
+    if (
+      value === null ||
+      value === undefined
+    ) {
+      return value;
+    }
+
+    if (
+      Array.isArray(value)
+    ) {
+      return value.map(
+        lpV6NormaliseForSignature
+      );
+    }
+
+    if (
+      typeof value ===
+      'object'
+    ) {
+
+      var out = {};
+
+      Object.keys(value)
+        .sort()
+        .forEach(
+          function (key) {
+
+            if (
+              key ===
+              '_lpUserUpdatedAt'
+            ) {
+              return;
+            }
+
+            out[key] =
+              lpV6NormaliseForSignature(
+                value[key]
+              );
+          }
+        );
+
+      return out;
+    }
+
+    return value;
+  }
+
+
+  function lpV6Signature(
+    user
+  ) {
+
+    try {
+
+      return JSON.stringify(
+        lpV6NormaliseForSignature(
+          user
+        )
+      );
+
+    } catch (e) {
+
+      return '';
+    }
+  }
+
+
+  function lpV6MakeBaseline(
+    users
+  ) {
+
+    var baseline = {};
+
+    (
+      Array.isArray(users)
+        ? users
+        : []
+    ).forEach(
+      function (user) {
+
+        if (
+          !user ||
+          lpV6IsDG(user)
+        ) {
+          return;
+        }
+
+        var key =
+          lpV6Key(user);
+
+        if (!key) {
+          return;
+        }
+
+        baseline[key] =
+          lpV6Signature(user);
+      }
+    );
+
+    return baseline;
+  }
+
+
+  var lpV6Baseline =
+    lpV6MakeBaseline(
+      (
+        typeof db !==
+          'undefined' &&
+        Array.isArray(
+          db?.users
+        )
+      )
+        ? db.users
+        : []
+    );
+
+
+  function lpV6RefreshBaseline() {
+
+    lpV6Baseline =
+      lpV6MakeBaseline(
+        (
+          typeof db !==
+            'undefined' &&
+          Array.isArray(
+            db?.users
+          )
+        )
+          ? db.users
+          : []
+      );
+  }
+
+
+  /*
+   * Avant chaque save(),
+   * identifier uniquement les utilisateurs
+   * réellement créés ou modifiés.
+   *
+   * Ils reçoivent un timestamp récent.
+   */
+  window.lpV6StampChangedUsers =
+    function () {
+
+      if (
+        typeof db ===
+          'undefined' ||
+        !Array.isArray(
+          db?.users
+        )
+      ) {
+        return;
+      }
+
+      var now =
+        Date.now();
+
+      var changed =
+        false;
+
+      db.users.forEach(
+        function (user) {
+
+          if (
+            !user ||
+            lpV6IsDG(user)
+          ) {
+            return;
+          }
+
+          var key =
+            lpV6Key(user);
+
+          if (!key) {
+            return;
+          }
+
+          var signature =
+            lpV6Signature(user);
+
+          if (
+            !Object.prototype
+              .hasOwnProperty
+              .call(
+                lpV6Baseline,
+                key
+              ) ||
+            lpV6Baseline[key] !==
+              signature
+          ) {
+
+            user._lpUserUpdatedAt =
+              now;
+
+            changed =
+              true;
+          }
+        }
+      );
+
+      lpV6RefreshBaseline();
+
+      if (changed) {
+
+        console.log(
+          'LEADER PHARMA USERS V6 MODIFICATION DATEE'
+        );
+      }
+    };
+
+
+  /*
+   * Fusion centrale.
+   *
+   * IMPORTANT :
+   * l'absence d'un compte dans une liste
+   * ne signifie JAMAIS suppression.
+   *
+   * On garde donc l'union des comptes.
+   */
+  function lpV6MergeNonDG(
+    remoteUsers,
+    localUsers,
+    mode
+  ) {
+
+    var map =
+      new Map();
+
+    function addRemote(
+      user
+    ) {
+
+      if (
+        !user ||
+        lpV6IsDG(user)
+      ) {
+        return;
+      }
+
+      var key =
+        lpV6Key(user);
+
+      if (!key) {
+        return;
+      }
+
+      map.set(
+        key,
+        lpV6Clone(user)
+      );
+    }
+
+
+    function mergeLocal(
+      local
+    ) {
+
+      if (
+        !local ||
+        lpV6IsDG(local)
+      ) {
+        return;
+      }
+
+      var key =
+        lpV6Key(local);
+
+      if (!key) {
+        return;
+      }
+
+      var remote =
+        map.get(key);
+
+      if (!remote) {
+
+        /*
+         * Nouveau compte local :
+         * on l'ajoute.
+         */
+        map.set(
+          key,
+          lpV6Clone(local)
+        );
+
+        return;
+      }
+
+      var remoteTime =
+        lpV6UpdatedAt(
+          remote
+        );
+
+      var localTime =
+        lpV6UpdatedAt(
+          local
+        );
+
+      /*
+       * Celui qui possède le timestamp
+       * le plus récent gagne.
+       */
+      if (
+        localTime >
+        remoteTime
+      ) {
+
+        map.set(
+          key,
+          lpV6Clone(local)
+        );
+
+        return;
+      }
+
+      if (
+        remoteTime >
+        localTime
+      ) {
+
+        return;
+      }
+
+      /*
+       * Transition depuis anciennes APK :
+       *
+       * si aucun des deux n'a encore
+       * de timestamp, le serveur reste
+       * prioritaire pour éviter qu'un
+       * ancien appareil réécrive
+       * un compte central.
+       *
+       * Une vraie modification locale
+       * reçoit automatiquement un
+       * timestamp par save().
+       */
+      if (
+        remoteTime === 0 &&
+        localTime === 0
+      ) {
+
+        if (
+          mode ===
+          'push-new-local' &&
+          lpV6Signature(remote) ===
+          lpV6Signature(local)
+        ) {
+
+          map.set(
+            key,
+            lpV6Clone(local)
+          );
+        }
+
+        return;
+      }
+    }
+
+
+    (
+      Array.isArray(
+        remoteUsers
+      )
+        ? remoteUsers
+        : []
+    ).forEach(
+      addRemote
+    );
+
+
+    (
+      Array.isArray(
+        localUsers
+      )
+        ? localUsers
+        : []
+    ).forEach(
+      mergeLocal
+    );
+
+
+    return Array.from(
+      map.values()
+    );
+  }
+
+
+  /*
+   * ==========================================
+   * PULL
+   *
+   * DG local conservé.
+   *
+   * Pour les non-DG :
+   * fusion remote + local.
+   * Aucun compte local ou distant
+   * n'est supprimé juste parce qu'il
+   * manque dans l'autre appareil.
+   * ==========================================
+   */
+  window.lpV5ApplyRemoteUsers =
+    function (
+      remoteUsers,
+      localUsers
+    ) {
+
+      var local =
+        Array.isArray(
+          localUsers
+        )
+          ? localUsers
+          : [];
+
+      var remote =
+        Array.isArray(
+          remoteUsers
+        )
+          ? remoteUsers
+          : [];
+
+      var localDG =
+        local
+          .filter(
+            lpV6IsDG
+          )
+          .map(
+            lpV6Clone
+          );
+
+      var remoteNonDG =
+        remote.filter(
+          function (u) {
+            return !lpV6IsDG(u);
+          }
+        );
+
+      var localNonDG =
+        local.filter(
+          function (u) {
+            return !lpV6IsDG(u);
+          }
+        );
+
+      var merged =
+        lpV6MergeNonDG(
+          remoteNonDG,
+          localNonDG,
+          'pull'
+        );
+
+      db.users =
+        localDG.concat(
+          merged
+        );
+
+      try {
+
+        if (
+          typeof lpV5RefreshSellerCache ===
+          'function'
+        ) {
+
+          lpV5RefreshSellerCache(
+            db.users
+          );
+        }
+
+      } catch (e) {
+
+        console.warn(
+          'LP V6 CACHE SELLER',
+          e
+        );
+      }
+
+
+      localStorage.setItem(
+        'lpmp_v13',
+        JSON.stringify(db)
+      );
+
+
+      lpV6RefreshBaseline();
+
+
+      console.log(
+        'LEADER PHARMA USERS V6 PULL FUSION OK'
+      );
+
+
+      return db.users;
+    };
+
+
+  /*
+   * ==========================================
+   * PUSH
+   *
+   * DG distant conservé.
+   *
+   * Pour les non-DG :
+   * union remote + local.
+   *
+   * Un appareil ancien NE PEUT PLUS
+   * supprimer les comptes récents.
+   * ==========================================
+   */
+  window.lpV5PrepareRemoteUsers =
+    function (
+      remoteUsers,
+      localUsers
+    ) {
+
+      var remote =
+        Array.isArray(
+          remoteUsers
+        )
+          ? remoteUsers
+          : [];
+
+      var local =
+        Array.isArray(
+          localUsers
+        )
+          ? localUsers
+          : [];
+
+      var remoteDG =
+        remote
+          .filter(
+            lpV6IsDG
+          )
+          .map(
+            lpV6Clone
+          );
+
+      var remoteNonDG =
+        remote.filter(
+          function (u) {
+            return !lpV6IsDG(u);
+          }
+        );
+
+      var localNonDG =
+        local.filter(
+          function (u) {
+            return !lpV6IsDG(u);
+          }
+        );
+
+      var merged =
+        lpV6MergeNonDG(
+          remoteNonDG,
+          localNonDG,
+          'push-new-local'
+        );
+
+
+      console.log(
+        'LEADER PHARMA USERS V6 PUSH FUSION OK'
+      );
+
+
+      return remoteDG.concat(
+        merged
+      );
+    };
+
+
+  /*
+   * Au chargement V6,
+   * on garde simplement une photo
+   * de référence locale.
+   *
+   * Aucun push automatique forcé ici,
+   * pour éviter de pousser une ancienne
+   * liste avant le premier échange.
+   */
+  lpV6RefreshBaseline();
+
+
+  console.log(
+    'LEADER PHARMA USERS V6 ANTI ECRASEMENT MULTI APPAREILS ACTIF'
+  );
+
+})();
+
+/* LP_USERS_V6_ANTI_ECRASEMENT_END */
+
+
+/* LP_V7_DEPENSES_NATIF_FIX2_START */
+console.log(
+  'LEADER PHARMA V7 DEPENSES NATIF STABLE FIX2 ACTIF'
+);
+/* LP_V7_DEPENSES_NATIF_FIX2_END */
+
+
+
+/* LP_V8_DASHBOARD_USER_CASH_START */
+console.log('LEADER PHARMA V8 TABLEAU UTILISATEUR CAISSE DEPENSES ACTIF');
+/* LP_V8_DASHBOARD_USER_CASH_END */
+
+
+/* LP_V9_RAPPORT_JOUR_USER_START */
+console.log('LEADER PHARMA V9 RAPPORT DU JOUR UTILISATEUR ACTIF');
+/* LP_V9_RAPPORT_JOUR_USER_END */
+
+/* LP_V10_OBJECTIFS_PERFORMANCE_USERS_ISOLES_START */
+
+(function(){
+
+  function lpV10Norm(v){
+    return String(v == null ? '' : v)
+      .trim()
+      .toLowerCase();
+  }
+
+  function lpV10Number(v){
+    var n = Number(v || 0);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function lpV10Money(v){
+    var n = lpV10Number(v);
+
+    if(typeof lpU3Money === 'function'){
+      return lpU3Money(n);
+    }
+
+    return n.toLocaleString('fr-FR') + ' FC';
+  }
+
+  function lpV10Escape(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+
+  function lpV10Today(){
+    if(typeof lpU3Today === 'function'){
+      return lpU3Today();
+    }
+
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function lpV10Agency(){
+    if(typeof lpU3Agency === 'function'){
+      return lpU3Agency();
+    }
+
+    return String(
+      typeof currentAgency !== 'undefined'
+        ? currentAgency
+        : ''
+    );
+  }
+
+  function lpV10CurrentUserRecord(){
+    if(
+      typeof db === 'undefined'
+      ||
+      !Array.isArray(db.users)
+      ||
+      typeof currentUser === 'undefined'
+      ||
+      !currentUser
+    ){
+      return null;
+    }
+
+    var myUsername = lpV10Norm(currentUser.username);
+    var myId = lpV10Norm(currentUser.id);
+
+    return db.users.find(function(u){
+
+      if(!u){
+        return false;
+      }
+
+      var username = lpV10Norm(u.username);
+      var id = lpV10Norm(u.id);
+
+      if(
+        myUsername
+        &&
+        username
+        &&
+        myUsername === username
+      ){
+        return true;
+      }
+
+      if(
+        myId
+        &&
+        id
+        &&
+        myId === id
+      ){
+        return true;
+      }
+
+      return false;
+    }) || null;
+  }
+
+  function lpV10SaleOwnerKeys(sale){
+
+    var keys = [];
+
+    if(!sale){
+      return keys;
+    }
+
+    [
+      sale.sellerUsername,
+      sale.sellerUserId,
+      sale.sellerName,
+      sale.seller,
+      sale.username,
+      sale.user
+    ].forEach(function(v){
+
+      var k = lpV10Norm(v);
+
+      if(k && keys.indexOf(k) === -1){
+        keys.push(k);
+      }
+    });
+
+    return keys;
+  }
+
+  function lpV10MyKeys(){
+
+    var keys = [];
+
+    if(
+      typeof currentUser === 'undefined'
+      ||
+      !currentUser
+    ){
+      return keys;
+    }
+
+    [
+      currentUser.username,
+      currentUser.id,
+      currentUser.name
+    ].forEach(function(v){
+
+      var k = lpV10Norm(v);
+
+      if(k && keys.indexOf(k) === -1){
+        keys.push(k);
+      }
+    });
+
+    return keys;
+  }
+
+  function lpV10SaleDate(sale){
+
+    if(!sale){
+      return '';
+    }
+
+    var value =
+      sale.date ||
+      sale.createdAt ||
+      sale.created_at ||
+      sale.datetime ||
+      sale.time ||
+      '';
+
+    return String(value).slice(0,10);
+  }
+
+  function lpV10SaleAgency(sale){
+
+    if(!sale){
+      return '';
+    }
+
+    return String(
+      sale.agency ||
+      sale.agencyName ||
+      sale.branch ||
+      ''
+    );
+  }
+
+  function lpV10AllSales(){
+
+    if(
+      typeof db === 'undefined'
+      ||
+      !Array.isArray(db.sales)
+    ){
+      return [];
+    }
+
+    var today = lpV10Today();
+    var agency = lpV10Agency();
+
+    return db.sales.filter(function(sale){
+
+      if(!sale){
+        return false;
+      }
+
+      var d = lpV10SaleDate(sale);
+
+      if(d && d !== today){
+        return false;
+      }
+
+      var a = lpV10SaleAgency(sale);
+
+      if(
+        agency
+        &&
+        a
+        &&
+        String(a) !== String(agency)
+      ){
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  function lpV10MySalesToday(){
+
+    var mine = lpV10MyKeys();
+
+    if(!mine.length){
+      return [];
+    }
+
+    return lpV10AllSales().filter(function(sale){
+
+      var owners = lpV10SaleOwnerKeys(sale);
+
+      if(!owners.length){
+        return false;
+      }
+
+      return owners.some(function(owner){
+        return mine.indexOf(owner) !== -1;
+      });
+    });
+  }
+
+  function lpV10SaleTotal(sale){
+
+    if(!sale){
+      return 0;
+    }
+
+    var direct = lpV10Number(
+      sale.total ||
+      sale.amount ||
+      sale.grandTotal ||
+      sale.totalAmount ||
+      0
+    );
+
+    if(direct){
+      return direct;
+    }
+
+    if(Array.isArray(sale.items)){
+
+      return sale.items.reduce(function(sum,item){
+
+        if(!item){
+          return sum;
+        }
+
+        var qty = lpV10Number(
+          item.qty ||
+          item.quantity ||
+          0
+        );
+
+        var price = lpV10Number(
+          item.price ||
+          item.unitPrice ||
+          item.unit_price ||
+          0
+        );
+
+        return sum + (qty * price);
+
+      },0);
+    }
+
+    return 0;
+  }
+
+  function lpV10MySalesTotal(){
+
+    return lpV10MySalesToday()
+      .reduce(function(sum,sale){
+        return sum + lpV10SaleTotal(sale);
+      },0);
+  }
+
+  function lpV10Target(){
+
+    var rec = lpV10CurrentUserRecord();
+
+    if(!rec){
+      return 0;
+    }
+
+    var value = lpV10Number(
+      rec.salesDailyTarget
+    );
+
+    return value > 0 ? value : 0;
+  }
+
+  function lpV10Performance(rate,target){
+
+    if(!target){
+      return {
+        icon:'⚪',
+        label:'Objectif non défini'
+      };
+    }
+
+    if(rate >= 100){
+      return {
+        icon:'🏆',
+        label:'Excellente'
+      };
+    }
+
+    if(rate >= 75){
+      return {
+        icon:'🟢',
+        label:'Bonne'
+      };
+    }
+
+    if(rate >= 50){
+      return {
+        icon:'🟠',
+        label:'À améliorer'
+      };
+    }
+
+    return {
+      icon:'🔴',
+      label:'Faible'
+    };
+  }
+
+  function lpV10MountSellerPerformance(){
+
+    if(
+      typeof currentUser === 'undefined'
+      ||
+      !currentUser
+      ||
+      lpV10Norm(currentUser.role) !== 'vendeur'
+    ){
+      return;
+    }
+
+    var report =
+      document.getElementById(
+        'lpV9DailyReport'
+      );
+
+    if(!report){
+      return;
+    }
+
+    var old =
+      document.getElementById(
+        'lpV10SellerPerformance'
+      );
+
+    if(old){
+      old.remove();
+    }
+
+    var target = lpV10Target();
+    var realised = lpV10MySalesTotal();
+
+    var remaining =
+      target > realised
+        ? target - realised
+        : 0;
+
+    var rate =
+      target > 0
+        ? (realised / target) * 100
+        : 0;
+
+    var perf =
+      lpV10Performance(
+        rate,
+        target
+      );
+
+    var card =
+      document.createElement('div');
+
+    card.id =
+      'lpV10SellerPerformance';
+
+    card.className = 'card';
+
+    card.style.marginTop = '16px';
+
+    card.innerHTML =
+      '<h3>🎯 Objectif &amp; Performance</h3>' +
+
+      '<div class="grid kpis">' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Objectif du jour</div>' +
+          '<div class="value">' +
+            (
+              target
+                ? lpV10Money(target)
+                : 'Non défini'
+            ) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Réalisé</div>' +
+          '<div class="value">' +
+            lpV10Money(realised) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Reste à atteindre</div>' +
+          '<div class="value">' +
+            lpV10Money(remaining) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Taux de réalisation</div>' +
+          '<div class="value">' +
+            (
+              target
+                ? Math.round(rate) + '%'
+                : '—'
+            ) +
+          '</div>' +
+        '</div>' +
+
+      '</div>' +
+
+      '<div style="margin-top:12px;font-weight:700">' +
+        perf.icon +
+        ' Performance : ' +
+        perf.label +
+      '</div>';
+
+    report.parentNode.insertBefore(
+      card,
+      report
+    );
+  }
+
+  function lpV10SellerUsers(){
+
+    if(
+      typeof db === 'undefined'
+      ||
+      !Array.isArray(db.users)
+    ){
+      return [];
+    }
+
+    return db.users.filter(function(u){
+
+      return (
+        u
+        &&
+        u.active !== false
+        &&
+        lpV10Norm(u.role) === 'vendeur'
+      );
+    });
+  }
+
+  function lpV10MountDGTargets(){
+
+    if(
+      typeof currentUser === 'undefined'
+      ||
+      !currentUser
+      ||
+      lpV10Norm(currentUser.role) !== 'dg'
+    ){
+      return;
+    }
+
+    var host =
+      document.getElementById('content');
+
+    if(!host){
+      return;
+    }
+
+    var old =
+      document.getElementById(
+        'lpV10DGTargets'
+      );
+
+    if(old){
+      old.remove();
+    }
+
+    var sellers =
+      lpV10SellerUsers();
+
+    var panel =
+      document.createElement('div');
+
+    panel.id =
+      'lpV10DGTargets';
+
+    panel.className = 'card';
+
+    panel.style.marginTop = '16px';
+
+    var html =
+      '<h3>🎯 Objectifs des vendeurs</h3>' +
+      '<div class="muted">' +
+        'Définissez l’objectif quotidien de chaque vendeur.' +
+      '</div>';
+
+    if(!sellers.length){
+
+      html +=
+        '<div class="muted" style="margin-top:12px">' +
+          'Aucun vendeur actif.' +
+        '</div>';
+
+    }else{
+
+      sellers.forEach(function(u,i){
+
+        var currentTarget =
+          lpV10Number(
+            u.salesDailyTarget
+          );
+
+        html +=
+          '<div class="card" style="margin-top:12px">' +
+
+            '<b>' +
+              lpV10Escape(
+                u.name ||
+                u.username ||
+                'Vendeur'
+              ) +
+            '</b>' +
+
+            '<div class="muted">' +
+              lpV10Escape(
+                u.username || ''
+              ) +
+            '</div>' +
+
+            '<label style="display:block;margin-top:10px">' +
+              'Objectif du jour (FC)' +
+            '</label>' +
+
+            '<input ' +
+              'type="number" ' +
+              'min="0" ' +
+              'inputmode="numeric" ' +
+              'id="lpV10Target_' + i + '" ' +
+              'value="' +
+                (
+                  currentTarget > 0
+                    ? currentTarget
+                    : ''
+                ) +
+              '" ' +
+              'placeholder="Ex. 100000">' +
+
+            '<button ' +
+              'type="button" ' +
+              'class="btn primary" ' +
+              'style="margin-top:10px" ' +
+              'data-lpv10-index="' + i + '">' +
+              'Enregistrer objectif' +
+            '</button>' +
+
+          '</div>';
+      });
+    }
+
+    panel.innerHTML = html;
+
+    host.appendChild(panel);
+
+    panel
+      .querySelectorAll(
+        '[data-lpv10-index]'
+      )
+      .forEach(function(btn){
+
+        btn.onclick = function(){
+
+          var i =
+            Number(
+              btn.getAttribute(
+                'data-lpv10-index'
+              )
+            );
+
+          var seller =
+            sellers[i];
+
+          var input =
+            document.getElementById(
+              'lpV10Target_' + i
+            );
+
+          if(!seller || !input){
+            return;
+          }
+
+          var value =
+            lpV10Number(
+              input.value
+            );
+
+          seller.salesDailyTarget =
+            value > 0 ? value : 0;
+
+          seller._lpUserUpdatedAt =
+            Date.now();
+
+          if(typeof save === 'function'){
+            save();
+          }
+
+          if(typeof toast === 'function'){
+            toast(
+              'Objectif vendeur enregistré'
+            );
+          }
+
+          lpV10MountDGTargets();
+        };
+      });
+  }
+
+  if(typeof dashboard === 'function'){
+
+    var lpV10OldDashboard =
+      dashboard;
+
+    dashboard = function(){
+
+      var result =
+        lpV10OldDashboard.apply(
+          this,
+          arguments
+        );
+
+      lpV10MountSellerPerformance();
+
+      return result;
+    };
+  }
+
+  if(typeof users === 'function'){
+
+    var lpV10OldUsers =
+      users;
+
+    users = function(){
+
+      var result =
+        lpV10OldUsers.apply(
+          this,
+          arguments
+        );
+
+      lpV10MountDGTargets();
+
+      return result;
+    };
+  }
+
+  if(typeof lp16UsersPage === 'function'){
+
+    var lpV10OldUsersPage =
+      lp16UsersPage;
+
+    lp16UsersPage = function(){
+
+      var result =
+        lpV10OldUsersPage.apply(
+          this,
+          arguments
+        );
+
+      lpV10MountDGTargets();
+
+      return result;
+    };
+  }
+
+  window.lpV10MountSellerPerformance =
+    lpV10MountSellerPerformance;
+
+  window.lpV10MountDGTargets =
+    lpV10MountDGTargets;
+
+  window.lpV10MySalesToday =
+    lpV10MySalesToday;
+
+  console.log(
+    'LEADER PHARMA V10 OBJECTIFS PERFORMANCE USERS ISOLES ACTIF'
+  );
+
+})();
+
+/* LP_V10_OBJECTIFS_PERFORMANCE_USERS_ISOLES_END */
+
+
+/* LP_V11_ORDONNANCES_STATS_USERS_START */
+
+(function(){
+
+  function lpV11Norm(v){
+    return String(
+      v == null ? '' : v
+    )
+    .trim()
+    .toLowerCase();
+  }
+
+
+  function lpV11Esc(v){
+    return String(
+      v == null ? '' : v
+    )
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+  }
+
+
+  function lpV11Num(v){
+    var n = Number(v || 0);
+
+    return Number.isFinite(n)
+      ? n
+      : 0;
+  }
+
+
+  function lpV11Money(v){
+
+    var n = lpV11Num(v);
+
+    if(
+      typeof lpU3Money ===
+      'function'
+    ){
+      return lpU3Money(n);
+    }
+
+    return (
+      n.toLocaleString(
+        'fr-FR'
+      ) +
+      ' FC'
+    );
+  }
+
+
+  function lpV11Today(){
+
+    if(
+      typeof lpU3Today ===
+      'function'
+    ){
+      return lpU3Today();
+    }
+
+    return new Date()
+      .toISOString()
+      .slice(0,10);
+  }
+
+
+  function lpV11Agency(){
+
+    if(
+      typeof currentAgency !==
+      'undefined'
+    ){
+      return String(
+        currentAgency || ''
+      );
+    }
+
+    return '';
+  }
+
+
+  function lpV11UserKey(){
+
+    if(
+      typeof currentUser ===
+        'undefined'
+      ||
+      !currentUser
+    ){
+      return '';
+    }
+
+    return String(
+      currentUser.username ||
+      currentUser.id ||
+      currentUser.name ||
+      ''
+    );
+  }
+
+
+  function lpV11IsDG(){
+
+    return (
+      typeof currentUser !==
+        'undefined'
+      &&
+      currentUser
+      &&
+      lpV11Norm(
+        currentUser.role
+      ) === 'dg'
+    );
+  }
+
+
+  /*
+   * =====================================
+   * ORDONNANCES MEDICALES PROFESSIONNELLES
+   * =====================================
+   */
+
+
+  function lpV11EnsurePrescriptions(){
+
+    if(
+      !Array.isArray(
+        db.prescriptions
+      )
+    ){
+      db.prescriptions = [];
+    }
+  }
+
+
+  function lpV11PrescriptionReference(){
+
+    var d =
+      new Date();
+
+    var stamp =
+      String(d.getFullYear()) +
+      String(d.getMonth()+1)
+        .padStart(2,'0') +
+      String(d.getDate())
+        .padStart(2,'0') +
+      '-' +
+      String(d.getHours())
+        .padStart(2,'0') +
+      String(d.getMinutes())
+        .padStart(2,'0') +
+      String(d.getSeconds())
+        .padStart(2,'0');
+
+    return 'ORD-' + stamp;
+  }
+
+
+  function lpV11PrescriptionRows(){
+
+    lpV11EnsurePrescriptions();
+
+    var agency =
+      lpV11Agency();
+
+    return db.prescriptions
+      .filter(
+        function(x){
+
+          if(!x){
+            return false;
+          }
+
+          if(
+            agency &&
+            x.agency &&
+            String(x.agency) !==
+              agency
+          ){
+            return false;
+          }
+
+          return true;
+        }
+      )
+      .slice()
+      .reverse();
+  }
+
+
+  function lpV11PrescriptionStatusBadge(
+    status
+  ){
+
+    var s =
+      lpV11Norm(status);
+
+    if(s === 'servie'){
+      return '✅ Servie';
+    }
+
+    if(s === 'partielle'){
+      return '🟠 Partielle';
+    }
+
+    return '⏳ En attente';
+  }
+
+
+  function lpV11MountPrescriptions(){
+
+    var host =
+      document.getElementById(
+        'content'
+      );
+
+    if(!host){
+      return;
+    }
+
+
+    var old =
+      document.getElementById(
+        'lpV11PrescriptionsPro'
+      );
+
+    if(old){
+      old.remove();
+    }
+
+
+    lpV11EnsurePrescriptions();
+
+
+    var rows =
+      lpV11PrescriptionRows();
+
+
+    var card =
+      document.createElement(
+        'div'
+      );
+
+    card.id =
+      'lpV11PrescriptionsPro';
+
+    card.className =
+      'card';
+
+    card.style.marginTop =
+      '16px';
+
+
+    var html = '';
+
+
+    html +=
+      '<h2>🩺 Ordonnance médicale</h2>';
+
+
+    html +=
+      '<div class="muted" style="margin-bottom:14px">' +
+      'Enregistrement professionnel et traçabilité des ordonnances délivrées.' +
+      '</div>';
+
+
+    html +=
+      '<div class="grid">';
+
+
+    html +=
+      '<div>' +
+      '<label>Nom du patient</label>' +
+      '<input id="lpV11Patient" placeholder="Ex. Jean Kabongo">' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Âge du patient</label>' +
+      '<input id="lpV11Age" type="number" min="0" placeholder="Ex. 35">' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Sexe</label>' +
+      '<select id="lpV11Sexe">' +
+      '<option value="">Non précisé</option>' +
+      '<option>Masculin</option>' +
+      '<option>Féminin</option>' +
+      '</select>' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Téléphone patient</label>' +
+      '<input id="lpV11Phone" type="tel" placeholder="Téléphone">' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Nom du médecin</label>' +
+      '<input id="lpV11Doctor" placeholder="Dr ...">' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Spécialité du médecin</label>' +
+      '<input id="lpV11Speciality" placeholder="Ex. Médecine générale">' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Établissement / Hôpital</label>' +
+      '<input id="lpV11Hospital" placeholder="Hôpital / Clinique">' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>N° ordonnance</label>' +
+      '<input id="lpV11Reference" value="' +
+      lpV11PrescriptionReference() +
+      '">' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Date ordonnance</label>' +
+      '<input id="lpV11Date" type="date" value="' +
+      lpV11Today() +
+      '">' +
+      '</div>';
+
+
+    html +=
+      '</div>';
+
+
+    html +=
+      '<label style="display:block;margin-top:12px">' +
+      'Médicaments prescrits' +
+      '</label>';
+
+
+    html +=
+      '<textarea id="lpV11Medicines" rows="4" ' +
+      'placeholder="Ex. Amoxicilline 500 mg — 1 gélule 3 fois/jour pendant 7 jours"></textarea>';
+
+
+    html +=
+      '<div class="grid" style="margin-top:12px">';
+
+
+    html +=
+      '<div>' +
+      '<label>Montant total (FC)</label>' +
+      '<input id="lpV11Amount" type="number" min="0" inputmode="numeric" placeholder="0">' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Mode de paiement</label>' +
+      '<select id="lpV11Payment">' +
+      '<option>Espèces</option>' +
+      '<option>Mobile Money</option>' +
+      '<option>Carte</option>' +
+      '<option>Crédit</option>' +
+      '</select>' +
+      '</div>';
+
+
+    html +=
+      '<div>' +
+      '<label>Statut</label>' +
+      '<select id="lpV11Status">' +
+      '<option value="servie">Servie</option>' +
+      '<option value="partielle">Partielle</option>' +
+      '<option value="attente">En attente</option>' +
+      '</select>' +
+      '</div>';
+
+
+    html +=
+      '</div>';
+
+
+    html +=
+      '<label style="display:block;margin-top:12px">' +
+      'Observations du pharmacien' +
+      '</label>';
+
+
+    html +=
+      '<textarea id="lpV11Notes" rows="3" ' +
+      'placeholder="Conseils, précautions, substitution autorisée, remarque particulière..."></textarea>';
+
+
+    html +=
+      '<button class="btn primary" type="button" ' +
+      'id="lpV11SavePrescription" style="margin-top:14px">' +
+      '💾 Enregistrer ordonnance' +
+      '</button>';
+
+
+    html +=
+      '<hr style="margin:22px 0">';
+
+
+    html +=
+      '<h3>📚 Historique des ordonnances</h3>';
+
+
+    html +=
+      '<input id="lpV11SearchPrescription" ' +
+      'placeholder="🔎 Rechercher patient, médecin ou ordonnance">' +
+      '<div id="lpV11PrescriptionHistory" style="margin-top:12px"></div>';
+
+
+    card.innerHTML =
+      html;
+
+
+    host.appendChild(
+      card
+    );
+
+
+    function renderHistory(
+      search
+    ){
+
+      var q =
+        lpV11Norm(
+          search || ''
+        );
+
+
+      var filtered =
+        rows.filter(
+          function(x){
+
+            if(!q){
+              return true;
+            }
+
+            return [
+              x.patient,
+              x.doctor,
+              x.reference,
+              x.medicines,
+              x.phone
+            ]
+            .some(
+              function(v){
+                return lpV11Norm(v)
+                  .indexOf(q) !== -1;
+              }
+            );
+          }
+        )
+        .slice(0,50);
+
+
+      var out =
+        document.getElementById(
+          'lpV11PrescriptionHistory'
+        );
+
+
+      if(!out){
+        return;
+      }
+
+
+      if(!filtered.length){
+
+        out.innerHTML =
+          '<div class="muted">Aucune ordonnance enregistrée.</div>';
+
+        return;
+      }
+
+
+      out.innerHTML =
+        filtered.map(
+          function(x){
+
+            return (
+              '<div class="card" style="margin-top:10px">' +
+
+              '<div style="font-weight:700">' +
+              lpV11Esc(
+                x.patient ||
+                'Patient'
+              ) +
+              '</div>' +
+
+              '<div class="muted">' +
+              lpV11Esc(
+                x.reference || ''
+              ) +
+              ' • ' +
+              lpV11Esc(
+                x.date || ''
+              ) +
+              '</div>' +
+
+              '<div style="margin-top:7px">' +
+              '<b>Médecin :</b> ' +
+              lpV11Esc(
+                x.doctor || 'Non précisé'
+              ) +
+              '</div>' +
+
+              '<div>' +
+              '<b>Médicaments :</b> ' +
+              lpV11Esc(
+                x.medicines || ''
+              ) +
+              '</div>' +
+
+              '<div>' +
+              '<b>Montant :</b> ' +
+              lpV11Money(
+                x.amount
+              ) +
+              '</div>' +
+
+              '<div>' +
+              '<b>Statut :</b> ' +
+              lpV11PrescriptionStatusBadge(
+                x.status
+              ) +
+              '</div>' +
+
+              '<div class="muted" style="margin-top:6px">' +
+              'Enregistrée par : ' +
+              lpV11Esc(
+                x.createdBy || ''
+              ) +
+              '</div>' +
+
+              '</div>'
+            );
+          }
+        )
+        .join('');
+    }
+
+
+    renderHistory('');
+
+
+    var search =
+      document.getElementById(
+        'lpV11SearchPrescription'
+      );
+
+
+    if(search){
+
+      search.oninput =
+        function(){
+          renderHistory(
+            search.value
+          );
+        };
+    }
+
+
+    var saveBtn =
+      document.getElementById(
+        'lpV11SavePrescription'
+      );
+
+
+    if(saveBtn){
+
+      saveBtn.onclick =
+        function(){
+
+
+          var patient =
+            String(
+              document.getElementById(
+                'lpV11Patient'
+              ).value || ''
+            ).trim();
+
+
+          var doctor =
+            String(
+              document.getElementById(
+                'lpV11Doctor'
+              ).value || ''
+            ).trim();
+
+
+          var medicines =
+            String(
+              document.getElementById(
+                'lpV11Medicines'
+              ).value || ''
+            ).trim();
+
+
+          if(!patient){
+            toast(
+              'Nom du patient obligatoire'
+            );
+            return;
+          }
+
+
+          if(!medicines){
+            toast(
+              'Médicaments obligatoires'
+            );
+            return;
+          }
+
+
+          var row = {
+
+            id:
+              typeof uid ===
+                'function'
+                ? uid()
+                : Date.now(),
+
+            reference:
+              document.getElementById(
+                'lpV11Reference'
+              ).value,
+
+            date:
+              document.getElementById(
+                'lpV11Date'
+              ).value ||
+              lpV11Today(),
+
+            patient:
+              patient,
+
+            age:
+              lpV11Num(
+                document.getElementById(
+                  'lpV11Age'
+                ).value
+              ),
+
+            sex:
+              document.getElementById(
+                'lpV11Sexe'
+              ).value,
+
+            phone:
+              document.getElementById(
+                'lpV11Phone'
+              ).value,
+
+            doctor:
+              doctor,
+
+            speciality:
+              document.getElementById(
+                'lpV11Speciality'
+              ).value,
+
+            hospital:
+              document.getElementById(
+                'lpV11Hospital'
+              ).value,
+
+            medicines:
+              medicines,
+
+            amount:
+              lpV11Num(
+                document.getElementById(
+                  'lpV11Amount'
+                ).value
+              ),
+
+            payment:
+              document.getElementById(
+                'lpV11Payment'
+              ).value,
+
+            status:
+              document.getElementById(
+                'lpV11Status'
+              ).value,
+
+            notes:
+              document.getElementById(
+                'lpV11Notes'
+              ).value,
+
+            agency:
+              lpV11Agency(),
+
+            createdBy:
+              lpV11UserKey(),
+
+            createdAt:
+              new Date()
+                .toISOString()
+          };
+
+
+          db.prescriptions.push(
+            row
+          );
+
+
+          if(
+            typeof audit ===
+              'function'
+          ){
+            audit(
+              'Ordonnance médicale',
+              row.reference +
+              ' • ' +
+              row.patient +
+              ' • ' +
+              lpV11Money(
+                row.amount
+              )
+            );
+          }
+
+
+          if(
+            typeof save ===
+              'function'
+          ){
+            save();
+          }
+
+
+          toast(
+            'Ordonnance enregistrée'
+          );
+
+
+          lpV11MountPrescriptions();
+        };
+    }
+  }
+
+
+  /*
+   * ============================
+   * STATISTIQUES PERSONNELLES
+   * ============================
+   */
+
+
+  function lpV11MySales(){
+
+    if(
+      typeof window.lpV10MySalesToday ===
+        'function'
+    ){
+      return window.lpV10MySalesToday();
+    }
+
+    return [];
+  }
+
+
+  function lpV11SaleTotal(
+    sale
+  ){
+
+    if(!sale){
+      return 0;
+    }
+
+    return lpV11Num(
+      sale.total ||
+      sale.amount ||
+      sale.grandTotal ||
+      sale.totalAmount ||
+      0
+    );
+  }
+
+
+  function lpV11SalesTotal(
+    rows
+  ){
+
+    return rows.reduce(
+      function(sum,x){
+        return (
+          sum +
+          lpV11SaleTotal(x)
+        );
+      },
+      0
+    );
+  }
+
+
+  function lpV11ProductsQty(
+    rows
+  ){
+
+    var qty = 0;
+
+
+    rows.forEach(
+      function(sale){
+
+        if(
+          !sale ||
+          !Array.isArray(
+            sale.items
+          )
+        ){
+          return;
+        }
+
+
+        sale.items.forEach(
+          function(item){
+
+            qty +=
+              lpV11Num(
+                item &&
+                (
+                  item.qty ||
+                  item.quantity
+                )
+              );
+          }
+        );
+      }
+    );
+
+
+    return qty;
+  }
+
+
+  function lpV11ClientCount(
+    rows
+  ){
+
+    var set = {};
+
+
+    rows.forEach(
+      function(x){
+
+        if(!x){
+          return;
+        }
+
+
+        var key =
+          lpV11Norm(
+            x.client ||
+            x.customer ||
+            x.customerName ||
+            x.clientName ||
+            ''
+          );
+
+
+        if(key){
+          set[key] = true;
+        }
+      }
+    );
+
+
+    var count =
+      Object.keys(set).length;
+
+
+    return count ||
+      rows.length;
+  }
+
+
+  function lpV11MyExpensesToday(){
+
+    if(
+      !Array.isArray(
+        db.expenses
+      )
+    ){
+      return 0;
+    }
+
+
+    var today =
+      lpV11Today();
+
+    var agency =
+      lpV11Agency();
+
+    var me =
+      lpV11Norm(
+        lpV11UserKey()
+      );
+
+
+    return db.expenses
+      .filter(
+        function(x){
+
+          if(!x){
+            return false;
+          }
+
+
+          if(
+            String(
+              x.date || ''
+            ).slice(0,10) !==
+              today
+          ){
+            return false;
+          }
+
+
+          if(
+            agency &&
+            x.agency &&
+            String(x.agency) !==
+              agency
+          ){
+            return false;
+          }
+
+
+          var owner =
+            lpV11Norm(
+              x.rhUser ||
+              x.user ||
+              x.username ||
+              ''
+            );
+
+
+          return (
+            owner &&
+            me &&
+            owner === me
+          );
+        }
+      )
+      .reduce(
+        function(sum,x){
+          return (
+            sum +
+            lpV11Num(
+              x.amount
+            )
+          );
+        },
+        0
+      );
+  }
+
+
+  function lpV11CurrentTarget(){
+
+    if(
+      !Array.isArray(
+        db.users
+      )
+      ||
+      !currentUser
+    ){
+      return 0;
+    }
+
+
+    var username =
+      lpV11Norm(
+        currentUser.username
+      );
+
+    var id =
+      lpV11Norm(
+        currentUser.id
+      );
+
+
+    var rec =
+      db.users.find(
+        function(u){
+
+          if(!u){
+            return false;
+          }
+
+
+          return (
+            (
+              username &&
+              lpV11Norm(
+                u.username
+              ) === username
+            )
+            ||
+            (
+              id &&
+              lpV11Norm(
+                u.id
+              ) === id
+            )
+          );
+        }
+      );
+
+
+    return rec
+      ? lpV11Num(
+          rec.salesDailyTarget
+        )
+      : 0;
+  }
+
+
+  function lpV11RenderPersonalStatistics(){
+
+    if(lpV11IsDG()){
+      return;
+    }
+
+
+    var host =
+      document.getElementById(
+        'content'
+      );
+
+
+    if(!host){
+      return;
+    }
+
+
+    var rows =
+      lpV11MySales();
+
+
+    var ca =
+      lpV11SalesTotal(
+        rows
+      );
+
+
+    var invoices =
+      rows.length;
+
+
+    var products =
+      lpV11ProductsQty(
+        rows
+      );
+
+
+    var clients =
+      lpV11ClientCount(
+        rows
+      );
+
+
+    var basket =
+      invoices > 0
+        ? ca / invoices
+        : 0;
+
+
+    var expenses =
+      lpV11MyExpensesToday();
+
+
+    var balance =
+      ca - expenses;
+
+
+    var target =
+      lpV11CurrentTarget();
+
+
+    var rate =
+      target > 0
+        ? (ca / target) * 100
+        : 0;
+
+
+    var performance =
+      !target
+        ? 'Objectif non défini'
+        : rate >= 100
+          ? 'Excellente'
+          : rate >= 75
+            ? 'Bonne'
+            : rate >= 50
+              ? 'À améliorer'
+              : 'Faible';
+
+
+    host.innerHTML = '';
+
+
+    var card =
+      document.createElement(
+        'div'
+      );
+
+
+    card.id =
+      'lpV11PersonalStatistics';
+
+
+    card.innerHTML =
+
+      '<h2>📊 Mes statistiques</h2>' +
+
+      '<div class="muted" style="margin-bottom:14px">' +
+      'Statistiques personnelles du jour • ' +
+      lpV11Esc(
+        currentUser.name ||
+        currentUser.username ||
+        ''
+      ) +
+      '</div>' +
+
+      '<div class="grid kpis">' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Chiffre d’affaires</div>' +
+        '<div class="value">' +
+        lpV11Money(ca) +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Factures</div>' +
+        '<div class="value">' +
+        invoices +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Produits vendus</div>' +
+        '<div class="value">' +
+        products +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Clients servis</div>' +
+        '<div class="value">' +
+        clients +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Panier moyen</div>' +
+        '<div class="value">' +
+        lpV11Money(basket) +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Mes dépenses</div>' +
+        '<div class="value">' +
+        lpV11Money(expenses) +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Solde personnel</div>' +
+        '<div class="value">' +
+        lpV11Money(balance) +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Objectif</div>' +
+        '<div class="value">' +
+        (
+          target
+            ? lpV11Money(target)
+            : 'Non défini'
+        ) +
+        '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+        '<div class="label">Taux de réalisation</div>' +
+        '<div class="value">' +
+        (
+          target
+            ? Math.round(rate) + '%'
+            : '—'
+        ) +
+        '</div>' +
+        '</div>' +
+
+      '</div>' +
+
+      '<div class="card" style="margin-top:16px">' +
+      '<h3>📈 Performance</h3>' +
+      '<div style="font-size:22px;font-weight:700">' +
+      lpV11Esc(performance) +
+      '</div>' +
+      '<div class="muted" style="margin-top:6px">' +
+      'Ces données appartiennent uniquement à cet utilisateur.' +
+      '</div>' +
+      '</div>';
+
+
+    host.appendChild(
+      card
+    );
+  
+
+  /* LP_V12_DIRECT_STATS_FINAL_START */
+
+  (function(){
+
+    var content = document.getElementById('content');
+
+    if(!content){
+      return;
+    }
+
+    var role = String(
+      currentUser && currentUser.role || ''
+    ).trim().toLowerCase();
+
+    if(role === 'dg'){
+      return;
+    }
+
+    /*
+     * RAPPORT UTILISATEUR PROFESSIONNEL
+     */
+
+    var oldReport =
+      document.getElementById(
+        'lpV12DirectProfessionalReport'
+      );
+
+    if(oldReport){
+      oldReport.remove();
+    }
+
+    var sales =
+      typeof window.lpV10MySalesToday === 'function'
+      ? window.lpV10MySalesToday()
+      : [];
+
+    var total = 0;
+    var qty = 0;
+
+    sales.forEach(function(sale){
+
+      var saleTotal = Number(
+        sale.total ||
+        sale.amount ||
+        sale.grandTotal ||
+        sale.totalAmount ||
+        0
+      ) || 0;
+
+      if(!saleTotal && Array.isArray(sale.items)){
+
+        sale.items.forEach(function(item){
+
+          saleTotal +=
+            (Number(item.qty || item.quantity || 0) || 0)
+            *
+            (Number(item.price || item.unitPrice || 0) || 0);
+
+        });
+      }
+
+      total += saleTotal;
+
+      if(Array.isArray(sale.items)){
+
+        sale.items.forEach(function(item){
+
+          qty += Number(
+            item.qty ||
+            item.quantity ||
+            0
+          ) || 0;
+
+        });
+      }
+    });
+
+    var invoices = sales.length;
+
+    var money = function(v){
+
+      if(typeof lpU3Money === 'function'){
+        return lpU3Money(Number(v || 0));
+      }
+
+      return Number(v || 0)
+        .toLocaleString('fr-FR') + ' FC';
+    };
+
+    var today =
+      typeof lpU3Today === 'function'
+      ? lpU3Today()
+      : new Date().toISOString().slice(0,10);
+
+    var userKeys = [
+      String(currentUser && currentUser.username || '')
+        .trim().toLowerCase(),
+
+      String(currentUser && currentUser.id || '')
+        .trim().toLowerCase(),
+
+      String(currentUser && currentUser.name || '')
+        .trim().toLowerCase()
+    ].filter(Boolean);
+
+    var expenses = 0;
+
+    if(Array.isArray(db.expenses)){
+
+      db.expenses.forEach(function(x){
+
+        if(!x){
+          return;
+        }
+
+        var d =
+          String(x.date || '').slice(0,10);
+
+        var owner = String(
+          x.rhUser ||
+          x.user ||
+          x.username ||
+          ''
+        ).trim().toLowerCase();
+
+        if(
+          d === today
+          &&
+          owner
+          &&
+          userKeys.indexOf(owner) !== -1
+        ){
+          expenses += Number(x.amount || 0) || 0;
+        }
+
+      });
+    }
+
+    var targetValue = 0;
+
+    if(Array.isArray(db.users)){
+
+      var currentRecord =
+        db.users.find(function(u){
+
+          if(!u){
+            return false;
+          }
+
+          return userKeys.indexOf(
+            String(
+              u.username ||
+              u.id ||
+              u.name ||
+              ''
+            ).trim().toLowerCase()
+          ) !== -1;
+
+        });
+
+      targetValue =
+        Number(
+          currentRecord &&
+          currentRecord.salesDailyTarget ||
+          0
+        ) || 0;
+    }
+
+    var rate =
+      targetValue > 0
+      ? (total / targetValue) * 100
+      : 0;
+
+    var performance =
+      targetValue <= 0
+      ? 'Objectif non défini'
+      : rate >= 100
+      ? 'Excellente'
+      : rate >= 75
+      ? 'Bonne'
+      : rate >= 50
+      ? 'À améliorer'
+      : 'Faible';
+
+    var report =
+      document.createElement('div');
+
+    report.id =
+      'lpV12DirectProfessionalReport';
+
+    report.className = 'card';
+
+    report.style.marginTop = '16px';
+
+    report.innerHTML =
+      '<h2>📋 Rapport utilisateur professionnel</h2>' +
+
+      '<div class="muted">' +
+        String(
+          currentUser &&
+          (
+            currentUser.name ||
+            currentUser.username
+          ) ||
+          ''
+        ) +
+        ' • ' +
+        today +
+      '</div>' +
+
+      '<div class="grid kpis" style="margin-top:14px">' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Chiffre d’affaires</div>' +
+          '<div class="value">' +
+            money(total) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Factures</div>' +
+          '<div class="value">' +
+            invoices +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Produits vendus</div>' +
+          '<div class="value">' +
+            qty +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Mes dépenses</div>' +
+          '<div class="value">' +
+            money(expenses) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Solde personnel</div>' +
+          '<div class="value">' +
+            money(total - expenses) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">Objectif</div>' +
+          '<div class="value">' +
+            (
+              targetValue
+              ? money(targetValue)
+              : 'Non défini'
+            ) +
+          '</div>' +
+        '</div>' +
+
+      '</div>' +
+
+      '<div class="card" style="margin-top:12px">' +
+        '<b>📈 Performance :</b> ' +
+        performance +
+        (
+          targetValue
+          ? ' • ' + Math.round(rate) + '%'
+          : ''
+        ) +
+      '</div>';
+
+    content.appendChild(report);
+
+    /*
+     * ORDONNANCE MEDICALE
+     * On appelle directement le module V11 déjà existant.
+     */
+
+    var ordonnanceTitle =
+      document.createElement('div');
+
+    ordonnanceTitle.id =
+      'lpV12DirectOrdonnanceTitle';
+
+    ordonnanceTitle.className = 'card';
+
+    ordonnanceTitle.style.marginTop = '16px';
+
+    ordonnanceTitle.innerHTML =
+      '<h2>🩺 Ordonnance médicale</h2>' +
+      '<div class="muted">' +
+        'Enregistrement et suivi des ordonnances.' +
+      '</div>';
+
+    var oldTitle =
+      document.getElementById(
+        'lpV12DirectOrdonnanceTitle'
+      );
+
+    if(oldTitle){
+      oldTitle.remove();
+    }
+
+    content.appendChild(ordonnanceTitle);
+
+    if(
+      typeof lpV11MountPrescriptions
+      === 'function'
+    ){
+      lpV11MountPrescriptions();
+    }
+
+  })();
+
+  /* LP_V12_DIRECT_STATS_FINAL_END */
+
+
+}
+
+
+  function lpV11IsStatisticsPage(){
+
+    if(
+      typeof page !==
+        'undefined'
+    ){
+
+      var p =
+        lpV11Norm(page);
+
+
+      if(
+        p === 'statistics'
+        ||
+        p === 'stats'
+        ||
+        p === 'analytics'
+        ||
+        p === 'analysis'
+        ||
+        p === 'advanced'
+      ){
+        return true;
+      }
+    }
+
+
+    var host =
+      document.getElementById(
+        'content'
+      );
+
+
+    if(!host){
+      return false;
+    }
+
+
+    var title =
+      host.querySelector(
+        'h1,h2'
+      );
+
+
+    var text =
+      lpV11Norm(
+        title
+          ? title.textContent
+          : ''
+      );
+
+
+    return (
+      text.indexOf(
+        'statistique'
+      ) !== -1
+      ||
+      text.indexOf(
+        'analyse'
+      ) !== -1
+    );
+  }
+
+
+  /*
+   * ============================
+   * BRANCHEMENTS
+   * ============================
+   */
+
+
+  if(
+    typeof clients ===
+      'function'
+  ){
+
+    var lpV11OldClients =
+      clients;
+
+
+    clients = function(){
+
+      var result =
+        lpV11OldClients.apply(
+          this,
+          arguments
+        );
+
+
+      lpV11MountPrescriptions();
+
+
+      return result;
+    };
+  }
+
+
+  if(
+    typeof render ===
+      'function'
+  ){
+
+    var lpV11OldRender =
+      render;
+
+
+    render = function(){
+
+      var result =
+        lpV11OldRender.apply(
+          this,
+          arguments
+        );
+
+
+      if(
+        typeof page !==
+          'undefined'
+        &&
+        lpV11Norm(page) ===
+          'clients'
+      ){
+        lpV11MountPrescriptions();
+      }
+
+
+      if(
+        !lpV11IsDG()
+        &&
+        lpV11IsStatisticsPage()
+      ){
+        lpV11RenderPersonalStatistics();
+      }
+
+
+      return result;
+    };
+  }
+
+
+  window.lpV11MountPrescriptions =
+    lpV11MountPrescriptions;
+
+
+  window.lpV11RenderPersonalStatistics =
+    lpV11RenderPersonalStatistics;
+
+
+  console.log(
+    'LEADER PHARMA V11 ORDONNANCES PRO STATISTIQUES USERS ACTIF'
+  );
+
+})();
+
+/* LP_V11_ORDONNANCES_STATS_USERS_END */
+
+
+/* LP_V11_USERS_ORDONNANCES_SIMPLE_START */
+
+(function(){
+
+  function lpRole(){
+    return String(
+      currentUser && currentUser.role || ''
+    ).trim().toLowerCase();
+  }
+
+  function lpCanUsePrescription(){
+    var r = lpRole();
+    return r === 'vendeur' || r === 'pharmacien';
+  }
+
+  function lpAddClientsMenu(){
+
+    if(!lpCanUsePrescription()){
+      return;
+    }
+
+    var nav = document.querySelector('#nav');
+
+    if(!nav){
+      return;
+    }
+
+    if(nav.querySelector('[data-p="clients"]')){
+      return;
+    }
+
+    var button = document.createElement('button');
+
+    button.className = 'nav-btn';
+    button.setAttribute('data-p','clients');
+    button.textContent = '👥 Clients / Ordonnances';
+
+    button.onclick = function(){
+      page = 'clients';
+      render();
+    };
+
+    var expenses =
+      nav.querySelector('[data-p="expenses"]');
+
+    if(expenses){
+      nav.insertBefore(button, expenses);
+    }else{
+      nav.appendChild(button);
+    }
+  }
+
+  var oldBuildNav = window.buildNav || buildNav;
+
+  window.buildNav = buildNav = function(){
+    var result = oldBuildNav.apply(this, arguments);
+    lpAddClientsMenu();
+    return result;
+  };
+
+  setTimeout(lpAddClientsMenu, 300);
+
+  console.log(
+    'LEADER PHARMA V11 ORDONNANCES VENDEUR PHARMACIEN ACTIF'
+  );
+
+})();
+
+/* LP_V11_USERS_ORDONNANCES_SIMPLE_END */
+
+
+/* LP_V11_STATS_PERSONNELLES_SIMPLE_START */
+
+(function(){
+
+  function lpStatsRole(){
+    return String(
+      currentUser && currentUser.role || ''
+    ).trim().toLowerCase();
+  }
+
+  if(typeof reports === 'function'){
+
+    var lpReportsGlobal = reports;
+
+    reports = function(){
+
+      if(lpStatsRole() === 'dg'){
+        return lpReportsGlobal.apply(this, arguments);
+      }
+
+      if(
+        window.lpV11RenderPersonalStatistics &&
+        typeof window.lpV11RenderPersonalStatistics === 'function'
+      ){
+        window.lpV11RenderPersonalStatistics();
+        return;
+      }
+
+      return lpReportsGlobal.apply(this, arguments);
+    };
+  }
+
+  console.log(
+    'LEADER PHARMA V11 STATISTIQUES PERSONNELLES ACTIVES'
+  );
+
+})();
+
+/* LP_V11_STATS_PERSONNELLES_SIMPLE_END */
+
+
+/* LP_V12_RAPPORT_PRO_FIX_START */
+
+(function(){
+
+  function lpV12N(v){
+    return Number(v || 0) || 0;
+  }
+
+  function lpV12S(v){
+    return String(v == null ? '' : v).trim();
+  }
+
+  function lpV12Norm(v){
+    return lpV12S(v).toLowerCase();
+  }
+
+  function lpV12Money(v){
+    if(typeof lpU3Money === 'function'){
+      return lpU3Money(lpV12N(v));
+    }
+    return lpV12N(v).toLocaleString('fr-FR') + ' FC';
+  }
+
+  function lpV12Today(){
+    if(typeof lpU3Today === 'function'){
+      return lpU3Today();
+    }
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function lpV12MySales(){
+    if(typeof window.lpV10MySalesToday === 'function'){
+      return window.lpV10MySalesToday();
+    }
+    return [];
+  }
+
+  function lpV12SaleTotal(sale){
+    if(!sale) return 0;
+
+    var direct = lpV12N(
+      sale.total ||
+      sale.amount ||
+      sale.grandTotal ||
+      sale.totalAmount
+    );
+
+    if(direct) return direct;
+
+    if(Array.isArray(sale.items)){
+      return sale.items.reduce(function(sum,item){
+        return sum +
+          lpV12N(item.qty || item.quantity) *
+          lpV12N(item.price || item.unitPrice);
+      },0);
+    }
+
+    return 0;
+  }
+
+  function lpV12Expenses(){
+    if(!Array.isArray(db.expenses)) return 0;
+
+    var today = lpV12Today();
+
+    var keys = [
+      lpV12Norm(currentUser && currentUser.username),
+      lpV12Norm(currentUser && currentUser.id),
+      lpV12Norm(currentUser && currentUser.name)
+    ].filter(Boolean);
+
+    return db.expenses
+      .filter(function(x){
+
+        if(!x) return false;
+
+        if(
+          String(x.date || '').slice(0,10) !== today
+        ){
+          return false;
+        }
+
+        var owner = lpV12Norm(
+          x.rhUser ||
+          x.user ||
+          x.username
+        );
+
+        return owner && keys.indexOf(owner) !== -1;
+      })
+      .reduce(function(sum,x){
+        return sum + lpV12N(x.amount);
+      },0);
+  }
+
+  function lpV12Target(){
+    if(!Array.isArray(db.users)) return 0;
+
+    var username =
+      lpV12Norm(currentUser && currentUser.username);
+
+    var id =
+      lpV12Norm(currentUser && currentUser.id);
+
+    var user = db.users.find(function(x){
+
+      return (
+        (username &&
+         lpV12Norm(x && x.username) === username)
+        ||
+        (id &&
+         lpV12Norm(x && x.id) === id)
+      );
+    });
+
+    return lpV12N(user && user.salesDailyTarget);
+  }
+
+  function lpV12Prescriptions(){
+    if(!Array.isArray(db.prescriptions)) return [];
+
+    var today = lpV12Today();
+
+    var keys = [
+      lpV12Norm(currentUser && currentUser.username),
+      lpV12Norm(currentUser && currentUser.id),
+      lpV12Norm(currentUser && currentUser.name)
+    ].filter(Boolean);
+
+    return db.prescriptions.filter(function(x){
+
+      if(!x) return false;
+
+      var date = String(
+        x.date ||
+        x.prescriptionDate ||
+        x.createdAt ||
+        ''
+      ).slice(0,10);
+
+      if(date !== today) return false;
+
+      var owner = lpV12Norm(
+        x.createdBy ||
+        x.user ||
+        x.username
+      );
+
+      return owner && keys.indexOf(owner) !== -1;
+    });
+  }
+
+  function lpV12Performance(rate,target){
+
+    if(!target){
+      return 'Objectif non défini';
+    }
+
+    if(rate >= 100){
+      return '🏆 Excellente';
+    }
+
+    if(rate >= 75){
+      return '🟢 Bonne';
+    }
+
+    if(rate >= 50){
+      return '🟠 À améliorer';
+    }
+
+    return '🔴 Faible';
+  }
+
+  function lpV12AddReport(){
+
+    if(
+      lpV12Norm(currentUser && currentUser.role)
+      === 'dg'
+    ){
+      return;
+    }
+
+    var content =
+      document.getElementById('content');
+
+    if(!content) return;
+
+    var old =
+      document.getElementById(
+        'lpV12ProfessionalReport'
+      );
+
+    if(old) old.remove();
+
+    var sales = lpV12MySales();
+
+    var total = sales.reduce(function(sum,sale){
+      return sum + lpV12SaleTotal(sale);
+    },0);
+
+    var qty = 0;
+
+    sales.forEach(function(sale){
+      (sale.items || []).forEach(function(item){
+        qty += lpV12N(
+          item.qty ||
+          item.quantity
+        );
+      });
+    });
+
+    var invoices = sales.length;
+
+    var basket =
+      invoices ? total / invoices : 0;
+
+    var expenses =
+      lpV12Expenses();
+
+    var balance =
+      total - expenses;
+
+    var target =
+      lpV12Target();
+
+    var rate =
+      target ? total / target * 100 : 0;
+
+    var prescriptions =
+      lpV12Prescriptions();
+
+    var prescriptionAmount =
+      prescriptions.reduce(function(sum,x){
+        return sum + lpV12N(x.amount);
+      },0);
+
+    var report =
+      document.createElement('div');
+
+    report.id =
+      'lpV12ProfessionalReport';
+
+    report.className = 'card';
+
+    report.style.marginTop = '16px';
+
+    report.innerHTML =
+      '<h2>📋 Rapport utilisateur professionnel</h2>' +
+
+      '<div class="muted">' +
+        lpV12S(
+          currentUser &&
+          (
+            currentUser.name ||
+            currentUser.username
+          )
+        ) +
+        ' • ' +
+        lpV12S(
+          currentUser &&
+          currentUser.role
+        ) +
+        ' • ' +
+        lpV12Today() +
+      '</div>' +
+
+      '<div class="grid kpis" style="margin-top:14px">' +
+
+        '<div class="card kpi">' +
+          '<div class="label">💰 Chiffre d’affaires</div>' +
+          '<div class="value">' +
+            lpV12Money(total) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">🧾 Factures</div>' +
+          '<div class="value">' +
+            invoices +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">📦 Produits vendus</div>' +
+          '<div class="value">' +
+            qty +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">🛒 Panier moyen</div>' +
+          '<div class="value">' +
+            lpV12Money(basket) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">💸 Mes dépenses</div>' +
+          '<div class="value">' +
+            lpV12Money(expenses) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">💵 Solde</div>' +
+          '<div class="value">' +
+            lpV12Money(balance) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">🎯 Objectif</div>' +
+          '<div class="value">' +
+            (
+              target
+              ? lpV12Money(target)
+              : 'Non défini'
+            ) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="card kpi">' +
+          '<div class="label">📈 Réalisation</div>' +
+          '<div class="value">' +
+            (
+              target
+              ? Math.round(rate) + '%'
+              : '—'
+            ) +
+          '</div>' +
+        '</div>' +
+
+      '</div>' +
+
+      '<div class="card" style="margin-top:12px">' +
+        '<b>🏅 Performance :</b> ' +
+        lpV12Performance(rate,target) +
+      '</div>' +
+
+      '<div class="card" style="margin-top:12px">' +
+        '<b>🩺 Ordonnances traitées :</b> ' +
+        prescriptions.length +
+        '<br>' +
+        '<b>Montant ordonnances :</b> ' +
+        lpV12Money(prescriptionAmount) +
+      '</div>' +
+
+      '<button class="btn primary" ' +
+        'id="lpV12PrintProfessional" ' +
+        'style="margin-top:14px">' +
+        '🖨️ Imprimer mon rapport' +
+      '</button>';
+
+    content.appendChild(report);
+
+    var print =
+      document.getElementById(
+        'lpV12PrintProfessional'
+      );
+
+    if(print){
+      print.onclick = function(){
+        window.print();
+      };
+    }
+  }
+
+  /*
+   * IMPORTANT :
+   * On enveloppe directement le moteur
+   * statistiques V11 déjà validé.
+   */
+
+  if(
+    typeof window.lpV11RenderPersonalStatistics
+    === 'function'
+  ){
+
+    var lpV12OldStats =
+      window.lpV11RenderPersonalStatistics;
+
+    window.lpV11RenderPersonalStatistics =
+      function(){
+
+        var result =
+          lpV12OldStats.apply(
+            this,
+            arguments
+          );
+
+        lpV12AddReport();
+
+        return result;
+      };
+  }
+
+  window.lpV12AddProfessionalReport =
+    lpV12AddReport;
+
+  console.log(
+    'LEADER PHARMA V12 RAPPORT PRO FIX ACTIF'
+  );
+
+})();
+
+/* LP_V12_RAPPORT_PRO_FIX_END */
+
+
+/* LP_V12_FIX_BRANCHEMENTS_FINAL_START */
+
+(function(){
+
+  function lpV12StableRole(){
+    return String(
+      currentUser && currentUser.role || ''
+    ).trim().toLowerCase();
+  }
+
+  /*
+   * MENU :
+   * aucune modification dynamique.
+   * On conserve exclusivement le menu natif déjà stable.
+   *
+   * RAPPORT :
+   * on conserve uniquement son affichage dans reports.
+   */
+
+  if(typeof reports === 'function'){
+
+    var lpV12StableOldReports = reports;
+
+    reports = function(){
+
+      var result =
+        lpV12StableOldReports.apply(
+          this,
+          arguments
+        );
+
+      if(
+        lpV12StableRole() !== 'dg'
+        &&
+        typeof window.lpV12AddProfessionalReport
+           === 'function'
+      ){
+        window.lpV12AddProfessionalReport();
+      }
+
+      return result;
+    };
+
+    window.reports = reports;
+  }
+
+  console.log(
+    'LEADER PHARMA V12 MENU STATISTIQUES STABLE ACTIF'
+  );
+
+})();
+
+/* LP_V12_FIX_BRANCHEMENTS_FINAL_END */
+
+
+/* LP_V12_MENU_STATISTIQUES_STABLE_FINAL_START */
+console.log('LEADER PHARMA V12 MENU STATISTIQUES STABLE FINAL');
+/* LP_V12_MENU_STATISTIQUES_STABLE_FINAL_END */
+
+/* LP_V13_NOTE_FIN_JOURNEE_START */
+
+(function(){
+
+  function lpV13Norm(v){
+    return String(
+      v == null ? '' : v
+    ).trim().toLowerCase();
+  }
+
+  function lpV13Today(){
+
+    if(typeof lpU3Today === 'function'){
+      return lpU3Today();
+    }
+
+    return new Date()
+      .toISOString()
+      .slice(0,10);
+  }
+
+  function lpV13IsDG(){
+
+    return lpV13Norm(
+      currentUser &&
+      currentUser.role
+    ) === 'dg';
+  }
+
+  function lpV13UserKey(){
+
+    return String(
+      currentUser &&
+      (
+        currentUser.username ||
+        currentUser.id ||
+        currentUser.name
+      ) ||
+      ''
+    ).trim();
+  }
+
+  function lpV13Agency(){
+
+    return String(
+      typeof currentAgency !== 'undefined'
+      ? currentAgency
+      : ''
+    ).trim();
+  }
+
+  function lpV13Ensure(){
+
+    if(!Array.isArray(db.dailyUserNotes)){
+      db.dailyUserNotes = [];
+    }
+  }
+
+  function lpV13MyNote(){
+
+    lpV13Ensure();
+
+    var today =
+      lpV13Today();
+
+    var user =
+      lpV13Norm(lpV13UserKey());
+
+    var agency =
+      lpV13Norm(lpV13Agency());
+
+    return db.dailyUserNotes.find(
+      function(x){
+
+        if(!x){
+          return false;
+        }
+
+        return (
+          String(
+            x.date || ''
+          ).slice(0,10) === today
+          &&
+          lpV13Norm(
+            x.user
+          ) === user
+          &&
+          (
+            !agency
+            ||
+            !x.agency
+            ||
+            lpV13Norm(
+              x.agency
+            ) === agency
+          )
+        );
+      }
+    ) || null;
+  }
+
+  function lpV13Mount(){
+
+    if(lpV13IsDG()){
+      return;
+    }
+
+    var content =
+      document.getElementById(
+        'content'
+      );
+
+    if(!content){
+      return;
+    }
+
+    /*
+     * Seulement dans la page
+     * Statistiques / Graphiques.
+     */
+
+    var p = String(
+      typeof page !== 'undefined'
+      ? page
+      : ''
+    ).trim().toLowerCase();
+
+    if(p !== 'reports'){
+      return;
+    }
+
+    var old =
+      document.getElementById(
+        'lpV13DailyNote'
+      );
+
+    if(old){
+      old.remove();
+    }
+
+    var existing =
+      lpV13MyNote();
+
+    var card =
+      document.createElement(
+        'div'
+      );
+
+    card.id =
+      'lpV13DailyNote';
+
+    card.className =
+      'card';
+
+    card.style.marginTop =
+      '16px';
+
+    card.innerHTML =
+      '<h2>📝 Note de fin de journée</h2>' +
+
+      '<div class="muted">' +
+        'Observation personnelle à transmettre à la Direction.' +
+      '</div>' +
+
+      '<label style="display:block;margin-top:14px">' +
+        'Observation' +
+      '</label>' +
+
+      '<textarea id="lpV13NoteText" ' +
+        'rows="5" ' +
+        'placeholder="Ex. Produit très demandé en rupture, remarque client, incident de caisse, besoin de réapprovisionnement..." ' +
+        'style="width:100%;margin-top:6px">' +
+      '</textarea>' +
+
+      '<button type="button" ' +
+        'class="btn primary" ' +
+        'id="lpV13SaveNote" ' +
+        'style="margin-top:12px">' +
+        '💾 Enregistrer la note' +
+      '</button>' +
+
+      '<div id="lpV13NoteStatus" ' +
+        'class="muted" ' +
+        'style="margin-top:10px"></div>';
+
+    content.appendChild(card);
+
+    var textarea =
+      document.getElementById(
+        'lpV13NoteText'
+      );
+
+    var status =
+      document.getElementById(
+        'lpV13NoteStatus'
+      );
+
+    if(
+      existing &&
+      textarea
+    ){
+
+      textarea.value =
+        String(
+          existing.note || ''
+        );
+
+      if(status){
+
+        status.textContent =
+          '✓ Note déjà enregistrée aujourd’hui. Vous pouvez la modifier.';
+      }
+    }
+
+    var button =
+      document.getElementById(
+        'lpV13SaveNote'
+      );
+
+    if(!button){
+      return;
+    }
+
+    button.onclick =
+      function(){
+
+        var text =
+          String(
+            textarea &&
+            textarea.value ||
+            ''
+          ).trim();
+
+        if(!text){
+
+          if(
+            typeof toast
+            === 'function'
+          ){
+            toast(
+              'Saisissez une observation'
+            );
+          }
+
+          return;
+        }
+
+        lpV13Ensure();
+
+        var current =
+          lpV13MyNote();
+
+        if(current){
+
+          current.note =
+            text;
+
+          current.updatedAt =
+            Date.now();
+
+        }else{
+
+          db.dailyUserNotes.push({
+
+            id:
+              typeof uid === 'function'
+              ? uid()
+              : (
+                'note-' +
+                Date.now()
+              ),
+
+            date:
+              lpV13Today(),
+
+            agency:
+              lpV13Agency(),
+
+            user:
+              lpV13UserKey(),
+
+            username:
+              String(
+                currentUser &&
+                currentUser.username ||
+                ''
+              ),
+
+            name:
+              String(
+                currentUser &&
+                currentUser.name ||
+                ''
+              ),
+
+            role:
+              String(
+                currentUser &&
+                currentUser.role ||
+                ''
+              ),
+
+            note:
+              text,
+
+            createdAt:
+              Date.now(),
+
+            updatedAt:
+              Date.now()
+          });
+        }
+
+        if(
+          typeof audit
+          === 'function'
+        ){
+          audit(
+            'Note fin de journée',
+            lpV13UserKey()
+          );
+        }
+
+        if(
+          typeof save
+          === 'function'
+        ){
+          save();
+        }
+
+        if(status){
+
+          status.textContent =
+            '✓ Note enregistrée et prête pour synchronisation.';
+        }
+
+        if(
+          typeof toast
+          === 'function'
+        ){
+          toast(
+            'Note enregistrée'
+          );
+        }
+      };
+  }
+
+  /*
+   * On se branche sur le rendu général,
+   * mais on ne modifie aucun menu.
+   */
+
+  if(
+    typeof render === 'function'
+  ){
+
+    var lpV13OldRender =
+      render;
+
+    render =
+      function(){
+
+        var result =
+          lpV13OldRender.apply(
+            this,
+            arguments
+          );
+
+        lpV13Mount();
+
+        return result;
+      };
+
+    window.render =
+      render;
+  }
+
+  /*
+   * Branchement direct sur Statistiques
+   * pour garantir l'affichage.
+   */
+
+  if(
+    typeof window.lpV11RenderPersonalStatistics
+    === 'function'
+  ){
+
+    var lpV13OldStats =
+      window.lpV11RenderPersonalStatistics;
+
+    window.lpV11RenderPersonalStatistics =
+      function(){
+
+        var result =
+          lpV13OldStats.apply(
+            this,
+            arguments
+          );
+
+        lpV13Mount();
+
+        return result;
+      };
+  }
+
+  window.lpV13MountDailyNote =
+    lpV13Mount;
+
+  console.log(
+    'LEADER PHARMA V13 NOTE FIN JOURNEE ACTIF'
+  );
+
+})();
+
+/* LP_V13_NOTE_FIN_JOURNEE_END */
+
+
+/* LP_V14_RH_JUSTIFICATION_DG_NOTE_FIX_START */
+
+(function(){
+
+  function v14s(v){
+    return String(v == null ? '' : v).trim();
+  }
+
+  function v14n(v){
+    return v14s(v).toLowerCase();
+  }
+
+  function v14DG(){
+    return v14n(currentUser && currentUser.role) === 'dg';
+  }
+
+  function v14User(){
+    return v14s(
+      currentUser &&
+      (
+        currentUser.username ||
+        currentUser.id ||
+        currentUser.name
+      )
+    );
+  }
+
+  function v14Name(){
+    return v14s(
+      currentUser &&
+      (
+        currentUser.name ||
+        currentUser.username
+      )
+    );
+  }
+
+  function v14Agency(){
+    return v14s(
+      typeof currentAgency !== 'undefined'
+      ? currentAgency
+      : ''
+    );
+  }
+
+  function v14Today(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function v14Ensure(){
+    if(!Array.isArray(db.rhRequests)){
+      db.rhRequests = [];
+    }
+  }
+
+  function v14Save(){
+    if(typeof save === 'function'){
+      save();
+    }
+  }
+
+  function v14Toast(text){
+    if(typeof toast === 'function'){
+      toast(text);
+    }
+  }
+
+  /* ==========================================
+     FIX NOTE FIN DE JOURNEE
+     ========================================== */
+
+  function v14FixNote(){
+
+    if(v14DG()){
+      return;
+    }
+
+    var card = document.getElementById('lpV13DailyNote');
+    var text = document.getElementById('lpV13NoteText');
+    var button = document.getElementById('lpV13SaveNote');
+    var status = document.getElementById('lpV13NoteStatus');
+
+    if(!card || !text || !button){
+      return;
+    }
+
+    if(button.dataset.v14 === '1'){
+      return;
+    }
+
+    button.dataset.v14 = '1';
+
+    button.onclick = function(){
+
+      var note = v14s(text.value);
+
+      if(!note){
+        v14Toast('Saisissez une observation');
+        return;
+      }
+
+      if(!Array.isArray(db.dailyUserNotes)){
+        db.dailyUserNotes = [];
+      }
+
+      var today = v14Today();
+      var user = v14n(v14User());
+      var agency = v14n(v14Agency());
+
+      var row = db.dailyUserNotes.find(function(x){
+        return x &&
+          v14s(x.date).slice(0,10) === today &&
+          v14n(x.user) === user &&
+          (
+            !agency ||
+            !x.agency ||
+            v14n(x.agency) === agency
+          );
+      });
+
+      if(row){
+        row.note = note;
+        row.updatedAt = Date.now();
+      }else{
+        db.dailyUserNotes.push({
+          id:
+            typeof uid === 'function'
+            ? uid()
+            : 'note-' + Date.now(),
+          date: today,
+          agency: v14Agency(),
+          user: v14User(),
+          username: v14s(currentUser && currentUser.username),
+          name: v14Name(),
+          role: v14s(currentUser && currentUser.role),
+          note: note,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+      }
+
+      v14Save();
+
+      text.readOnly = true;
+      button.style.display = 'none';
+
+      if(status){
+        status.innerHTML = '🔒 <b>Note enregistrée</b>';
+      }
+
+      var oldEdit =
+        document.getElementById('lpV14EditNote');
+
+      if(oldEdit){
+        oldEdit.remove();
+      }
+
+      var edit = document.createElement('button');
+      edit.type = 'button';
+      edit.id = 'lpV14EditNote';
+      edit.className = 'btn';
+      edit.style.marginTop = '10px';
+      edit.textContent = '✏️ Modifier la note';
+
+      button.insertAdjacentElement('afterend', edit);
+
+      edit.onclick = function(){
+        text.readOnly = false;
+        button.style.display = '';
+        edit.remove();
+
+        if(status){
+          status.textContent = '✏️ Modification en cours';
+        }
+
+        text.focus();
+      };
+
+      v14Toast('Note enregistrée');
+    };
+  }
+
+  /* ==========================================
+     DEMANDE / JUSTIFICATION UTILISATEUR
+     ========================================== */
+
+  function v14UserRH(){
+
+    if(v14DG()){
+      return;
+    }
+
+    var content = document.getElementById('content');
+
+    if(!content){
+      return;
+    }
+
+    var old = document.getElementById('lpV14UserRH');
+
+    if(old){
+      old.remove();
+    }
+
+    v14Ensure();
+
+    var mine = db.rhRequests
+      .filter(function(x){
+        return x && v14n(x.user) === v14n(v14User());
+      })
+      .slice()
+      .reverse()
+      .slice(0,10);
+
+    var history = mine.map(function(x){
+
+      var decision =
+        x.status === 'En attente'
+        ? '⏳ En attente de décision DG'
+        : '⚖️ ' + v14s(x.status);
+
+      var dgText = x.dgComment
+        ? '<div class="muted">Décision DG : ' +
+          v14s(x.dgComment) +
+          '</div>'
+        : '';
+
+      return (
+        '<div class="card" style="margin-top:10px">' +
+          '<b>' + v14s(x.type) + '</b>' +
+          '<div>' + v14s(x.startDate) +
+          (
+            x.endDate && x.endDate !== x.startDate
+            ? ' → ' + v14s(x.endDate)
+            : ''
+          ) +
+          '</div>' +
+          '<div>' + v14s(x.reason) + '</div>' +
+          '<div style="margin-top:6px"><b>' +
+            decision +
+          '</b></div>' +
+          dgText +
+        '</div>'
+      );
+
+    }).join('');
+
+    var card = document.createElement('div');
+
+    card.id = 'lpV14UserRH';
+    card.className = 'card';
+    card.style.marginTop = '16px';
+
+    card.innerHTML =
+      '<h2>📝 Justification / Demande RH</h2>' +
+
+      '<div class="muted">' +
+        'Absence, retard, permission ou autre demande à transmettre au DG.' +
+      '</div>' +
+
+      '<label>Type</label>' +
+      '<select id="lpV14Type">' +
+        '<option>Justification absence</option>' +
+        '<option>Justification retard</option>' +
+        '<option>Demande de permission</option>' +
+        '<option>Demande de congé</option>' +
+        '<option>Autre demande RH</option>' +
+      '</select>' +
+
+      '<label>Date début</label>' +
+      '<input type="date" id="lpV14Start" value="' +
+        v14Today() +
+      '">' +
+
+      '<label>Date fin</label>' +
+      '<input type="date" id="lpV14End" value="' +
+        v14Today() +
+      '">' +
+
+      '<label>Motif / Justification</label>' +
+      '<textarea id="lpV14Reason" rows="4" ' +
+        'placeholder="Expliquez clairement le motif..."></textarea>' +
+
+      '<button type="button" class="btn primary" ' +
+        'id="lpV14Send" style="margin-top:12px">' +
+        '📨 Envoyer au DG' +
+      '</button>' +
+
+      '<div id="lpV14SendStatus" class="muted" ' +
+        'style="margin-top:8px"></div>' +
+
+      '<hr style="margin:20px 0">' +
+
+      '<h3>📚 Mes demandes</h3>' +
+
+      (
+        history ||
+        '<div class="muted">Aucune demande enregistrée.</div>'
+      );
+
+    content.appendChild(card);
+
+    var send = document.getElementById('lpV14Send');
+
+    send.onclick = function(){
+
+      var type = v14s(
+        document.getElementById('lpV14Type').value
+      );
+
+      var startDate = v14s(
+        document.getElementById('lpV14Start').value
+      );
+
+      var endDate = v14s(
+        document.getElementById('lpV14End').value
+      );
+
+      var reason = v14s(
+        document.getElementById('lpV14Reason').value
+      );
+
+      if(!reason){
+        v14Toast('Saisissez le motif ou la justification');
+        return;
+      }
+
+      v14Ensure();
+
+      db.rhRequests.push({
+        id:
+          typeof uid === 'function'
+          ? uid()
+          : 'rh-' + Date.now(),
+        user: v14User(),
+        username: v14s(currentUser && currentUser.username),
+        name: v14Name(),
+        role: v14s(currentUser && currentUser.role),
+        agency: v14Agency(),
+        type: type,
+        startDate: startDate,
+        endDate: endDate,
+        reason: reason,
+        status: 'En attente',
+        dgComment: '',
+        sanction: '',
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      });
+
+      v14Save();
+
+      v14Toast('Demande transmise au DG');
+
+      v14UserRH();
+    };
+  }
+
+  /* ==========================================
+     DECISION DG
+     ========================================== */
+
+  function v14DGPanel(){
+
+    if(!v14DG()){
+      return;
+    }
+
+    var content = document.getElementById('content');
+
+    if(!content){
+      return;
+    }
+
+    var old = document.getElementById('lpV14DGPanel');
+
+    if(old){
+      old.remove();
+    }
+
+    v14Ensure();
+
+    var requests = db.rhRequests
+      .slice()
+      .reverse();
+
+    var card = document.createElement('div');
+
+    card.id = 'lpV14DGPanel';
+    card.className = 'card';
+    card.style.marginTop = '16px';
+
+    card.innerHTML =
+      '<h2>⚖️ Décisions RH — Direction Générale</h2>' +
+      '<div class="muted">' +
+        'Validation des justifications, demandes et absences.' +
+      '</div>' +
+      '<div id="lpV14DGList"></div>';
+
+    content.appendChild(card);
+
+    var list = document.getElementById('lpV14DGList');
+
+    if(!requests.length){
+      list.innerHTML =
+        '<div class="muted" style="margin-top:12px">' +
+          'Aucune demande RH.' +
+        '</div>';
+      return;
+    }
+
+    requests.forEach(function(x){
+
+      var box = document.createElement('div');
+
+      box.className = 'card';
+      box.style.marginTop = '12px';
+
+      box.innerHTML =
+        '<b>👤 ' +
+          v14s(x.name || x.username || x.user) +
+        '</b>' +
+
+        '<div class="muted">' +
+          v14s(x.agency) +
+        '</div>' +
+
+        '<div style="margin-top:8px"><b>' +
+          v14s(x.type) +
+        '</b></div>' +
+
+        '<div>' +
+          v14s(x.startDate) +
+          (
+            x.endDate && x.endDate !== x.startDate
+            ? ' → ' + v14s(x.endDate)
+            : ''
+          ) +
+        '</div>' +
+
+        '<div style="margin-top:8px">' +
+          v14s(x.reason) +
+        '</div>' +
+
+        '<label style="margin-top:12px">Décision finale</label>' +
+
+        '<select class="lpV14Decision">' +
+          '<option value="En attente">En attente</option>' +
+          '<option value="Approuvée">Approuvée</option>' +
+          '<option value="Refusée">Refusée</option>' +
+          '<option value="Absence justifiée">Absence justifiée</option>' +
+          '<option value="Absence non justifiée">Absence non justifiée</option>' +
+        '</select>' +
+
+        '<label>Décision / commentaire DG</label>' +
+
+        '<textarea class="lpV14DGComment" rows="3" ' +
+          'placeholder="Motif de la décision..."></textarea>' +
+
+        '<label>Sanction éventuelle</label>' +
+
+        '<input class="lpV14Sanction" ' +
+          'placeholder="Ex. Avertissement, mise en garde...">' +
+
+        '<button type="button" class="btn primary lpV14Decide" ' +
+          'style="margin-top:10px">' +
+          '⚖️ Enregistrer la décision' +
+        '</button>';
+
+      list.appendChild(box);
+
+      var decision =
+        box.querySelector('.lpV14Decision');
+
+      var comment =
+        box.querySelector('.lpV14DGComment');
+
+      var sanction =
+        box.querySelector('.lpV14Sanction');
+
+      decision.value =
+        v14s(x.status || 'En attente');
+
+      comment.value =
+        v14s(x.dgComment);
+
+      sanction.value =
+        v14s(x.sanction);
+
+      box.querySelector('.lpV14Decide').onclick =
+        function(){
+
+          x.status = v14s(decision.value);
+          x.dgComment = v14s(comment.value);
+          x.sanction = v14s(sanction.value);
+          x.decidedBy = v14User();
+          x.decidedAt = Date.now();
+          x.updatedAt = Date.now();
+
+          v14Save();
+
+          v14Toast('Décision DG enregistrée');
+
+          v14DGPanel();
+        };
+    });
+  }
+
+  /* ==========================================
+     MONTAGE RH
+     ========================================== */
+
+  function v14MountRH(){
+
+    var p = v14n(
+      typeof page !== 'undefined'
+      ? page
+      : ''
+    );
+
+    /*
+     * La base RH historique peut utiliser
+     * payroll ou une page RH dédiée.
+     */
+
+    if(
+      p !== 'payroll' &&
+      p !== 'rh' &&
+      p !== 'attendance'
+    ){
+      return;
+    }
+
+    if(v14DG()){
+      v14DGPanel();
+    }else{
+      v14UserRH();
+    }
+  }
+
+  /* ==========================================
+     BRANCHEMENTS
+     ========================================== */
+
+  if(typeof render === 'function'){
+
+    var v14OldRender = render;
+
+    render = function(){
+
+      var result =
+        v14OldRender.apply(this, arguments);
+
+      v14MountRH();
+      v14FixNote();
+
+      return result;
+    };
+
+    window.render = render;
+  }
+
+  /*
+   * RH V10 est le rendu déjà utilisé
+   * par votre module RH / Pointage.
+   */
+
+  if(typeof lpV10RenderRH === 'function'){
+
+    var v14OldRH = lpV10RenderRH;
+
+    lpV10RenderRH = function(){
+
+      var result =
+        v14OldRH.apply(this, arguments);
+
+      if(v14DG()){
+        v14DGPanel();
+      }else{
+        v14UserRH();
+      }
+
+      return result;
+    };
+
+    window.lpV10RenderRH = lpV10RenderRH;
+  }
+
+  /*
+   * La Note V13 reste dans Statistiques.
+   */
+
+  if(
+    typeof window.lpV13MountDailyNote === 'function'
+  ){
+
+    var v14OldNoteMount =
+      window.lpV13MountDailyNote;
+
+    window.lpV13MountDailyNote = function(){
+
+      var result =
+        v14OldNoteMount.apply(this, arguments);
+
+      v14FixNote();
+
+      return result;
+    };
+  }
+
+  window.lpV14MountRH = v14MountRH;
+
+  console.log(
+    'LEADER PHARMA V14 RH JUSTIFICATION DECISION DG NOTE FIX ACTIF'
+  );
+
+})();
+
+/* LP_V14_RH_JUSTIFICATION_DG_NOTE_FIX_END */
+
+
+/* LP_V14_NOTE_ORDONNANCE_FIX2_START */
+console.log('LEADER PHARMA V14 NOTE ORDONNANCE FIX2 ACTIF');
+/* LP_V14_NOTE_ORDONNANCE_FIX2_END */
+
+/* LP_V14_FIX3_CONSULTATION_NOTE_ORDONNANCE_START */
+console.log('LEADER PHARMA V14 FIX3 CONSULTATION NOTE ORDONNANCE ACTIF');
+/* LP_V14_FIX3_CONSULTATION_NOTE_ORDONNANCE_END */
+
+
+/* LP_V14_FIX4_VRAI_BLOC_CONSULTATION */
+console.log('LEADER PHARMA V14 FIX4 VRAI BLOC CONSULTATION ACTIF');
+
+/* LP_V14_FIX_ENREGISTREMENT_NOTE_ORDONNANCE */
+console.log('LEADER PHARMA ENREGISTREMENT NOTE ORDONNANCE ACTIF');
+
+
+
+
+
+
+
+/* LP_V15_RH_DOUBLON_JUSTIFICATION_SUPPRIME_FINAL */
+console.log('LEADER PHARMA RH JUSTIFICATION UNIQUE ACTIVE');
+
+/* LP_V15_ALERTES_UTILISATEURS_PRO_FINAL_START */
+(function(){
+
+  function lpAlertS(v){
+    return String(
+      v == null ? '' : v
+    ).trim();
+  }
+
+  function lpAlertNorm(v){
+    return lpAlertS(v)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'');
+  }
+
+  function lpAlertUser(){
+    try{
+      return currentUser || {};
+    }catch(e){
+      return {};
+    }
+  }
+
+  function lpAlertIsDG(){
+    var u = lpAlertUser();
+
+    var role = lpAlertNorm(
+      u.role ||
+      u.profil ||
+      u.type ||
+      ''
+    );
+
+    return (
+      role === 'dg' ||
+      role === 'direction' ||
+      role === 'directeur general'
+    );
+  }
+
+  function lpAlertEsc(v){
+    return lpAlertS(v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function lpAlertToast(msg){
+    try{
+      if(typeof toast === 'function'){
+        toast(msg);
+        return;
+      }
+    }catch(e){}
+
+    alert(msg);
+  }
+
+  function lpAlertIsPage(){
+
+    var p = '';
+
+    try{
+      p = lpAlertNorm(page);
+    }catch(e){}
+
+    return (
+      p === 'alerts' ||
+      p === 'alertes'
+    );
+  }
+
+  function lpAlertProducts(){
+
+    try{
+
+      if(typeof db === 'undefined'){
+        return [];
+      }
+
+      var candidates = [
+        db.products,
+        db.produits,
+        db.stock,
+        db.items
+      ];
+
+      for(
+        var i = 0;
+        i < candidates.length;
+        i++
+      ){
+        if(
+          Array.isArray(candidates[i]) &&
+          candidates[i].length
+        ){
+          return candidates[i];
+        }
+      }
+
+    }catch(e){}
+
+    return [];
+  }
+
+  function lpAlertName(p){
+
+    return lpAlertS(
+      p.name ||
+      p.nom ||
+      p.productName ||
+      p.designation ||
+      p.libelle ||
+      'Produit'
+    );
+  }
+
+  function lpAlertStock(p){
+
+    var value =
+      p.stock;
+
+    if(value == null){
+      value = p.quantity;
+    }
+
+    if(value == null){
+      value = p.qty;
+    }
+
+    if(value == null){
+      value = p.quantite;
+    }
+
+    value = Number(value);
+
+    return isNaN(value)
+      ? 0
+      : value;
+  }
+
+  function lpAlertMin(p){
+
+    var value =
+      p.minStock;
+
+    if(value == null){
+      value = p.stockMin;
+    }
+
+    if(value == null){
+      value = p.minimum;
+    }
+
+    if(value == null){
+      value = p.seuil;
+    }
+
+    value = Number(value);
+
+    if(
+      isNaN(value) ||
+      value <= 0
+    ){
+      value = 5;
+    }
+
+    return value;
+  }
+
+  function lpAlertExpiry(p){
+
+    return lpAlertS(
+      p.expiryDate ||
+      p.expirationDate ||
+      p.expiry ||
+      p.expiration ||
+      p.dateExpiration ||
+      p.datePeremption ||
+      p.peremption ||
+      ''
+    );
+  }
+
+  function lpAlertDays(dateValue){
+
+    if(!dateValue){
+      return null;
+    }
+
+    var d =
+      new Date(dateValue);
+
+    if(isNaN(d.getTime())){
+      return null;
+    }
+
+    var now =
+      new Date();
+
+    now.setHours(
+      0,0,0,0
+    );
+
+    d.setHours(
+      0,0,0,0
+    );
+
+    return Math.ceil(
+      (
+        d.getTime() -
+        now.getTime()
+      ) /
+      86400000
+    );
+  }
+
+  function lpAlertAnalyse(p){
+
+    var stock =
+      lpAlertStock(p);
+
+    var min =
+      lpAlertMin(p);
+
+    var expiry =
+      lpAlertExpiry(p);
+
+    var days =
+      lpAlertDays(expiry);
+
+    var expired =
+      days !== null &&
+      days < 0;
+
+    var nearExpiry =
+      days !== null &&
+      days >= 0 &&
+      days <= 30;
+
+    if(
+      expired ||
+      (
+        stock <= 0 &&
+        expired
+      )
+    ){
+      return {
+        level:3,
+        label:'🔴 Critique',
+        action:
+          'Retirer le lot périmé'
+      };
+    }
+
+    if(stock <= 0){
+      return {
+        level:2,
+        label:'🟠 Urgent',
+        action:
+          'Proposer un réapprovisionnement'
+      };
+    }
+
+    if(
+      stock <= min ||
+      nearExpiry
+    ){
+      return {
+        level:1,
+        label:'🟡 À surveiller',
+        action:
+          nearExpiry
+          ? 'Surveiller la péremption'
+          : 'Anticiper la rupture'
+      };
+    }
+
+    return {
+      level:0,
+      label:'🟢 Normal',
+      action:'Aucune urgence'
+    };
+  }
+
+  function lpAlertData(){
+
+    return lpAlertProducts()
+      .map(function(p){
+
+        var analysis =
+          lpAlertAnalyse(p);
+
+        return {
+          product:p,
+          name:lpAlertName(p),
+          stock:lpAlertStock(p),
+          expiry:lpAlertExpiry(p),
+          level:analysis.level,
+          label:analysis.label,
+          action:analysis.action
+        };
+
+      })
+      .filter(function(x){
+        return x.level > 0;
+      })
+      .sort(function(a,b){
+        return b.level - a.level;
+      });
+  }
+
+  function lpAlertFindHost(){
+
+    var selectors = [
+      '#alerts',
+      '#alertsPage',
+      '#alertsContent',
+      '#alertes',
+      '#alertesPage',
+      '.alerts-page'
+    ];
+
+    for(
+      var i = 0;
+      i < selectors.length;
+      i++
+    ){
+      var el =
+        document.querySelector(
+          selectors[i]
+        );
+
+      if(el){
+        return el;
+      }
+    }
+
+    return document.querySelector(
+      '#content,main,.content,.page-content'
+    );
+  }
+
+  function lpAlertRender(){
+
+    /*
+     * Innovation demandee uniquement
+     * chez les utilisateurs.
+     * Le DG reste totalement intact.
+     */
+
+    if(
+      lpAlertIsDG() ||
+      !lpAlertIsPage()
+    ){
+      return;
+    }
+
+    var host =
+      lpAlertFindHost();
+
+    if(!host){
+      return;
+    }
+
+    var existing =
+      document.getElementById(
+        'lpUserAlertCenter'
+      );
+
+    if(existing){
+      existing.remove();
+    }
+
+    var rows =
+      lpAlertData();
+
+    var critical =
+      rows.filter(function(x){
+        return x.level === 3;
+      }).length;
+
+    var urgent =
+      rows.filter(function(x){
+        return x.level === 2;
+      }).length;
+
+    var watch =
+      rows.filter(function(x){
+        return x.level === 1;
+      }).length;
+
+    var box =
+      document.createElement(
+        'section'
+      );
+
+    box.id =
+      'lpUserAlertCenter';
+
+    box.style.cssText =
+      'margin:14px 0 18px;padding:16px;border:1px solid #dfe4ea;border-radius:16px;background:#fff;';
+
+    var cards = '';
+
+    if(!rows.length){
+
+      cards =
+        '<div style="padding:14px 0;color:#667085;">✅ Aucune alerte prioritaire actuellement.</div>';
+
+    }else{
+
+      cards =
+        rows
+        .slice(0,20)
+        .map(function(x){
+
+          var button = '';
+
+          if(
+            x.level === 2 ||
+            (
+              x.level === 1 &&
+              lpAlertStock(
+                x.product
+              ) <=
+              lpAlertMin(
+                x.product
+              )
+            )
+          ){
+
+            button =
+              '<button type="button" ' +
+              'class="btn lpAlertPropose" ' +
+              'data-product="' +
+              lpAlertEsc(x.name) +
+              '" ' +
+              'style="margin-top:8px;">' +
+              '🛒 Proposer commande' +
+              '</button>';
+          }
+
+          return (
+            '<div style="padding:12px 0;border-top:1px solid #eef1f4;">' +
+
+            '<div style="font-weight:800;">' +
+            lpAlertEsc(x.name) +
+            '</div>' +
+
+            '<div style="margin-top:4px;">' +
+            x.label +
+            '</div>' +
+
+            '<div style="color:#667085;margin-top:4px;">' +
+            'Stock : ' +
+            lpAlertEsc(x.stock) +
+            (
+              x.expiry
+              ?
+              ' • Péremption : ' +
+              lpAlertEsc(x.expiry)
+              :
+              ''
+            ) +
+            '</div>' +
+
+            '<div style="margin-top:5px;"><b>Action recommandée :</b> ' +
+            lpAlertEsc(x.action) +
+            '</div>' +
+
+            button +
+
+            '</div>'
+          );
+        })
+        .join('');
+    }
+
+    box.innerHTML =
+      '<h3 style="margin:0 0 5px;">🚨 Centre d’alertes intelligent</h3>' +
+
+      '<div style="color:#667085;margin-bottom:12px;">Priorités stock destinées à faciliter votre signalement à la Direction.</div>' +
+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;">' +
+
+      '<div style="padding:9px;text-align:center;border:1px solid #f1d5d5;border-radius:10px;">' +
+      '<b>🔴 ' + critical + '</b><br><small>Critiques</small>' +
+      '</div>' +
+
+      '<div style="padding:9px;text-align:center;border:1px solid #f0dfc8;border-radius:10px;">' +
+      '<b>🟠 ' + urgent + '</b><br><small>Urgentes</small>' +
+      '</div>' +
+
+      '<div style="padding:9px;text-align:center;border:1px solid #eee6c8;border-radius:10px;">' +
+      '<b>🟡 ' + watch + '</b><br><small>À surveiller</small>' +
+      '</div>' +
+
+      '</div>' +
+
+      cards;
+
+    /*
+     * Le centre est ajoute au-dessus
+     * de la liste actuelle.
+     */
+
+    if(host.firstChild){
+      host.insertBefore(
+        box,
+        host.firstChild
+      );
+    }else{
+      host.appendChild(box);
+    }
+
+    box
+      .querySelectorAll(
+        '.lpAlertPropose'
+      )
+      .forEach(function(btn){
+
+        btn.onclick =
+          function(){
+
+            var product =
+              btn.getAttribute(
+                'data-product'
+              ) || 'Produit';
+
+            /*
+             * On cherche le bouton
+             * Proposer commande deja
+             * existant dans l'application.
+             */
+
+            var all =
+              Array.from(
+                document.querySelectorAll(
+                  'button,[role="button"]'
+                )
+              );
+
+            var nativeButton =
+              all.find(function(b){
+
+                if(
+                  b === btn ||
+                  box.contains(b)
+                ){
+                  return false;
+                }
+
+                return lpAlertNorm(
+                  b.textContent
+                ).includes(
+                  'proposer commande'
+                );
+              });
+
+            if(nativeButton){
+
+              nativeButton.click();
+
+              setTimeout(
+                function(){
+
+                  var inputs =
+                    Array.from(
+                      document.querySelectorAll(
+                        'input,textarea'
+                      )
+                    );
+
+                  var productInput =
+                    inputs.find(
+                      function(input){
+
+                        var info =
+                          lpAlertNorm(
+                            (
+                              input.placeholder ||
+                              ''
+                            ) +
+                            ' ' +
+                            (
+                              input.name ||
+                              ''
+                            )
+                          );
+
+                        return (
+                          info.includes(
+                            'produit'
+                          ) ||
+                          info.includes(
+                            'designation'
+                          )
+                        );
+                      }
+                    );
+
+                  if(productInput){
+
+                    productInput.value =
+                      product;
+
+                    productInput.dispatchEvent(
+                      new Event(
+                        'input',
+                        {
+                          bubbles:true
+                        }
+                      )
+                    );
+                  }
+
+                },
+                100
+              );
+
+              return;
+            }
+
+            lpAlertToast(
+              'Produit à proposer au DG : ' +
+              product
+            );
+          };
+      });
+  }
+
+  window.lpV15UserAlertCenter =
+    lpAlertRender;
+
+  var oldRender =
+    window.render;
+
+  if(
+    typeof oldRender ===
+    'function'
+  ){
+
+    window.render =
+      function(){
+
+        var result =
+          oldRender.apply(
+            this,
+            arguments
+          );
+
+        setTimeout(
+          lpAlertRender,
+          80
+        );
+
+        return result;
+      };
+  }
+
+  setTimeout(
+    lpAlertRender,
+    200
+  );
+
+  console.log(
+    'LEADER PHARMA V15 ALERTES UTILISATEURS PRO FINAL ACTIF'
+  );
+
+})();
+/* LP_V15_ALERTES_UTILISATEURS_PRO_FINAL_END */
+
+
+/* LP_V15_COMMANDES_VALIDATION_DG_FINAL_START */
+(function(){
+
+  function lpCmdS(v){
+    return String(
+      v == null ? '' : v
+    ).trim();
+  }
+
+  function lpCmdNorm(v){
+    return lpCmdS(v)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'');
+  }
+
+  function lpCmdEsc(v){
+    return lpCmdS(v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function lpCmdUser(){
+    try{
+      return currentUser || {};
+    }catch(e){
+      return {};
+    }
+  }
+
+  function lpCmdRole(){
+    var u = lpCmdUser();
+
+    return lpCmdNorm(
+      u.role ||
+      u.profil ||
+      u.type ||
+      ''
+    );
+  }
+
+  function lpCmdIsDG(){
+    var r = lpCmdRole();
+
+    return (
+      r === 'dg' ||
+      r === 'direction' ||
+      r === 'directeur general'
+    );
+  }
+
+  function lpCmdUserName(){
+    var u = lpCmdUser();
+
+    return lpCmdS(
+      u.nom ||
+      u.name ||
+      u.username ||
+      u.identifiant ||
+      u.email ||
+      'Utilisateur'
+    );
+  }
+
+  function lpCmdUserId(){
+    var u = lpCmdUser();
+
+    return lpCmdS(
+      u.id ||
+      u.userId ||
+      u.username ||
+      u.identifiant ||
+      u.email ||
+      lpCmdUserName()
+    );
+  }
+
+  function lpCmdToast(msg){
+    try{
+      if(typeof toast === 'function'){
+        toast(msg);
+        return;
+      }
+    }catch(e){}
+
+    alert(msg);
+  }
+
+  function lpCmdSave(){
+    try{
+      if(typeof save === 'function'){
+        save();
+      }
+    }catch(e){}
+  }
+
+  function lpCmdStore(){
+
+    try{
+
+      if(typeof db === 'undefined'){
+        return [];
+      }
+
+      if(
+        !Array.isArray(
+          db.orderProposals
+        )
+      ){
+        db.orderProposals = [];
+      }
+
+      return db.orderProposals;
+
+    }catch(e){
+      return [];
+    }
+  }
+
+  function lpCmdDate(v){
+
+    if(!v){
+      return '';
+    }
+
+    try{
+      return new Date(v)
+        .toLocaleString('fr-FR');
+    }catch(e){
+      return lpCmdS(v);
+    }
+  }
+
+  function lpCmdStatus(status){
+
+    var s =
+      lpCmdNorm(status);
+
+    if(s === 'approved'){
+      return '✅ Approuvée par le DG';
+    }
+
+    if(s === 'rejected'){
+      return '❌ Refusée par le DG';
+    }
+
+    return '⏳ En attente de décision DG';
+  }
+
+  function lpCmdCreateProposal(
+    product,
+    quantity,
+    reason
+  ){
+
+    product =
+      lpCmdS(product);
+
+    if(!product){
+      lpCmdToast(
+        'Produit obligatoire'
+      );
+      return false;
+    }
+
+    quantity =
+      Number(quantity);
+
+    if(
+      !Number.isFinite(quantity) ||
+      quantity <= 0
+    ){
+      quantity = 1;
+    }
+
+    var rows =
+      lpCmdStore();
+
+    /*
+     * Eviter plusieurs propositions
+     * en attente du meme utilisateur
+     * pour le meme produit.
+     */
+
+    var exists =
+      rows.some(function(r){
+
+        return (
+          lpCmdS(r.userId) ===
+          lpCmdUserId() &&
+          lpCmdNorm(r.product) ===
+          lpCmdNorm(product) &&
+          lpCmdNorm(r.status) ===
+          'pending'
+        );
+      });
+
+    if(exists){
+
+      lpCmdToast(
+        'Une proposition pour ce produit est déjà en attente du DG'
+      );
+
+      return false;
+    }
+
+    rows.push({
+
+      id:
+        'cmd_' +
+        Date.now() +
+        '_' +
+        Math.random()
+          .toString(36)
+          .slice(2,8),
+
+      product:
+        product,
+
+      quantity:
+        quantity,
+
+      reason:
+        lpCmdS(reason) ||
+        'Réapprovisionnement proposé depuis les alertes',
+
+      userId:
+        lpCmdUserId(),
+
+      userName:
+        lpCmdUserName(),
+
+      status:
+        'pending',
+
+      dgComment:
+        '',
+
+      createdAt:
+        new Date()
+          .toISOString(),
+
+      decidedAt:
+        '',
+
+      decidedBy:
+        ''
+
+    });
+
+    /*
+     * IMPORTANT :
+     * aucune modification du stock ici.
+     */
+
+    lpCmdSave();
+
+    lpCmdToast(
+      'Proposition envoyée au DG'
+    );
+
+    return true;
+  }
+
+  /*
+   * =================================================
+   * CONNEXION AVEC LES BOUTONS ALERTES UTILISATEURS
+   * =================================================
+   */
+
+  document.addEventListener(
+    'click',
+    function(e){
+
+      if(lpCmdIsDG()){
+        return;
+      }
+
+      var button =
+        e.target &&
+        e.target.closest
+        ?
+        e.target.closest(
+          '.lpAlertPropose'
+        )
+        :
+        null;
+
+      if(!button){
+        return;
+      }
+
+      /*
+       * On prend la main uniquement
+       * sur ce bouton Alertes.
+       */
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      var product =
+        lpCmdS(
+          button.getAttribute(
+            'data-product'
+          )
+        );
+
+      if(!product){
+        return;
+      }
+
+      var qtyText =
+        window.prompt(
+          'Quantité proposée pour ' +
+          product +
+          ' :',
+          '1'
+        );
+
+      if(qtyText === null){
+        return;
+      }
+
+      var quantity =
+        Number(qtyText);
+
+      if(
+        !Number.isFinite(quantity) ||
+        quantity <= 0
+      ){
+        lpCmdToast(
+          'Quantité invalide'
+        );
+        return;
+      }
+
+      var reason =
+        window.prompt(
+          'Motif de la proposition :',
+          'Réapprovisionnement recommandé par le centre d’alertes'
+        );
+
+      if(reason === null){
+        return;
+      }
+
+      lpCmdCreateProposal(
+        product,
+        quantity,
+        reason
+      );
+
+    },
+    true
+  );
+
+  /*
+   * =================================================
+   * MES PROPOSITIONS - UTILISATEUR
+   * =================================================
+   */
+
+  function lpCmdRenderUser(){
+
+    if(lpCmdIsDG()){
+      return;
+    }
+
+    var titles =
+      Array.from(
+        document.querySelectorAll(
+          'h1,h2,h3,h4'
+        )
+      );
+
+    var title =
+      titles.find(function(el){
+
+        return lpCmdNorm(
+          el.textContent
+        ).includes(
+          'mes propositions de commande'
+        );
+      });
+
+    if(!title){
+      return;
+    }
+
+    var section =
+      title.parentElement;
+
+    if(!section){
+      return;
+    }
+
+    var old =
+      section.querySelector(
+        '#lpCmdUserHistory'
+      );
+
+    if(old){
+      old.remove();
+    }
+
+    var rows =
+      lpCmdStore()
+        .filter(function(r){
+
+          return (
+            lpCmdS(r.userId) ===
+            lpCmdUserId()
+          );
+        })
+        .slice()
+        .reverse();
+
+    var box =
+      document.createElement(
+        'div'
+      );
+
+    box.id =
+      'lpCmdUserHistory';
+
+    box.style.cssText =
+      'margin-top:14px;';
+
+    if(!rows.length){
+
+      box.innerHTML =
+        '<div style="color:#667085;padding:8px 0;">Aucune proposition de commande envoyée.</div>';
+
+    }else{
+
+      box.innerHTML =
+        rows.map(function(r){
+
+          return (
+            '<div style="margin:10px 0;padding:13px;border:1px solid #e3e7ec;border-radius:12px;background:#fff;">' +
+
+            '<div style="font-weight:800;">' +
+            lpCmdEsc(r.product) +
+            '</div>' +
+
+            '<div>Quantité proposée : <b>' +
+            lpCmdEsc(r.quantity) +
+            '</b></div>' +
+
+            '<div style="margin-top:5px;">' +
+            lpCmdStatus(r.status) +
+            '</div>' +
+
+            (
+              r.reason
+              ?
+              '<div style="margin-top:5px;color:#667085;"><b>Motif :</b> ' +
+              lpCmdEsc(r.reason) +
+              '</div>'
+              :
+              ''
+            ) +
+
+            (
+              r.dgComment
+              ?
+              '<div style="margin-top:5px;"><b>Commentaire DG :</b> ' +
+              lpCmdEsc(r.dgComment) +
+              '</div>'
+              :
+              ''
+            ) +
+
+            '<small style="display:block;margin-top:6px;color:#667085;">Envoyée : ' +
+            lpCmdEsc(
+              lpCmdDate(
+                r.createdAt
+              )
+            ) +
+            '</small>' +
+
+            '</div>'
+          );
+        }).join('');
+    }
+
+    section.appendChild(box);
+  }
+
+  /*
+   * =================================================
+   * PANNEAU DE DECISION - DG
+   * =================================================
+   */
+
+  function lpCmdFindDGHost(){
+
+    var main =
+      document.querySelector(
+        '#content,main,.content,.page-content'
+      );
+
+    return main || null;
+  }
+
+  function lpCmdDGPage(){
+
+    if(!lpCmdIsDG()){
+      return false;
+    }
+
+    var p = '';
+
+    try{
+      p = lpCmdNorm(page);
+    }catch(e){}
+
+    /*
+     * Le panneau DG est rattache aux
+     * Alertes pour ne pas creer
+     * une nouvelle rubrique de menu.
+     */
+
+    return (
+      p === 'alerts' ||
+      p === 'alertes'
+    );
+  }
+
+  function lpCmdRenderDG(){
+
+    if(!lpCmdDGPage()){
+      return;
+    }
+
+    var host =
+      lpCmdFindDGHost();
+
+    if(!host){
+      return;
+    }
+
+    var old =
+      document.getElementById(
+        'lpCmdDGPanel'
+      );
+
+    if(old){
+      old.remove();
+    }
+
+    var rows =
+      lpCmdStore()
+        .slice()
+        .reverse();
+
+    var pending =
+      rows.filter(function(r){
+        return (
+          lpCmdNorm(r.status) ===
+          'pending'
+        );
+      }).length;
+
+    var box =
+      document.createElement(
+        'section'
+      );
+
+    box.id =
+      'lpCmdDGPanel';
+
+    box.style.cssText =
+      'margin:14px 0 18px;padding:16px;border:1px solid #dfe4ea;border-radius:16px;background:#fff;';
+
+    var html = '';
+
+    if(!rows.length){
+
+      html =
+        '<div style="padding:10px 0;color:#667085;">Aucune proposition de commande reçue.</div>';
+
+    }else{
+
+      html =
+        rows.map(function(r){
+
+          var waiting =
+            lpCmdNorm(
+              r.status
+            ) === 'pending';
+
+          return (
+            '<div style="padding:13px 0;border-top:1px solid #edf0f3;">' +
+
+            '<div style="font-weight:800;font-size:17px;">' +
+            lpCmdEsc(r.product) +
+            '</div>' +
+
+            '<div style="margin-top:4px;"><b>Proposé par :</b> ' +
+            lpCmdEsc(
+              r.userName ||
+              'Utilisateur'
+            ) +
+            '</div>' +
+
+            '<div><b>Quantité :</b> ' +
+            lpCmdEsc(r.quantity) +
+            '</div>' +
+
+            '<div><b>Motif :</b> ' +
+            lpCmdEsc(
+              r.reason ||
+              '—'
+            ) +
+            '</div>' +
+
+            '<div style="margin-top:5px;">' +
+            lpCmdStatus(r.status) +
+            '</div>' +
+
+            (
+              waiting
+              ?
+              '<textarea id="lpCmdComment_' +
+              lpCmdEsc(r.id) +
+              '" rows="2" placeholder="Commentaire / décision du DG" style="width:100%;box-sizing:border-box;margin-top:10px;padding:9px;border:1px solid #ccd3dc;border-radius:8px;"></textarea>' +
+
+              '<div style="display:flex;gap:8px;margin-top:9px;">' +
+
+              '<button type="button" class="btn primary lpCmdApprove" data-id="' +
+              lpCmdEsc(r.id) +
+              '" style="flex:1;">✅ Approuver</button>' +
+
+              '<button type="button" class="btn lpCmdReject" data-id="' +
+              lpCmdEsc(r.id) +
+              '" style="flex:1;">❌ Refuser</button>' +
+
+              '</div>'
+              :
+              (
+                r.dgComment
+                ?
+                '<div style="margin-top:6px;"><b>Commentaire DG :</b> ' +
+                lpCmdEsc(
+                  r.dgComment
+                ) +
+                '</div>'
+                :
+                ''
+              )
+            ) +
+
+            '</div>'
+          );
+        }).join('');
+    }
+
+    box.innerHTML =
+      '<h3 style="margin:0 0 5px;">🛒 Propositions de commande</h3>' +
+
+      '<div style="color:#667085;margin-bottom:10px;">Décision DG — ' +
+      pending +
+      ' proposition(s) en attente.</div>' +
+
+      html;
+
+    /*
+     * On ajoute le panneau dans
+     * Alertes DG uniquement.
+     */
+
+    host.insertBefore(
+      box,
+      host.firstChild
+    );
+
+    box
+      .querySelectorAll(
+        '.lpCmdApprove,.lpCmdReject'
+      )
+      .forEach(function(button){
+
+        button.onclick =
+          function(){
+
+            var id =
+              lpCmdS(
+                button.getAttribute(
+                  'data-id'
+                )
+              );
+
+            var row =
+              lpCmdStore()
+                .find(function(r){
+                  return (
+                    lpCmdS(r.id) === id
+                  );
+                });
+
+            if(!row){
+              return;
+            }
+
+            if(
+              lpCmdNorm(
+                row.status
+              ) !== 'pending'
+            ){
+              lpCmdToast(
+                'Cette proposition a déjà été traitée'
+              );
+              return;
+            }
+
+            var comment =
+              document.getElementById(
+                'lpCmdComment_' +
+                id
+              );
+
+            row.dgComment =
+              lpCmdS(
+                comment
+                ? comment.value
+                : ''
+              );
+
+            row.status =
+              button.classList
+                .contains(
+                  'lpCmdApprove'
+                )
+              ?
+              'approved'
+              :
+              'rejected';
+
+            row.decidedAt =
+              new Date()
+                .toISOString();
+
+            row.decidedBy =
+              lpCmdUserName();
+
+            /*
+             * REGLE DE GESTION :
+             * aucune modification de stock.
+             * La reception physique reste
+             * la seule operation qui pourra
+             * augmenter le stock.
+             */
+
+            lpCmdSave();
+
+            lpCmdToast(
+              row.status ===
+              'approved'
+              ?
+              'Proposition approuvée'
+              :
+              'Proposition refusée'
+            );
+
+            lpCmdRenderDG();
+          };
+      });
+  }
+
+  function lpCmdRender(){
+
+    if(lpCmdIsDG()){
+      lpCmdRenderDG();
+    }else{
+      lpCmdRenderUser();
+    }
+  }
+
+  window.lpV15CreateOrderProposal =
+    lpCmdCreateProposal;
+
+  window.lpV15RenderOrderProposals =
+    lpCmdRender;
+
+  var oldRender =
+    window.render;
+
+  if(
+    typeof oldRender ===
+    'function'
+  ){
+
+    window.render =
+      function(){
+
+        var result =
+          oldRender.apply(
+            this,
+            arguments
+          );
+
+        setTimeout(
+          lpCmdRender,
+          100
+        );
+
+        return result;
+      };
+  }
+
+  document.addEventListener(
+    'click',
+    function(){
+
+      setTimeout(
+        lpCmdRender,
+        120
+      );
+
+    },
+    false
+  );
+
+  setTimeout(
+    lpCmdRender,
+    250
+  );
+
+  console.log(
+    'LEADER PHARMA V15 COMMANDES VALIDATION DG FINAL ACTIF'
+  );
+
+})();
+/* LP_V15_COMMANDES_VALIDATION_DG_FINAL_END */
+
+
+/* LP_V15_DG_COMMENTAIRE_CLAVIER_FINAL_START */
+(function(){
+
+  function lpDGCommentField(target){
+
+    if(!target){
+      return null;
+    }
+
+    var el = target;
+
+    if(
+      el.nodeType !== 1
+    ){
+      el = el.parentElement;
+    }
+
+    if(!el){
+      return null;
+    }
+
+    if(
+      el.matches &&
+      el.matches(
+        'textarea[id^="lpCmdComment_"]'
+      )
+    ){
+      return el;
+    }
+
+    if(el.closest){
+      return el.closest(
+        'textarea[id^="lpCmdComment_"]'
+      );
+    }
+
+    return null;
+  }
+
+  function lpDGUnlockComment(field){
+
+    if(!field){
+      return;
+    }
+
+    field.disabled = false;
+    field.readOnly = false;
+
+    field.removeAttribute(
+      'disabled'
+    );
+
+    field.removeAttribute(
+      'readonly'
+    );
+
+    field.removeAttribute(
+      'aria-disabled'
+    );
+
+    field.removeAttribute(
+      'data-lp171032-readonly'
+    );
+
+    field.removeAttribute(
+      'data-lp1787-readonly'
+    );
+
+    field.removeAttribute(
+      'data-lp1788-readonly'
+    );
+
+    field.style.setProperty(
+      'pointer-events',
+      'auto',
+      'important'
+    );
+
+    field.style.setProperty(
+      'user-select',
+      'text',
+      'important'
+    );
+
+    field.style.setProperty(
+      '-webkit-user-select',
+      'text',
+      'important'
+    );
+
+    field.style.opacity = '1';
+
+    field.setAttribute(
+      'inputmode',
+      'text'
+    );
+
+    field.setAttribute(
+      'autocomplete',
+      'off'
+    );
+
+    field.setAttribute(
+      'enterkeyhint',
+      'done'
+    );
+  }
+
+  function lpDGUnlockAll(){
+
+    document
+      .querySelectorAll(
+        'textarea[id^="lpCmdComment_"]'
+      )
+      .forEach(
+        function(field){
+          lpDGUnlockComment(
+            field
+          );
+        }
+      );
+  }
+
+  /*
+   * On ne bloque PAS le clic.
+   * On reactive simplement le champ
+   * avant que le navigateur traite
+   * normalement le toucher.
+   */
+
+  document.addEventListener(
+    'touchstart',
+    function(e){
+
+      var field =
+        lpDGCommentField(
+          e.target
+        );
+
+      if(!field){
+        return;
+      }
+
+      lpDGUnlockComment(
+        field
+      );
+
+    },
+    true
+  );
+
+  document.addEventListener(
+    'pointerdown',
+    function(e){
+
+      var field =
+        lpDGCommentField(
+          e.target
+        );
+
+      if(!field){
+        return;
+      }
+
+      lpDGUnlockComment(
+        field
+      );
+
+    },
+    true
+  );
+
+  document.addEventListener(
+    'click',
+    function(e){
+
+      var field =
+        lpDGCommentField(
+          e.target
+        );
+
+      if(!field){
+        return;
+      }
+
+      lpDGUnlockComment(
+        field
+      );
+
+      /*
+       * Le focus explicite permet
+       * au WebView Android d'ouvrir
+       * son clavier normalement.
+       */
+
+      try{
+        field.focus({
+          preventScroll:true
+        });
+      }catch(err){
+        field.focus();
+      }
+
+    },
+    true
+  );
+
+  document.addEventListener(
+    'focusin',
+    function(e){
+
+      var field =
+        lpDGCommentField(
+          e.target
+        );
+
+      if(!field){
+        return;
+      }
+
+      lpDGUnlockComment(
+        field
+      );
+
+    },
+    true
+  );
+
+  /*
+   * Les champs sont recrees lorsque
+   * le panneau DG est rerendu.
+   * MutationObserver les reactive
+   * sans modifier le panneau.
+   */
+
+  var observer =
+    new MutationObserver(
+      function(){
+        lpDGUnlockAll();
+      }
+    );
+
+  if(document.body){
+
+    observer.observe(
+      document.body,
+      {
+        childList:true,
+        subtree:true
+      }
+    );
+  }
+
+  lpDGUnlockAll();
+
+  window.lpV15UnlockDGComment =
+    lpDGUnlockAll;
+
+  console.log(
+    'LEADER PHARMA V15 DG COMMENTAIRE CLAVIER FINAL ACTIF'
+  );
+
+})();
+/* LP_V15_DG_COMMENTAIRE_CLAVIER_FINAL_END */
+
+
+/* LP_V15_ALERTES_FIX_CIBLE_SANS_TOUCHER_RH_START */
+(function(){
+
+  function lpAFNorm(v){
+    return String(v == null ? '' : v)
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g,'');
+  }
+
+  function lpAFPage(){
+
+    var p = '';
+
+    try{
+      if(typeof page !== 'undefined'){
+        p = lpAFNorm(page);
+      }
+    }catch(e){}
+
+    if(p){
+      return p;
+    }
+
+    try{
+      if(typeof currentPage !== 'undefined'){
+        p = lpAFNorm(currentPage);
+      }
+    }catch(e){}
+
+    return p;
+  }
+
+  function lpAFIsAlerts(){
+    var p = lpAFPage();
+
+    return (
+      p === 'alerts' ||
+      p === 'alertes'
+    );
+  }
+
+  function lpAFRemoveParasites(){
+
+    if(lpAFIsAlerts()){
+      return;
+    }
+
+    var userCenter =
+      document.getElementById(
+        'lpUserAlertCenter'
+      );
+
+    if(userCenter){
+      userCenter.remove();
+    }
+
+    var dgPanel =
+      document.getElementById(
+        'lpCmdDGPanel'
+      );
+
+    if(dgPanel){
+      dgPanel.remove();
+    }
+  }
+
+  /*
+   * CORRECTIF CIBLE :
+   * aucune modification de window.render.
+   * aucune modification RH/Pointage.
+   * aucune modification des boutons DG.
+   *
+   * Après une navigation, on vérifie
+   * seulement si les éléments Alertes
+   * doivent être retirés.
+   */
+  document.addEventListener(
+    'click',
+    function(){
+
+      setTimeout(
+        lpAFRemoveParasites,
+        30
+      );
+
+      setTimeout(
+        lpAFRemoveParasites,
+        150
+      );
+
+      setTimeout(
+        lpAFRemoveParasites,
+        400
+      );
+
+    },
+    false
+  );
+
+  /*
+   * Si un ancien hook Alertes tente
+   * de réinsérer son panneau ailleurs,
+   * on retire uniquement ces deux IDs.
+   */
+  var observer =
+    new MutationObserver(
+      function(){
+
+        if(!lpAFIsAlerts()){
+          lpAFRemoveParasites();
+        }
+      }
+    );
+
+  if(document.body){
+
+    observer.observe(
+      document.body,
+      {
+        childList:true,
+        subtree:true
+      }
+    );
+  }
+
+  setTimeout(
+    lpAFRemoveParasites,
+    300
+  );
+
+  console.log(
+    'LEADER PHARMA ALERTES FIX CIBLE SANS TOUCHER RH ACTIF'
+  );
+
+})();
+/* LP_V15_ALERTES_FIX_CIBLE_SANS_TOUCHER_RH_END */
+
