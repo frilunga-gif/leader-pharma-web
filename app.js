@@ -114235,9 +114235,24 @@ console.log(
     }catch(error){}
   }
 
-  /* LP_DG_OFFLINE_SECURE_V6_HELPERS_START */
+  /* LP_DG_OFFLINE_SECURE_V7_HELPERS_START */
 
-  function lpDGNetworkFailureV6(error){
+  function lpDGOfflineV7(){
+
+    try{
+      return (
+        typeof navigator !== "undefined"
+        &&
+        navigator.onLine === false
+      );
+    }catch(e){
+      return false;
+    }
+  }
+
+  function lpDGNetworkFailureV7(
+    error
+  ){
 
     const message =
       String(
@@ -114248,17 +114263,9 @@ console.log(
       .trim()
       .toLowerCase();
 
-    try{
-      if(
-        typeof navigator !== "undefined"
-        &&
-        navigator.onLine === false
-      ){
-        return true;
-      }
-    }catch(e){}
-
     return (
+      lpDGOfflineV7()
+      ||
       (
         typeof TypeError !== "undefined"
         &&
@@ -114277,8 +114284,9 @@ console.log(
     );
   }
 
-  function lpDGOfflinePasswordOKV6(
-    password
+  function lpDGOfflineLoginV7(
+    password,
+    button
   ){
 
     try{
@@ -114309,12 +114317,71 @@ console.log(
         return false;
       }
 
+      /*
+       * Le mot de passe local est remis
+       * uniquement depuis le cache cree
+       * apres une validation Supabase.
+       */
+      dg.password =
+        String(
+          password || ""
+        );
+
+      dg.active =
+        true;
+
+      dg.role =
+        "DG";
+
+      dg.username =
+        LP_DG_USERNAME_V5;
+
+      try{
+        if(
+          typeof save ===
+            "function"
+        ){
+          save();
+        }
+      }catch(e){}
+
+      lpShowDGMessageV5(
+        "Mode hors ligne sécurisé."
+      );
+
+      try{
+        window.lpDGOfflineMode =
+          true;
+      }catch(e){}
+
+      lpDGLegacyPassV5 =
+        true;
+
+      setTimeout(
+        function(){
+
+          try{
+            button.click();
+          }finally{
+
+            setTimeout(
+              function(){
+                lpDGLegacyPassV5 =
+                  false;
+              },
+              500
+            );
+          }
+        },
+        30
+      );
+
       return true;
 
     }catch(error){
 
       console.error(
-        "DG OFFLINE CACHE:",
+        "DG OFFLINE V7:",
         error
       );
 
@@ -114322,47 +114389,7 @@ console.log(
     }
   }
 
-  function lpDGContinueOfflineV6(
-    button
-  ){
-
-    try{
-      window.lpDGOfflineMode = true;
-    }catch(e){}
-
-    lpShowDGMessageV5(
-      "Mode hors ligne sécurisé."
-    );
-
-    lpDGLegacyPassV5 =
-      true;
-
-    setTimeout(
-      function(){
-
-        try{
-
-          button.click();
-
-        }finally{
-
-          setTimeout(
-            function(){
-
-              lpDGLegacyPassV5 =
-                false;
-
-            },
-            500
-          );
-        }
-
-      },
-      50
-    );
-  }
-
-  /* LP_DG_OFFLINE_SECURE_V6_HELPERS_END */
+  /* LP_DG_OFFLINE_SECURE_V7_HELPERS_END */
 
   function lpFindLoginButtonV5(
     eventTarget
@@ -114458,6 +114485,32 @@ console.log(
       "Vérification sécurisée DG..."
     );
 
+    /*
+     * V7 : si l'appareil est clairement hors ligne,
+     * on ne tente meme pas fetch().
+     */
+    if(
+      lpDGOfflineV7()
+    ){
+
+      const offlineOK =
+        lpDGOfflineLoginV7(
+          password,
+          button
+        );
+
+      lpDGProcessingV5 =
+        false;
+
+      if(!offlineOK){
+        lpShowDGMessageV5(
+          "Première connexion Internet requise sur cet appareil."
+        );
+      }
+
+      return;
+    }
+
     try{
 
       /*
@@ -114527,39 +114580,27 @@ console.log(
 
     }catch(error){
 
-      /*
-       * HORS LIGNE :
-       * uniquement si la verification Supabase
-       * a echoue pour une raison reseau.
-       *
-       * Une reponse Supabase "mot de passe DG incorrect"
-       * ne passe pas par ce secours.
-       */
       if(
-        lpDGNetworkFailureV6(
+        lpDGNetworkFailureV7(
           error
         )
         &&
-        lpDGOfflinePasswordOKV6(
-          password
+        lpDGOfflineLoginV7(
+          password,
+          button
         )
       ){
-
-        lpDGContinueOfflineV6(
-          button
-        );
-
-      }else{
-
-        lpShowDGMessageV5(
-          error &&
-          error.message
-            ?
-            error.message
-            :
-            "Connexion DG refusée."
-        );
+        return;
       }
+
+      lpShowDGMessageV5(
+        error &&
+        error.message
+          ?
+          error.message
+          :
+          "Connexion DG refusée."
+      );
 
     }finally{
 
@@ -114675,11 +114716,11 @@ console.log(
 
 /* LP_DG_PASSWORD_SUPABASE_V5_END */
 
-/* LP_DG_OFFLINE_SECURE_V6_START */
+/* LP_DG_OFFLINE_SECURE_V7_START */
 console.log(
-  "LEADER PHARMA DG ONLINE + HORS LIGNE SECURISE V6 ACTIF"
+  "LEADER PHARMA DG ONLINE + HORS LIGNE SECURISE V7 ACTIF"
 );
-/* LP_DG_OFFLINE_SECURE_V6_END */
+/* LP_DG_OFFLINE_SECURE_V7_END */
 
 
 
