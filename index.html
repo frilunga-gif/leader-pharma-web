@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b6b4f" />
-  <title>Leader Pharma Manager Pro Web V10.2 DG SECURE</title>
+  <title>Leader Pharma Manager Pro V1.4</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -12,15 +12,15 @@
     <div class="login-card">
       <div class="brand-mark">✚</div>
       <h1>Leader Pharma</h1>
-      <img src="leader-pharma-logo.png" alt="Logo Leader Pharma" class="brand-logo login-logo">
-<p class="subtitle">Manager Pro Web V10.2 DG SECURE</p>
+      <img src="assets/leader-pharma-logo.png" alt="Logo Leader Pharma" class="brand-logo login-logo">
+<p class="subtitle">Manager Pro V1.4 DG DEV</p>
       <div class="legal-id">N° Impôt : A2311751Z<br>RCCM : CD/KNA/RCCM/25-A-593<br>Adresse : Route Kanyama, Réf. HGR Kamina — Kamina</div>
       <label>Agence</label>
       <select id="loginAgency"></select>
       <label>Utilisateur</label>
       <input id="username" value="leader.fr" autocomplete="username" />
       <label>Mot de passe</label>
-      <input id="password" type="password" value="" autocomplete="current-password" />
+      <input id="password" type="password" value="1234" autocomplete="current-password" />
       <button id="loginBtn">Se connecter</button>
       <p id="loginError" class="error"></p>
       <small>Connexion sécurisée Leader Pharma</small>
@@ -31,7 +31,7 @@
     <aside class="sidebar">
       <div class="logo-wrap">
         <div class="brand-mark small">✚</div>
-        <img src="leader-pharma-logo.png" alt="Logo Leader Pharma" class="brand-logo sidebar-logo"><div><strong>LEADER PHARMA</strong><span>Manager Pro</span><small class="sidebar-legal">Impôt A2311751Z<br>RCCM CD/KNA/RCCM/25-A-593</small></div>
+        <img src="assets/leader-pharma-logo.png" alt="Logo Leader Pharma" class="brand-logo sidebar-logo"><div><strong>LEADER PHARMA</strong><span>Manager Pro</span><small class="sidebar-legal">Impôt A2311751Z<br>RCCM CD/KNA/RCCM/25-A-593</small></div>
       </div>
       <nav id="nav"></nav>
       <div class="side-footer">
@@ -58,5 +58,6 @@
 
   <div id="toast" class="toast"></div>
   <script src="app.js"></script>
+<script src="dg-security.js"></script>
 </body>
 </html>
