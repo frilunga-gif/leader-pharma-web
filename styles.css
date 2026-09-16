@@ -45,3 +45,32 @@ font-size:12px;line-height:1.5;color:#44524c;background:#f8fbf9}
   visibility:visible!important;
   opacity:1!important;
 }
+
+/* ============================================================
+   LEADER PHARMA WEB F29.6.0.17
+   MENU DG VERTICAL STABLE - CORRECTIF CIBLE CSS UNIQUEMENT
+   - Rubriques dans l'ordre, une seule colonne
+   - Defilement vertical de la barre laterale
+   - Parametres et rubriques basses toujours accessibles
+   - Aucun moteur / role / permission modifie
+   ============================================================ */
+.sidebar{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+}
+
+.sidebar nav,
+#nav{
+  grid-template-columns:1fr !important;
+  align-content:start !important;
+}
+
+#nav .nav-btn{
+  width:100% !important;
+  min-width:0 !important;
+  white-space:normal !important;
+}
+
+.side-footer{
+  flex-shrink:0 !important;
+}
