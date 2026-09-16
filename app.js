@@ -39166,38 +39166,8 @@ function lp171042Rows(){
 }
 
 
-function lp171042Today(){
-
-  const key =
-    lp171042Key();
-
-  return lp171042Rows()
-    .find(
-      function(row){
-
-        return (
-          String(
-            row.lpUser || ''
-          ) === key
-          &&
-          String(
-            row.date || ''
-          ) === lp171042Date()
-          &&
-          String(
-            row.agency || ''
-          ) === String(
-            currentAgency || ''
-          )
-        );
-
-      }
-    );
-
-}
-
-
-function lp171042Clock(type){
+function lp171042Today(){ const key = lp171042Key(); const agency = String(currentAgency || ''); const rows = lp171042Rows().filter( function(row){ return ( String(row.lpUser || '') === key && String(row.agency || '') === agency ); } ); const today = rows.find( function(row){ return String(row.date || '') === lp171042Date(); } ); if(today){ return today; } /* * LEADER PHARMA 24H/24 * Si l'agent a commence son service la veille
+   * et n'a pas encore signe son depart, on garde * exactement le meme pointage apres minuit. */ return rows .slice() .reverse() .find( function(row){ return !!row.entry && !row.exit; } ) || null; } function lp171042Clock(type){
 
   if(
     !currentUser ||
@@ -39305,8 +39275,9 @@ function lp171042Clock(type){
 
     }
 
-    row.exit =
-      lp171042Time();
+    row.exit = lp171042Time();
+
+ row.exitDate = lp171042Date();
 
   }
 
@@ -39425,7 +39396,7 @@ function lp171042RenderPointage(){
           <tr>
             <td>${row.date || ''}</td>
             <td>${row.entry || '—'}</td>
-            <td>${row.exit || '—'}</td>
+            <td>${ row.exit ? ( ( row.exitDate && row.exitDate !== row.date ? row.exitDate + ' • ' : '' ) + row.exit ) : '—' }</td>
           </tr>
 
         `;
@@ -106830,19 +106801,7 @@ console.log(
     return db.attendance;
   }
 
-  function lpU12TodayRow(){
-    const key = lpU12CurrentKey();
-
-    return lpU12Attendance().find(function(row){
-      return (
-        String(row?.lpUser || '') === key &&
-        String(row?.date || '') === lpU12Date() &&
-        String(row?.agency || '') === String(currentAgency || '')
-      );
-    }) || null;
-  }
-
-  function lpU12CompressPhoto(file,callback){
+  function lpU12TodayRow(){ const key = lpU12CurrentKey(); const agency = String(currentAgency || ''); const rows = lpU12Attendance().filter(function(row){ return ( String(row?.lpUser || '') === key && String(row?.agency || '') === agency ); }); const today = rows.find(function(row){ return String(row?.date || '') === lpU12Date(); }); if(today){ return today; } const open = rows.slice().reverse().find(function(row){ return !!row?.entry && !row?.exit; }); if(open){ return open; } /* * Le depart est enregistre avant la photo. * Apres minuit, on retrouve donc le dernier * pointage ferme qui attend encore sa photo depart. */ return rows.slice().reverse().find(function(row){ return !!row?.entry && !!row?.exit && !row?.exitPhoto; }) || null; }  function lpU12CompressPhoto(file,callback){
     if(!file){
       callback('');
       return;
@@ -107271,7 +107230,7 @@ console.log(
               <td>${lpU12Esc(row.role || '—')}</td>
               <td>${lpU12Esc(row.entry || '—')}</td>
               <td>${inPhoto}</td>
-              <td>${lpU12Esc(row.exit || '—')}</td>
+              <td>${lpU12Esc( row.exit ? ( ( row.exitDate && row.exitDate !== row.date ? row.exitDate + ' • ' : '' ) + row.exit ) : '—' )}</td>
               <td>${outPhoto}</td>
             </tr>
           `;
@@ -146390,3 +146349,1769 @@ console.log(MARKER);
   );
 
 })();
+
+
+/* ============================================================
+   LEADER PHARMA F29.6.0.11
+   SUPPRESSION UTILISATEUR DEFINITIVE
+   CIBLE UNIQUE : UTILISATEURS
+   ============================================================ */
+(function(){
+  'use strict';
+
+  const LP_F296011_MARK =
+    'LEADER PHARMA F29.6.0.11 SUPPRESSION UTILISATEUR DEFINITIVE ACTIF';
+
+  console.log(LP_F296011_MARK);
+
+  function lpF296011Norm(v){
+    return String(v == null ? '' : v)
+      .trim()
+      .toLowerCase();
+  }
+
+  function lpF296011IsDeleted(user){
+    return !!(
+      user &&
+      user._lpDeleted === true
+    );
+  }
+
+  function lpF296011DeletedNames(){
+    const out = new Set();
+
+    try{
+      if(
+        typeof db !== 'undefined' &&
+        db &&
+        Array.isArray(db.users)
+      ){
+        db.users.forEach(function(user){
+          if(
+            lpF296011IsDeleted(user) &&
+            lpF296011Norm(user.username)
+          ){
+            out.add(
+              lpF296011Norm(user.username)
+            );
+          }
+        });
+      }
+    }catch(e){}
+
+    return out;
+  }
+
+  function lpF296011HideDeletedRows(){
+    const deleted =
+      lpF296011DeletedNames();
+
+    if(!deleted.size){
+      return;
+    }
+
+    document
+      .querySelectorAll('[data-user]')
+      .forEach(function(el){
+        let username =
+          String(
+            el.dataset?.user || ''
+          );
+
+        try{
+          username =
+            decodeURIComponent(username);
+        }catch(e){}
+
+        if(
+          !deleted.has(
+            lpF296011Norm(username)
+          )
+        ){
+          return;
+        }
+
+        const row =
+          el.closest('tr');
+
+        if(row){
+          row.remove();
+        }
+      });
+  }
+
+  function lpF296011RemoveSecurityAccount(username){
+    try{
+      const key =
+        'lpmp_dg_security_v14';
+
+      const state =
+        JSON.parse(
+          localStorage.getItem(key) ||
+          'null'
+        );
+
+      if(
+        state &&
+        Array.isArray(state.accounts)
+      ){
+        const wanted =
+          lpF296011Norm(username);
+
+        state.accounts =
+          state.accounts.filter(
+            function(acc){
+              return (
+                lpF296011Norm(
+                  acc?.username
+                ) !== wanted
+              );
+            }
+          );
+
+        localStorage.setItem(
+          key,
+          JSON.stringify(state)
+        );
+      }
+    }catch(e){}
+  }
+
+  function lpF296011RefreshUsers(){
+    try{
+      if(
+        typeof lp16UsersPage ===
+        'function'
+      ){
+        lp16UsersPage();
+      }else if(
+        typeof users ===
+        'function'
+      ){
+        users();
+      }
+    }catch(e){}
+
+    [0,80,180,420].forEach(
+      function(ms){
+        setTimeout(
+          lpF296011HideDeletedRows,
+          ms
+        );
+      }
+    );
+  }
+
+  if(
+    typeof lp163DeleteUser ===
+    'function'
+  ){
+    lp163DeleteUser =
+      function(username){
+
+        if(
+          typeof lp163IsDG ===
+            'function' &&
+          !lp163IsDG()
+        ){
+          return;
+        }
+
+        const user =
+          (
+            typeof lp163FindUser ===
+            'function'
+          )
+            ? lp163FindUser(username)
+            : (
+                Array.isArray(db?.users)
+                  ? db.users.find(
+                      function(u){
+                        return (
+                          lpF296011Norm(
+                            u?.username
+                          ) ===
+                          lpF296011Norm(
+                            username
+                          )
+                        );
+                      }
+                    )
+                  : null
+              );
+
+        if(!user){
+          alert(
+            'Utilisateur introuvable.'
+          );
+          return;
+        }
+
+        if(
+          lpF296011Norm(
+            user.username
+          ) === 'leader.fr' ||
+          lpF296011Norm(
+            user.role
+          ) === 'dg'
+        ){
+          alert(
+            'Le compte Direction ne peut pas être supprimé.'
+          );
+          return;
+        }
+
+        if(
+          !confirm(
+            'Supprimer définitivement le compte "' +
+            String(
+              user.username || ''
+            ) +
+            '" ?'
+          )
+        ){
+          return;
+        }
+
+        const usernameSaved =
+          String(
+            user.username || ''
+          );
+
+        const now =
+          Date.now();
+
+        user.active = false;
+        user._lpDeleted = true;
+        user._lpDeletedAt = now;
+        user._lpUserUpdatedAt = now;
+
+        try{
+          if(
+            typeof lp163SellerPasswordDelete ===
+            'function'
+          ){
+            lp163SellerPasswordDelete(
+              usernameSaved
+            );
+          }
+        }catch(e){}
+
+        lpF296011RemoveSecurityAccount(
+          usernameSaved
+        );
+
+        try{
+          if(
+            typeof lp163Save ===
+            'function'
+          ){
+            lp163Save();
+          }else if(
+            typeof save ===
+            'function'
+          ){
+            save();
+          }else{
+            localStorage.setItem(
+              'lpmp_v13',
+              JSON.stringify(db)
+            );
+          }
+        }catch(e){}
+
+        try{
+          if(
+            typeof audit ===
+            'function'
+          ){
+            audit(
+              'Utilisateur supprimé définitivement',
+              usernameSaved
+            );
+          }
+        }catch(e){}
+
+        try{
+          if(
+            typeof syncPush ===
+            'function'
+          ){
+            Promise
+              .resolve(
+                syncPush()
+              )
+              .catch(
+                function(e){
+                  console.warn(
+                    'F29.6.0.11 SYNC DELETE',
+                    e
+                  );
+                }
+              );
+          }
+        }catch(e){}
+
+        lpF296011RefreshUsers();
+
+        alert(
+          'Utilisateur supprimé définitivement.'
+        );
+      };
+  }
+
+  try{
+    if(
+      typeof lp16UsersPage ===
+      'function'
+    ){
+      const lpF296011UsersPageBase =
+        lp16UsersPage;
+
+      lp16UsersPage =
+        function(){
+
+          if(
+            typeof db ===
+              'undefined' ||
+            !db ||
+            !Array.isArray(db.users)
+          ){
+            return (
+              lpF296011UsersPageBase
+                .apply(
+                  this,
+                  arguments
+                )
+            );
+          }
+
+          const fullUsers =
+            db.users;
+
+          db.users =
+            fullUsers.filter(
+              function(user){
+                return (
+                  !lpF296011IsDeleted(
+                    user
+                  )
+                );
+              }
+            );
+
+          try{
+            return (
+              lpF296011UsersPageBase
+                .apply(
+                  this,
+                  arguments
+                )
+            );
+          }finally{
+            db.users =
+              fullUsers;
+
+            [0,80,180,420]
+              .forEach(
+                function(ms){
+                  setTimeout(
+                    lpF296011HideDeletedRows,
+                    ms
+                  );
+                }
+              );
+          }
+        };
+    }
+  }catch(e){}
+
+  function lpF296011InstallObserver(){
+    const host =
+      document.getElementById(
+        'content'
+      );
+
+    if(
+      !host ||
+      host.dataset
+        .lpF296011Observer ===
+        '1'
+    ){
+      return;
+    }
+
+    host.dataset
+      .lpF296011Observer =
+      '1';
+
+    const observer =
+      new MutationObserver(
+        function(){
+          lpF296011HideDeletedRows();
+        }
+      );
+
+    observer.observe(
+      host,
+      {
+        childList:true,
+        subtree:true
+      }
+    );
+
+    lpF296011HideDeletedRows();
+  }
+
+  if(
+    document.readyState ===
+    'loading'
+  ){
+    document.addEventListener(
+      'DOMContentLoaded',
+      lpF296011InstallObserver,
+      {once:true}
+    );
+  }else{
+    lpF296011InstallObserver();
+  }
+
+  setTimeout(
+    lpF296011InstallObserver,
+    500
+  );
+
+})();
+/* LEADER PHARMA F29.6.0.11 SUPPRESSION UTILISATEUR DEFINITIVE END */
+
+/* ============================================================
+   LEADER PHARMA F29.6.0.12
+   PHOTO POINTAGE DG - AGRANDISSEMENT VISUEL
+
+   UNIQUEMENT :
+   - clic sur photo arrivee / depart dans Controle DG
+   - ouverture grande et fixe a l'ecran
+   - fermeture par bouton, fond noir ou touche Echap
+   - aucune modification des donnees de pointage
+   - aucun changement cloud / utilisateurs / stock / ventes
+   ============================================================ */
+
+/* LP_F296012_PHOTO_DG_VIEWER_START */
+
+(function(){
+  'use strict';
+
+  const LP_F296012_MARKER =
+    'LEADER PHARMA F29.6.0.12 PHOTO POINTAGE DG AGRANDISSEMENT ACTIF';
+
+  let lpF296012Timer = null;
+
+  function lpF296012Close(){
+
+    const old =
+      document.getElementById(
+        'lpF296012PhotoViewer'
+      );
+
+    if(old){
+      old.remove();
+    }
+  }
+
+  function lpF296012Esc(v){
+
+    return String(
+      v == null ? '' : v
+    )
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+  }
+
+  function lpF296012Open(img){
+
+    if(!img){
+      return;
+    }
+
+    const src =
+      String(
+        img.currentSrc ||
+        img.src ||
+        ''
+      ).trim();
+
+    if(!src){
+      return;
+    }
+
+    lpF296012Close();
+
+    const label =
+      String(
+        img.alt ||
+        'Photo de pointage'
+      ).trim();
+
+    const viewer =
+      document.createElement('div');
+
+    viewer.id =
+      'lpF296012PhotoViewer';
+
+    viewer.setAttribute(
+      'role',
+      'dialog'
+    );
+
+    viewer.setAttribute(
+      'aria-modal',
+      'true'
+    );
+
+    viewer.setAttribute(
+      'aria-label',
+      label || 'Photo de pointage'
+    );
+
+    viewer.style.cssText = [
+      'position:fixed',
+      'inset:0',
+      'z-index:2147483646',
+      'background:rgba(0,0,0,.92)',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'padding:14px',
+      'box-sizing:border-box'
+    ].join(';');
+
+    viewer.innerHTML = `
+      <div
+        data-lpf296012-card="1"
+        style="
+          width:min(96vw,760px);
+          max-height:94vh;
+          overflow:auto;
+          text-align:center;
+          color:#fff;
+          background:#111827;
+          border:2px solid rgba(255,255,255,.22);
+          border-radius:18px;
+          padding:14px;
+          box-sizing:border-box;
+        "
+      >
+        <div
+          style="
+            font-size:19px;
+            font-weight:900;
+            margin:2px 0 12px 0;
+          "
+        >
+          👁️ ${lpF296012Esc(
+            label ||
+            'Photo de pointage'
+          )}
+        </div>
+
+        <img
+          src="${lpF296012Esc(src)}"
+          alt="${lpF296012Esc(
+            label ||
+            'Photo de pointage'
+          )}"
+          style="
+            display:block;
+            width:auto;
+            max-width:100%;
+            height:auto;
+            max-height:76vh;
+            object-fit:contain;
+            margin:0 auto;
+            border-radius:14px;
+            background:#fff;
+          "
+        >
+
+        <div
+          style="
+            margin-top:12px;
+            font-size:13px;
+            opacity:.86;
+          "
+        >
+          Photo de présence • affichage DG
+        </div>
+
+        <button
+          type="button"
+          id="lpF296012CloseViewer"
+          style="
+            min-width:150px;
+            min-height:46px;
+            margin-top:14px;
+            padding:10px 18px;
+            border:0;
+            border-radius:12px;
+            background:#11795e;
+            color:#fff;
+            font-size:16px;
+            font-weight:900;
+          "
+        >
+          Fermer
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(
+      viewer
+    );
+
+    const closeBtn =
+      document.getElementById(
+        'lpF296012CloseViewer'
+      );
+
+    if(closeBtn){
+
+      closeBtn.onclick =
+        function(e){
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          lpF296012Close();
+        };
+    }
+
+    viewer.addEventListener(
+      'click',
+      function(e){
+
+        if(e.target === viewer){
+          lpF296012Close();
+        }
+      }
+    );
+  }
+
+  function lpF296012StyleThumbs(){
+
+    document
+      .querySelectorAll(
+        '#lpU12DGPhotoControl img'
+      )
+      .forEach(function(img){
+
+        img.style.cursor =
+          'zoom-in';
+
+        img.style.width =
+          '68px';
+
+        img.style.height =
+          '68px';
+
+        img.style.objectFit =
+          'cover';
+
+        img.style.borderRadius =
+          '10px';
+
+        img.style.border =
+          '2px solid #11795e';
+
+        img.style.boxShadow =
+          '0 2px 8px rgba(0,0,0,.18)';
+
+        img.style.background =
+          '#fff';
+
+        img.setAttribute(
+          'title',
+          'Touchez pour agrandir la photo'
+        );
+
+        img.setAttribute(
+          'data-lpf296012-view',
+          '1'
+        );
+      });
+  }
+
+  function lpF296012Schedule(){
+
+    if(lpF296012Timer){
+      clearTimeout(
+        lpF296012Timer
+      );
+    }
+
+    lpF296012Timer =
+      setTimeout(
+        lpF296012StyleThumbs,
+        80
+      );
+  }
+
+  document.addEventListener(
+    'click',
+    function(e){
+
+      const target =
+        e.target;
+
+      const img =
+        target &&
+        target.closest
+          ? target.closest(
+              '#lpU12DGPhotoControl img'
+            )
+          : null;
+
+      if(!img){
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      lpF296012Open(img);
+    },
+    true
+  );
+
+  document.addEventListener(
+    'keydown',
+    function(e){
+
+      if(e.key === 'Escape'){
+        lpF296012Close();
+      }
+    },
+    true
+  );
+
+  try{
+
+    const observer =
+      new MutationObserver(
+        lpF296012Schedule
+      );
+
+    observer.observe(
+      document.documentElement,
+      {
+        childList:true,
+        subtree:true
+      }
+    );
+
+  }catch(e){}
+
+  setTimeout(
+    lpF296012StyleThumbs,
+    0
+  );
+
+  setTimeout(
+    lpF296012StyleThumbs,
+    250
+  );
+
+  setTimeout(
+    lpF296012StyleThumbs,
+    700
+  );
+
+  console.log(
+    LP_F296012_MARKER
+  );
+
+})();
+
+/* LP_F296012_PHOTO_DG_VIEWER_END */
+
+ /* ============================================================ LEADER PHARMA F29.6.0.13 POINTAGE 24H / SERVICE DE NUIT ------------------------------------------------------------ CORRECTIF UNIQUE : - arrivée avant minuit et départ après minuit = même présence - date réelle du départ conservée dans exitDate - photo arrivée et photo départ restent sur la même présence - aucun autre module métier modifié ============================================================ */ console.log('LEADER PHARMA F29.6.0.13 POINTAGE 24H NUIT ACTIF'); 
+/* ============================================================
+   LEADER PHARMA F29.6.0.14
+   MASTER PRO - UPDATE CENTRALISE
+   ------------------------------------------------------------
+   OBJECTIF :
+   - une seule publication cote Direction
+   - verification automatique legere sur tous les appareils
+   - canal prive Supabase
+   - telechargement uniquement apres confirmation utilisateur
+   - URL signee temporaire, aucune service_role dans APK
+   - aucun module metier modifie
+   ============================================================ */
+/* LP_F296014_MASTER_UPDATE_CENTRAL_START */
+(function(){
+  'use strict';
+
+  const LP_CENTRAL_MARKER =
+    'LEADER PHARMA F29.6.0.14 MASTER PRO UPDATE CENTRALISE ACTIF';
+
+  const LP_CENTRAL_ENDPOINT =
+    'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
+
+  const LP_CENTRAL_GATE =
+    'LP-MASTER-PRO-2026';
+
+  const LP_CENTRAL_TECH_VERSION =
+    '29.6.0.17';
+
+  const LP_CENTRAL_DISPLAY =
+    'F29.6.0.17 MASTER PRO';
+
+  const LP_CENTRAL_CHECK_EVERY =
+    6 * 60 * 60 * 1000;
+
+  const LP_CENTRAL_LAST_CHECK =
+    'lp_master_update_central_last_check_v17';
+
+  const LP_CENTRAL_LAST_PROMPT =
+    'lp_master_update_central_last_prompt_v17';
+
+  let lpCentralBusy = false;
+  let lpCentralLastData = null;
+  let lpCentralTimer = null;
+
+  function lpCentralEsc(value){
+    return String(value == null ? '' : value)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  function lpCentralNow(){
+    return Date.now();
+  }
+
+  function lpCentralReadNumber(key){
+    try{
+      return Number(localStorage.getItem(key) || 0) || 0;
+    }catch(e){
+      return 0;
+    }
+  }
+
+  function lpCentralWriteNumber(key,value){
+    try{
+      localStorage.setItem(key,String(value));
+    }catch(e){}
+  }
+
+  function lpCentralShouldAutoCheck(){
+    const last = lpCentralReadNumber(LP_CENTRAL_LAST_CHECK);
+    return !last || (lpCentralNow() - last) >= LP_CENTRAL_CHECK_EVERY;
+  }
+
+  function lpCentralValidUrl(url){
+    try{
+      const parsed = new URL(String(url || ''));
+      return (
+        parsed.protocol === 'https:' &&
+        parsed.hostname.endsWith('.supabase.co') &&
+        parsed.pathname.includes('/storage/v1/object/')
+      );
+    }catch(e){
+      return false;
+    }
+  }
+
+  function lpCentralCard(){
+    return document.getElementById('lp-update-secure-status-v2');
+  }
+
+  function lpCentralState(){
+    return document.getElementById('lp-update-v2-state');
+  }
+
+  function lpCentralDetail(){
+    return document.getElementById('lp-update-v2-detail');
+  }
+
+  function lpCentralSetCard(title,detail,busy){
+    const state = lpCentralState();
+    const info = lpCentralDetail();
+    const button = document.getElementById('lp-master-update-final-button');
+
+    if(state){
+      state.textContent = title;
+    }
+
+    if(info){
+      info.textContent = detail;
+    }
+
+    if(button){
+      button.disabled = !!busy;
+      button.textContent = busy ? 'Vérification…' : 'Vérifier maintenant';
+      button.style.opacity = busy ? '.58' : '1';
+    }
+  }
+
+  function lpCentralRemoveDownloadButton(){
+    const old = document.getElementById('lpF296014DownloadButton');
+    if(old){
+      old.remove();
+    }
+  }
+
+  function lpCentralDownloadButton(){
+    const card = lpCentralCard();
+    if(!card){
+      return;
+    }
+
+    let button = document.getElementById('lpF296014DownloadButton');
+    if(!button){
+      button = document.createElement('button');
+      button.id = 'lpF296014DownloadButton';
+      button.type = 'button';
+      button.className = 'btn';
+      button.style.cssText = [
+        'margin-top:12px',
+        'width:100%',
+        'min-height:48px',
+        'font-weight:900'
+      ].join(';');
+      card.appendChild(button);
+    }
+
+    button.textContent = '⬇ Mettre à jour maintenant';
+    button.onclick = function(event){
+      event?.preventDefault?.();
+      event?.stopPropagation?.();
+      lpCentralDownloadFresh();
+    };
+  }
+
+  function lpCentralCloseModal(){
+    const old = document.getElementById('lpF296014UpdateModal');
+    if(old){
+      old.remove();
+    }
+  }
+
+  function lpCentralRemoteTech(data){
+    return String(
+      data?.technical_version ||
+      data?.technicalVersion ||
+      data?.version_name ||
+      data?.version ||
+      ''
+    ).trim();
+  }
+
+  function lpCentralRemoteDisplay(data){
+    const tech = lpCentralRemoteTech(data);
+    const display = String(
+      data?.display_version ||
+      data?.displayVersion ||
+      data?.version_name ||
+      tech ||
+      'Nouvelle version'
+    ).trim();
+
+    if(display === 'F29.6.0 MASTER PRO' && tech){
+      return 'F' + tech + ' MASTER PRO';
+    }
+
+    return display;
+  }
+
+  function lpCentralShowModal(data){
+    if(!data || data.update_available !== true && data.updateAvailable !== true){
+      return;
+    }
+
+    const remoteTech = lpCentralRemoteTech(data);
+    const previousPrompt = lpCentralReadNumber(LP_CENTRAL_LAST_PROMPT);
+
+    if(previousPrompt && (lpCentralNow() - previousPrompt) < 4 * 60 * 60 * 1000){
+      return;
+    }
+
+    lpCentralWriteNumber(LP_CENTRAL_LAST_PROMPT,lpCentralNow());
+    lpCentralCloseModal();
+
+    const modal = document.createElement('div');
+    modal.id = 'lpF296014UpdateModal';
+    modal.style.cssText = [
+      'position:fixed',
+      'inset:0',
+      'z-index:2147483647',
+      'background:rgba(0,0,0,.78)',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'padding:16px',
+      'box-sizing:border-box'
+    ].join(';');
+
+    const mandatory = data.is_mandatory === true || data.mandatory === true;
+    const notes = String(data.release_notes || data.releaseNotes || '').trim();
+    const remoteDisplay = lpCentralRemoteDisplay(data);
+
+    modal.innerHTML = `
+      <div style="width:min(94vw,540px);max-height:88vh;overflow:auto;background:#fff;border-radius:18px;padding:20px;box-sizing:border-box;box-shadow:0 16px 48px rgba(0,0,0,.30)">
+        <div style="font-size:14px;font-weight:900;color:#11795e">⬆ MASTER PRO UPDATE</div>
+        <h2 style="margin:8px 0 8px">Nouvelle version disponible</h2>
+        <div style="font-weight:800;margin-bottom:8px">${lpCentralEsc(remoteDisplay)}</div>
+        <div style="font-size:14px;opacity:.78;margin-bottom:12px">Version installée : ${lpCentralEsc(LP_CENTRAL_DISPLAY)}</div>
+        ${mandatory ? '<div style="font-weight:900;margin-bottom:10px">Mise à jour importante</div>' : ''}
+        ${notes ? `<div style="font-size:14px;line-height:1.45;margin-bottom:14px">${lpCentralEsc(notes)}</div>` : ''}
+        <div style="font-size:13px;opacity:.72;margin-bottom:14px">Le téléchargement démarre seulement après votre confirmation afin d’économiser la connexion Internet.</div>
+        <button type="button" id="lpF296014ModalUpdate" class="btn" style="width:100%;min-height:50px;font-weight:900">⬇ Mettre à jour maintenant</button>
+        <button type="button" id="lpF296014ModalLater" class="secondary" style="width:100%;min-height:46px;margin-top:10px">Plus tard</button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const update = document.getElementById('lpF296014ModalUpdate');
+    const later = document.getElementById('lpF296014ModalLater');
+
+    if(update){
+      update.onclick = function(event){
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        lpCentralDownloadFresh();
+      };
+    }
+
+    if(later){
+      later.onclick = function(event){
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        lpCentralCloseModal();
+      };
+    }
+
+    modal.addEventListener('click',function(event){
+      if(event.target === modal){
+        lpCentralCloseModal();
+      }
+    });
+
+    console.log('LP CENTRAL UPDATE DISPONIBLE',remoteTech);
+  }
+
+  async function lpCentralFetch(){
+    const controller = new AbortController();
+    const timer = setTimeout(function(){
+      try{ controller.abort(); }catch(e){}
+    },12000);
+
+    try{
+      const response = await fetch(
+        LP_CENTRAL_ENDPOINT,
+        {
+          method:'GET',
+          cache:'no-store',
+          headers:{
+            'Accept':'application/json',
+            'x-leader-current-version':LP_CENTRAL_TECH_VERSION,
+            'x-leader-update':LP_CENTRAL_GATE
+          },
+          signal:controller.signal
+        }
+      );
+
+      if(!response.ok){
+        throw new Error('HTTP_' + response.status);
+      }
+
+      const data = await response.json();
+      if(!data || data.ok !== true){
+        throw new Error('REPONSE_MASTER_INVALIDE');
+      }
+
+      return data;
+    }finally{
+      clearTimeout(timer);
+    }
+  }
+
+  async function lpCentralCheck(options){
+    const opts = options || {};
+
+    if(lpCentralBusy){
+      return lpCentralLastData;
+    }
+
+    if(!opts.force && !lpCentralShouldAutoCheck()){
+      return lpCentralLastData;
+    }
+
+    lpCentralBusy = true;
+
+    if(opts.manual){
+      lpCentralSetCard(
+        'Vérification sécurisée…',
+        'Connexion au canal privé MASTER PRO.',
+        true
+      );
+    }
+
+    try{
+      const data = await lpCentralFetch();
+      lpCentralLastData = data;
+      lpCentralWriteNumber(LP_CENTRAL_LAST_CHECK,lpCentralNow());
+
+      const available =
+        data.update_available === true ||
+        data.updateAvailable === true;
+
+      if(available){
+        const remote = lpCentralRemoteDisplay(data);
+
+        lpCentralSetCard(
+          'Nouvelle version disponible',
+          'Version installée : ' + LP_CENTRAL_DISPLAY +
+          ' • Version disponible : ' + remote,
+          false
+        );
+
+        lpCentralDownloadButton();
+
+        if(opts.prompt !== false){
+          lpCentralShowModal(data);
+        }
+      }else{
+        lpCentralRemoveDownloadButton();
+
+        lpCentralSetCard(
+          'Application à jour',
+          'Version installée : ' + LP_CENTRAL_DISPLAY +
+          ' • Canal MASTER PRO vérifié',
+          false
+        );
+      }
+
+      return data;
+    }catch(error){
+      if(opts.manual){
+        lpCentralSetCard(
+          'Vérification indisponible',
+          'Aucune modification effectuée. Réessayez lorsque la connexion Internet est disponible.',
+          false
+        );
+      }
+
+      console.warn('LP CENTRAL UPDATE CHECK',error);
+      return null;
+    }finally{
+      lpCentralBusy = false;
+    }
+  }
+
+  async function lpCentralDownloadFresh(){
+    if(lpCentralBusy){
+      return;
+    }
+
+    lpCentralBusy = true;
+
+    try{
+      lpCentralSetCard(
+        'Préparation de la mise à jour…',
+        'Création du lien privé sécurisé.',
+        true
+      );
+
+      const data = await lpCentralFetch();
+      const available =
+        data.update_available === true ||
+        data.updateAvailable === true;
+
+      if(!available){
+        lpCentralCloseModal();
+        lpCentralRemoveDownloadButton();
+        lpCentralSetCard(
+          'Application à jour',
+          'Aucune nouvelle version à télécharger.',
+          false
+        );
+        return;
+      }
+
+      const url = data.download_url || data.downloadUrl || '';
+      if(!lpCentralValidUrl(url)){
+        throw new Error('LIEN_PRIVE_INVALIDE');
+      }
+
+      lpCentralCloseModal();
+
+      try{
+        localStorage.setItem(
+          'lp_master_update_pending_version',
+          lpCentralRemoteTech(data)
+        );
+      }catch(e){}
+
+      console.log('LP CENTRAL UPDATE TELECHARGEMENT DEMARRE');
+      window.location.replace(String(url));
+    }catch(error){
+      lpCentralSetCard(
+        'Téléchargement indisponible',
+        'Le canal privé n’a pas pu préparer le fichier. Réessayez dans quelques instants.',
+        false
+      );
+      console.error('LP CENTRAL UPDATE DOWNLOAD',error);
+    }finally{
+      lpCentralBusy = false;
+    }
+  }
+
+  function lpCentralMountManualButton(){
+    const card = lpCentralCard();
+    if(!card){
+      return false;
+    }
+
+    let current = document.getElementById('lp-master-update-final-button');
+
+    if(!current){
+      current = card.querySelector('#lp-master-update-check, #lp-update-v2-button');
+    }
+
+    if(!current){
+      return false;
+    }
+
+    if(current.dataset.lpCentralUpdate === '1'){
+      return true;
+    }
+
+    const clean = current.cloneNode(true);
+    clean.id = 'lp-master-update-final-button';
+    clean.dataset.lpCentralUpdate = '1';
+    clean.removeAttribute('onclick');
+    clean.disabled = false;
+    clean.textContent = 'Vérifier maintenant';
+    clean.style.opacity = '1';
+
+    current.replaceWith(clean);
+
+    clean.addEventListener(
+      'click',
+      function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        lpCentralCheck({force:true,manual:true,prompt:true});
+      },
+      true
+    );
+
+    return true;
+  }
+
+  function lpCentralScheduleMount(){
+    if(lpCentralTimer){
+      clearTimeout(lpCentralTimer);
+    }
+
+    lpCentralTimer = setTimeout(function(){
+      lpCentralMountManualButton();
+    },80);
+  }
+
+  document.addEventListener(
+    'click',
+    lpCentralScheduleMount,
+    true
+  );
+
+  window.addEventListener(
+    'hashchange',
+    lpCentralScheduleMount
+  );
+
+  window.addEventListener(
+    'online',
+    function(){
+      setTimeout(function(){
+        lpCentralCheck({force:false,manual:false,prompt:true});
+      },1800);
+    }
+  );
+
+  try{
+    const observer = new MutationObserver(lpCentralScheduleMount);
+    observer.observe(document.documentElement,{
+      childList:true,
+      subtree:true
+    });
+  }catch(e){}
+
+  [0,250,700,1500,3000].forEach(function(delay){
+    setTimeout(lpCentralMountManualButton,delay);
+  });
+
+  setTimeout(function(){
+    lpCentralCheck({force:false,manual:false,prompt:true});
+  },8000);
+
+  window.LeaderPharmaCentralUpdate = Object.freeze({
+    version:LP_CENTRAL_TECH_VERSION,
+    check:function(){
+      return lpCentralCheck({force:true,manual:true,prompt:true});
+    },
+    download:lpCentralDownloadFresh
+  });
+
+  console.log(LP_CENTRAL_MARKER);
+})();
+/* LP_F296014_MASTER_UPDATE_CENTRAL_END */
+
+
+/* ============================================================
+   LEADER PHARMA F29.6.0.15
+   MISES A JOUR DANS PARAMETRES UTILISATEURS
+   ------------------------------------------------------------
+   CIBLE UNIQUE :
+   - utilisateurs non DG
+   - page Parametres / Mon compte
+   - affichage du controle MASTER PRO central
+   - aucun menu metier modifie
+   ============================================================ */
+/* LP_F296015_USER_UPDATE_SETTINGS_START */
+(function(){
+  'use strict';
+
+  const LP_USER_UPDATE_MARKER =
+    'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
+
+  const LP_USER_UPDATE_VERSION =
+    'F29.6.0.17 MASTER PRO';
+
+  let lpUserUpdateMountTimer = null;
+  let lpUserUpdateBusy = false;
+
+  function lpUserUpdateIsDG(){
+    try{
+      return String(currentUser?.role || '')
+        .trim()
+        .toLowerCase() === 'dg';
+    }catch(e){
+      return false;
+    }
+  }
+
+  function lpUserUpdateIsSettings(){
+    try{
+      return String(page || '')
+        .trim()
+        .toLowerCase() === 'settings';
+    }catch(e){
+      return false;
+    }
+  }
+
+  function lpUserUpdateContent(){
+    return document.querySelector('#content');
+  }
+
+  function lpUserUpdateState(text){
+    const el =
+      document.getElementById(
+        'lpF296015UserUpdateState'
+      );
+
+    if(el){
+      el.textContent = text;
+    }
+  }
+
+  function lpUserUpdateDetail(text){
+    const el =
+      document.getElementById(
+        'lpF296015UserUpdateDetail'
+      );
+
+    if(el){
+      el.textContent = text;
+    }
+  }
+
+  function lpUserUpdateButtonBusy(busy){
+    const button =
+      document.getElementById(
+        'lpF296015UserUpdateCheck'
+      );
+
+    if(!button){
+      return;
+    }
+
+    button.disabled = !!busy;
+    button.style.opacity =
+      busy ? '.58' : '1';
+
+    button.textContent =
+      busy
+        ? 'Vérification…'
+        : 'Vérifier maintenant';
+  }
+
+  async function lpUserUpdateCheck(){
+    if(lpUserUpdateBusy){
+      return;
+    }
+
+    lpUserUpdateBusy = true;
+    lpUserUpdateButtonBusy(true);
+
+    lpUserUpdateState(
+      'Vérification sécurisée…'
+    );
+
+    lpUserUpdateDetail(
+      'Connexion au canal MASTER PRO.'
+    );
+
+    try{
+      const service =
+        window.LeaderPharmaCentralUpdate;
+
+      if(
+        !service ||
+        typeof service.check !== 'function'
+      ){
+        throw new Error(
+          'SERVICE_MASTER_PRO_INDISPONIBLE'
+        );
+      }
+
+      const data =
+        await service.check();
+
+      if(!data || data.ok !== true){
+        throw new Error(
+          'REPONSE_MASTER_PRO_INVALIDE'
+        );
+      }
+
+      const available =
+        data.update_available === true ||
+        data.updateAvailable === true;
+
+      if(available){
+        const remote =
+          String(
+            data.display_version ||
+            data.displayVersion ||
+            data.technical_version ||
+            data.technicalVersion ||
+            data.version_name ||
+            data.version ||
+            'Nouvelle version'
+          ).trim();
+
+        lpUserUpdateState(
+          'Nouvelle version disponible'
+        );
+
+        lpUserUpdateDetail(
+          'Version installée : ' +
+          LP_USER_UPDATE_VERSION +
+          ' • Version disponible : ' +
+          remote
+        );
+      }else{
+        lpUserUpdateState(
+          'Application à jour'
+        );
+
+        lpUserUpdateDetail(
+          'Version installée : ' +
+          LP_USER_UPDATE_VERSION +
+          ' • Canal MASTER PRO vérifié'
+        );
+      }
+    }catch(error){
+      console.warn(
+        'LP USER UPDATE SETTINGS',
+        error
+      );
+
+      lpUserUpdateState(
+        'Vérification indisponible'
+      );
+
+      lpUserUpdateDetail(
+        'Aucune modification effectuée. Réessayez lorsque la connexion Internet est disponible.'
+      );
+    }finally{
+      lpUserUpdateBusy = false;
+      lpUserUpdateButtonBusy(false);
+    }
+  }
+
+  function lpUserUpdateMount(){
+    if(
+      !currentUser ||
+      lpUserUpdateIsDG() ||
+      !lpUserUpdateIsSettings()
+    ){
+      return false;
+    }
+
+    const root =
+      lpUserUpdateContent();
+
+    if(!root){
+      return false;
+    }
+
+    let panel =
+      document.getElementById(
+        'lpF296015UserUpdatePanel'
+      );
+
+    if(panel){
+      return true;
+    }
+
+    panel =
+      document.createElement('section');
+
+    panel.id =
+      'lpF296015UserUpdatePanel';
+
+    panel.className = 'card';
+
+    panel.style.cssText =
+      'margin-top:16px;';
+
+    panel.innerHTML = `
+      <h3 style="margin-top:0">
+        ⬆ Mise à jour MASTER PRO
+      </h3>
+
+      <div
+        id="lpF296015UserUpdateState"
+        style="
+          font-size:18px;
+          font-weight:800;
+          margin:8px 0;
+        "
+      >
+        Prêt pour vérification
+      </div>
+
+      <div
+        id="lpF296015UserUpdateDetail"
+        class="muted"
+        style="
+          line-height:1.45;
+          margin-bottom:14px;
+        "
+      >
+        Canal officiel MASTER PRO • Supabase sécurisé
+      </div>
+
+      <button
+        type="button"
+        id="lpF296015UserUpdateCheck"
+        class="btn"
+        style="
+          min-height:48px;
+          font-weight:900;
+        "
+      >
+        Vérifier maintenant
+      </button>
+    `;
+
+    root.appendChild(panel);
+
+    const button =
+      document.getElementById(
+        'lpF296015UserUpdateCheck'
+      );
+
+    if(button){
+      button.addEventListener(
+        'click',
+        function(event){
+          event.preventDefault();
+          event.stopPropagation();
+          lpUserUpdateCheck();
+        }
+      );
+    }
+
+    return true;
+  }
+
+  function lpUserUpdateSchedule(){
+    if(lpUserUpdateMountTimer){
+      clearTimeout(
+        lpUserUpdateMountTimer
+      );
+    }
+
+    lpUserUpdateMountTimer =
+      setTimeout(
+        lpUserUpdateMount,
+        80
+      );
+  }
+
+  document.addEventListener(
+    'click',
+    function(){
+      [40,140,350,700].forEach(
+        function(delay){
+          setTimeout(
+            lpUserUpdateMount,
+            delay
+          );
+        }
+      );
+    },
+    true
+  );
+
+  try{
+    const observer =
+      new MutationObserver(
+        lpUserUpdateSchedule
+      );
+
+    observer.observe(
+      document.documentElement,
+      {
+        childList:true,
+        subtree:true
+      }
+    );
+  }catch(e){}
+
+  [0,250,700,1500].forEach(
+    function(delay){
+      setTimeout(
+        lpUserUpdateMount,
+        delay
+      );
+    }
+  );
+
+  window.LeaderPharmaUserUpdateSettings =
+    Object.freeze({
+      mount:lpUserUpdateMount,
+      check:lpUserUpdateCheck,
+      version:LP_USER_UPDATE_VERSION
+    });
+
+  console.log(
+    LP_USER_UPDATE_MARKER
+  );
+})();
+/* LP_F296015_USER_UPDATE_SETTINGS_END */
+
+
+/* ============================================================
+   LEADER PHARMA F29.6.0.16
+   AFFICHAGE UNIQUE MISE A JOUR UTILISATEURS
+   CIBLE UNIQUE : suppression du doublon visuel dans Parametres.
+   ============================================================ */
+console.log('LEADER PHARMA F29.6.0.16 AFFICHAGE UNIQUE UPDATE UTILISATEURS ACTIF');
+
+
+/* ============================================================
+   LEADER PHARMA F29.6.0.17
+   REINITIALISER DONNEES = DG SEUL
+   - DG : bouton conserve et fonctionnel
+   - utilisateurs : bouton retire de Parametres + clic bloque
+   - aucun autre module modifie
+   ============================================================ */
+/* LP_F296017_RESET_DG_ONLY_START */
+(function(){
+  'use strict';
+
+  function lpF296017IsDG(){
+    try{
+      return String(currentUser?.role || '')
+        .trim()
+        .toLowerCase() === 'dg';
+    }catch(e){
+      return false;
+    }
+  }
+
+  function lpF296017IsSettings(){
+    try{
+      return String(page || '')
+        .trim()
+        .toLowerCase() === 'settings';
+    }catch(e){
+      return false;
+    }
+  }
+
+  function lpF296017Clean(){
+    if(!currentUser || lpF296017IsDG() || !lpF296017IsSettings()){
+      return false;
+    }
+
+    const reset = document.getElementById('resetData');
+    if(reset){
+      reset.remove();
+    }
+
+    return true;
+  }
+
+  document.addEventListener(
+    'click',
+    function(event){
+      const t = event.target;
+      if(
+        t &&
+        t.id === 'resetData' &&
+        currentUser &&
+        !lpF296017IsDG()
+      ){
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return false;
+      }
+
+      [0,60,180,450].forEach(function(delay){
+        setTimeout(lpF296017Clean,delay);
+      });
+    },
+    true
+  );
+
+  if(typeof render === 'function'){
+    const lpF296017RenderBase = render;
+    render = function(){
+      const result = lpF296017RenderBase.apply(this,arguments);
+      [0,60,180].forEach(function(delay){
+        setTimeout(lpF296017Clean,delay);
+      });
+      return result;
+    };
+    try{ window.render = render; }catch(e){}
+  }
+
+  [0,180,600].forEach(function(delay){
+    setTimeout(lpF296017Clean,delay);
+  });
+
+  console.log('LEADER PHARMA F29.6.0.17 RESET DONNEES DG SEUL ACTIF');
+})();
+/* LP_F296017_RESET_DG_ONLY_END */
