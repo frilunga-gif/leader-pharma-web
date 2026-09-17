@@ -306,5 +306,220 @@
   })();
   </script>
 
+
+<!-- LEADER PHARMA F29.6.0.17 DG360 FINAL -->
+<script>
+/* LEADER PHARMA F29.6.0.17 - CENTRE DE CONTROLE DG 360 FINAL - LECTURE SEULE */
+(function(){
+  'use strict';
+  if(window.__LP_F296017_DG360_FINAL__) return;
+  window.__LP_F296017_DG360_FINAL__=true;
+
+  const MARK='LEADER PHARMA F29.6.0.17 DG360 FINAL READ ONLY';
+  const norm=v=>{try{return String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}catch(e){return String(v??'').trim().toLowerCase()}};
+  const esc360=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=v=>Number.isFinite(Number(v))?Number(v):0;
+  const fmtMoney=v=>{try{return typeof money==='function'?money(num(v)):new Intl.NumberFormat('fr-CD').format(num(v))+' FC'}catch(e){return num(v)+' FC'}};
+  const dateToday=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+  const hasPhoto=v=>typeof v==='string'&&(v.startsWith('data:image')||v.length>100);
+  const arr=k=>{try{return db&&Array.isArray(db[k])?db[k]:[]}catch(e){return []}};
+
+  function isDG360(){
+    try{
+      if(typeof currentUser!=='undefined'&&currentUser){
+        const r=norm(currentUser.role),u=norm(currentUser.username||currentUser.user||currentUser.login),n=norm(currentUser.name);
+        if(r==='dg'||r.includes('direction')||u==='leader.fr'||n.includes('direction generale')) return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  function isClosedStatus(v){
+    const s=norm(v);
+    return s.includes('paye')||s.includes('annul')||s.includes('solde')||s.includes('ferme')||s.includes('clos');
+  }
+
+  function agencies(){
+    const base=arr('agencies').map(a=>({id:String(a.id??a.agency??''),name:String(a.name??a.nom??a.id??'Agence')})).filter(a=>a.id);
+    if(base.length) return base;
+    const ids=new Set();
+    ['sales','expenses','products','receivables','debts','attendance'].forEach(k=>arr(k).forEach(x=>{if(x&&x.agency!=null)ids.add(String(x.agency))}));
+    return Array.from(ids).map(id=>({id,name:id}));
+  }
+
+  function agentName(r){
+    if(!r) return 'Agent';
+    const direct=r.name||r.agentName||r.employeeName||r.lpUser||r.username||r.user;
+    if(direct) return String(direct);
+    const e=arr('employees').find(x=>String(x.id)===String(r.employeeId));
+    return e?.name||e?.username||'Agent';
+  }
+
+  function stats(){
+    const d=dateToday();
+    const ags=agencies();
+    const validSales=arr('sales').filter(x=>x&&x.date===d&&norm(x.status)!=='annulee'&&!norm(x.status).includes('annul'));
+    const expensesToday=arr('expenses').filter(x=>x&&x.date===d);
+    const products=arr('products');
+    const openRec=arr('receivables').filter(x=>x&&!isClosedStatus(x.status));
+    const openDebt=arr('debts').filter(x=>x&&!isClosedStatus(x.status));
+    const attendance=arr('attendance');
+
+    const now=Date.now(), soon=now+90*86400000;
+    const critical=products.filter(p=>num(p.stock)<=num(p.min));
+    const ruptures=products.filter(p=>num(p.stock)<=0);
+    const expiry=products.filter(p=>{
+      if(!p?.expiry) return false;
+      const t=new Date(p.expiry+'T12:00:00').getTime();
+      return Number.isFinite(t)&&t<=soon;
+    });
+    const expired=products.filter(p=>{
+      if(!p?.expiry) return false;
+      const t=new Date(p.expiry+'T12:00:00').getTime();
+      return Number.isFinite(t)&&t<now;
+    });
+
+    const recentLimit=now-2*86400000;
+    const recentAttendance=attendance.filter(r=>{
+      if(!r?.date) return false;
+      const t=new Date(r.date+'T12:00:00').getTime();
+      return !Number.isFinite(t)||t>=recentLimit;
+    });
+    const missingExit=recentAttendance.filter(r=>r.entry&&!r.exit);
+    const missingExitPhoto=recentAttendance.filter(r=>r.exit&&!hasPhoto(r.exitPhoto));
+
+    const totalRevenue=validSales.reduce((a,x)=>a+num(x.total),0);
+    const totalProfit=validSales.reduce((a,x)=>a+num(x.profit),0);
+    const totalExpenses=expensesToday.reduce((a,x)=>a+num(x.amount),0);
+    const totalRec=openRec.reduce((a,x)=>a+num(x.balance??x.amount),0);
+    const totalDebt=openDebt.reduce((a,x)=>a+num(x.balance??x.amount),0);
+
+    const byAgency=ags.map(a=>{
+      const sales=validSales.filter(x=>String(x.agency)===a.id);
+      const ex=expensesToday.filter(x=>String(x.agency)===a.id);
+      const ps=products.filter(x=>!x.agency||String(x.agency)===a.id);
+      const rec=openRec.filter(x=>String(x.agency)===a.id);
+      const debt=openDebt.filter(x=>String(x.agency)===a.id);
+      const at=recentAttendance.filter(x=>String(x.agency)===a.id);
+      return {
+        id:a.id,name:a.name,
+        revenue:sales.reduce((n,x)=>n+num(x.total),0),
+        profit:sales.reduce((n,x)=>n+num(x.profit),0),
+        expenses:ex.reduce((n,x)=>n+num(x.amount),0),
+        salesCount:sales.length,
+        critical:ps.filter(p=>num(p.stock)<=num(p.min)).length,
+        receivables:rec.reduce((n,x)=>n+num(x.balance??x.amount),0),
+        debts:debt.reduce((n,x)=>n+num(x.balance??x.amount),0),
+        incomplete:at.filter(r=>r.entry&&!r.exit).length,
+        noPhoto:at.filter(r=>r.exit&&!hasPhoto(r.exitPhoto)).length
+      };
+    });
+
+    const alerts=[];
+    byAgency.filter(a=>a.salesCount===0).forEach(a=>alerts.push({level:'warn',title:'Aucune vente aujourd’hui',detail:a.name}));
+    ruptures.slice(0,4).forEach(p=>alerts.push({level:'danger',title:'Rupture de stock',detail:(p.name||'Produit')+' • '+(ags.find(a=>a.id===String(p.agency))?.name||p.agency||'Toutes agences')}));
+    critical.filter(p=>num(p.stock)>0).slice(0,4).forEach(p=>alerts.push({level:'warn',title:'Stock critique',detail:(p.name||'Produit')+' • stock '+num(p.stock)+' / mini '+num(p.min)}));
+    expired.slice(0,3).forEach(p=>alerts.push({level:'danger',title:'Produit périmé',detail:(p.name||'Produit')+' • '+p.expiry}));
+    expiry.filter(p=>!expired.includes(p)).slice(0,3).forEach(p=>alerts.push({level:'warn',title:'Péremption ≤ 90 jours',detail:(p.name||'Produit')+' • '+p.expiry}));
+    missingExit.slice(0,4).forEach(r=>alerts.push({level:'warn',title:'Pointage sans départ',detail:agentName(r)+' • '+r.date}));
+    missingExitPhoto.slice(0,4).forEach(r=>alerts.push({level:'warn',title:'Photo départ manquante',detail:agentName(r)+' • '+r.date+' • '+(r.exit||'') }));
+
+    return {d,ags,byAgency,totalRevenue,totalProfit,totalExpenses,totalRec,totalDebt,critical,ruptures,expiry,expired,missingExit,missingExitPhoto,alerts};
+  }
+
+  function css(){
+    if(document.getElementById('lp-dg360-style')) return;
+    const s=document.createElement('style');
+    s.id='lp-dg360-style';
+    s.textContent=`
+      #lp-dg360-root{display:grid;gap:14px}
+      .lp360-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 16px;background:linear-gradient(135deg,#073b2d,#0b6b4f);color:#fff;border-radius:14px}
+      .lp360-head h3{margin:0;font-size:20px}.lp360-head p{margin:3px 0 0;opacity:.88;font-size:12px}
+      .lp360-badge{display:inline-flex;align-items:center;gap:6px;background:#e8fff5;color:#07583f;border:1px solid #a7ead2;border-radius:999px;padding:6px 10px;font-weight:800;font-size:11px}
+      .lp360-btn{border:0;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;background:#fff;color:#07583f}
+      .lp360-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+      .lp360-card{background:#fff;border:1px solid #e5e7eb;border-radius:13px;padding:12px;box-shadow:0 4px 16px rgba(15,23,42,.06)}
+      .lp360-card small{display:block;color:#64748b;font-weight:700}.lp360-card b{display:block;font-size:19px;margin-top:5px;color:#0f172a}.lp360-card span{font-size:11px;color:#64748b}
+      .lp360-two{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:12px}
+      .lp360-title{margin:0 0 10px;font-size:15px;color:#0f172a}
+      .lp360-tablewrap{overflow:auto}.lp360-table{width:100%;border-collapse:collapse;font-size:12px}.lp360-table th,.lp360-table td{padding:8px 7px;border-bottom:1px solid #eef2f7;text-align:left;white-space:nowrap}.lp360-table th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
+      .lp360-alert{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #eef2f7}.lp360-alert:last-child{border-bottom:0}.lp360-dot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex:0 0 9px;background:#d97706}.lp360-alert.danger .lp360-dot{background:#b91c1c}.lp360-alert strong{font-size:12px;color:#0f172a}.lp360-alert div div{font-size:11px;color:#64748b;margin-top:2px}
+      .lp360-empty{padding:12px;border-radius:10px;background:#f0fdf4;color:#166534;font-size:12px;font-weight:700}
+      #lp-dg360-nav.nav-btn{font-weight:800!important}
+      @media(max-width:1180px){.lp360-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.lp360-two{grid-template-columns:1fr}}
+      @media(max-width:700px){.lp360-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lp360-card b{font-size:16px}.lp360-head{align-items:flex-start}.lp360-table th,.lp360-table td{padding:7px 6px}}
+    `;
+    document.head.appendChild(s);
+  }
+
+  function render360(){
+    if(!isDG360()) return;
+    const root=document.getElementById('content');
+    if(!root) return;
+    css();
+    const s=stats();
+    try{if(typeof setHeader==='function')setHeader('Centre de contrôle DG 360','Pilotage multi-agences • lecture seule • décisions rapides');else{const t=document.getElementById('pageTitle');if(t)t.textContent='Centre de contrôle DG 360'}}catch(e){}
+    const rows=s.byAgency.map(a=>`<tr><td><b>${esc360(a.name)}</b></td><td>${fmtMoney(a.revenue)}</td><td>${fmtMoney(a.profit)}</td><td>${fmtMoney(a.expenses)}</td><td>${a.critical}</td><td>${fmtMoney(a.receivables)}</td><td>${fmtMoney(a.debts)}</td><td>${a.incomplete+a.noPhoto}</td></tr>`).join('');
+    const alertHtml=s.alerts.slice(0,12).map(a=>`<div class="lp360-alert ${a.level==='danger'?'danger':''}"><i class="lp360-dot"></i><div><strong>${esc360(a.title)}</strong><div>${esc360(a.detail)}</div></div></div>`).join('');
+    root.innerHTML=`<div id="lp-dg360-root" data-marker="${MARK}">
+      <div class="lp360-head"><div><div class="lp360-badge">DG 360 • LECTURE SEULE</div><h3>Centre de contrôle Direction Générale</h3><p>${esc360(s.d)} • toutes les agences • actualisé à ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</p></div><button id="lp360-refresh" class="lp360-btn">↻ Actualiser</button></div>
+      <div class="lp360-grid">
+        <div class="lp360-card"><small>Ventes du jour</small><b>${fmtMoney(s.totalRevenue)}</b><span>${s.byAgency.reduce((n,a)=>n+a.salesCount,0)} opération(s)</span></div>
+        <div class="lp360-card"><small>Bénéfice brut</small><b>${fmtMoney(s.totalProfit)}</b><span>toutes agences</span></div>
+        <div class="lp360-card"><small>Dépenses du jour</small><b>${fmtMoney(s.totalExpenses)}</b><span>résultat estimé ${fmtMoney(s.totalProfit-s.totalExpenses)}</span></div>
+        <div class="lp360-card"><small>Stock / péremption</small><b>${s.critical.length} critique(s)</b><span>${s.ruptures.length} rupture(s) • ${s.expiry.length} échéance(s)</span></div>
+        <div class="lp360-card"><small>Créances / dettes</small><b>${fmtMoney(s.totalRec)}</b><span>dettes ${fmtMoney(s.totalDebt)}</span></div>
+      </div>
+      <div class="lp360-two">
+        <div class="lp360-card"><h3 class="lp360-title">Résumé quotidien par agence</h3><div class="lp360-tablewrap"><table class="lp360-table"><thead><tr><th>Agence</th><th>Ventes</th><th>Bénéfice</th><th>Dépenses</th><th>Stock critique</th><th>Créances</th><th>Dettes</th><th>Pointages</th></tr></thead><tbody>${rows||'<tr><td colspan="8">Aucune agence</td></tr>'}</tbody></table></div></div>
+        <div class="lp360-card"><h3 class="lp360-title">À vérifier par le DG</h3>${alertHtml||'<div class="lp360-empty">Aucune alerte prioritaire détectée.</div>'}</div>
+      </div>
+      <div class="lp360-card"><h3 class="lp360-title">Contrôle RH rapide</h3><div class="lp360-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><small>Départs non enregistrés</small><b>${s.missingExit.length}</b></div><div><small>Photos départ manquantes</small><b>${s.missingExitPhoto.length}</b></div><div><small>Agences sans vente aujourd’hui</small><b>${s.byAgency.filter(a=>a.salesCount===0).length}</b></div></div></div>
+    </div>`;
+    const btn=document.getElementById('lp360-refresh');
+    if(btn) btn.onclick=()=>render360();
+  }
+
+  function ensureButton(){
+    const nav=document.getElementById('nav');
+    if(!nav) return;
+    if(!isDG360()){
+      document.getElementById('lp-dg360-nav')?.remove();
+      return;
+    }
+    let b=document.getElementById('lp-dg360-nav');
+    if(!b){
+      b=document.createElement('button');
+      b.id='lp-dg360-nav';
+      b.type='button';
+      b.className='nav-btn';
+      b.textContent='DG 360';
+      b.title='Centre de contrôle DG 360';
+      b.onclick=e=>{e.preventDefault();e.stopPropagation();window.__LP_DG360_ACTIVE__=true;render360()};
+      const target=Array.from(nav.querySelectorAll('.nav-btn')).find(x=>norm(x.textContent).includes('controle dg'));
+      if(target&&target.nextSibling) nav.insertBefore(b,target.nextSibling); else if(target) nav.appendChild(b); else nav.prepend(b);
+    }
+  }
+
+  document.addEventListener('click',e=>{
+    const b=e.target?.closest?.('#nav .nav-btn');
+    if(b&&b.id!=='lp-dg360-nav') window.__LP_DG360_ACTIVE__=false;
+  },true);
+
+  let t=null;
+  function tick(){
+    clearTimeout(t);
+    t=setTimeout(()=>{
+      css();ensureButton();
+      if(window.__LP_DG360_ACTIVE__&&isDG360()&&!document.getElementById('lp-dg360-root')) render360();
+    },80);
+  }
+  css();tick();
+  try{new MutationObserver(tick).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}
+  window.lpF296017DG360Render=render360;
+  window.lpF296017DG360Marker=MARK;
+})();
+
+</script>
 </body>
 </html>
