@@ -148115,3 +148115,154 @@ console.log('LEADER PHARMA F29.6.0.16 AFFICHAGE UNIQUE UPDATE UTILISATEURS ACTIF
   console.log('LEADER PHARMA F29.6.0.17 RESET DONNEES DG SEUL ACTIF');
 })();
 /* LP_F296017_RESET_DG_ONLY_END */
+
+
+/* ============================================================
+   LEADER PHARMA F29.6.0.17
+   SUPABASE EGRESS MAITRISE - ETAT APPLICATION
+   - conserve les synchronisations et modules existants
+   - remplace les lectures completes repetees par un test updated_at leger
+   - telecharge le gros snapshot seulement si Supabase a reellement change
+   - rafraichissement complet de securite au plus tard toutes les 30 minutes
+   - aucun changement ventes / stock / RH / pointage / impression
+   ============================================================ */
+(function(){
+  'use strict';
+
+  const MARK='LEADER PHARMA F29.6.0.17 SUPABASE EGRESS MAITRISE ACTIF';
+  if(window.__LP_F296017_EGRESS_MASTER__) return;
+  window.__LP_F296017_EGRESS_MASTER__=true;
+
+  try{
+    if(typeof sbSchema==='function' && !sbSchema.__lpEgressWrapped){
+      const baseSchema=sbSchema;
+      let schemaPromise=null;
+
+      const wrappedSchema=async function(){
+        if(schemaPromise) return schemaPromise;
+        schemaPromise=Promise.resolve()
+          .then(()=>baseSchema())
+          .catch(err=>{
+            schemaPromise=null;
+            throw err;
+          });
+        return schemaPromise;
+      };
+      wrappedSchema.__lpEgressWrapped=true;
+      sbSchema=wrappedSchema;
+      try{window.sbSchema=sbSchema;}catch(e){}
+    }
+  }catch(e){
+    console.warn('LP EGRESS schema cache',e);
+  }
+
+  try{
+    if(typeof __lpRemoteMeta==='function' && !__lpRemoteMeta.__lpEgressWrapped){
+      const baseMeta=__lpRemoteMeta;
+      let cachedMeta=null;
+      let cachedStamp='';
+      let lastFullAt=0;
+      let metaInFlight=null;
+      let stampInFlight=null;
+      const FORCE_FULL_MS=30*60*1000;
+
+      async function lightStamp(){
+        if(stampInFlight) return stampInFlight;
+
+        stampInFlight=(async function(){
+          try{
+            if(
+              typeof SUPABASE==='undefined' ||
+              !SUPABASE ||
+              !SUPABASE.url ||
+              !SUPABASE.table ||
+              typeof sbHeaders!=='function'
+            ){
+              return '';
+            }
+
+            const base=String(SUPABASE.url).replace(/\/+$/,'');
+            const table=encodeURIComponent(String(SUPABASE.table));
+            const q=new URLSearchParams();
+            q.set('select','updated_at');
+            q.set('reference_locale','eq.lpmp_v13');
+            q.set('order','updated_at.desc');
+            q.set('limit','1');
+
+            const r=await fetch(
+              base+'/rest/v1/'+table+'?'+q.toString(),
+              {method:'GET',headers:sbHeaders()}
+            );
+
+            if(!r.ok) return '';
+            const rows=await r.json();
+            if(!Array.isArray(rows) || !rows.length) return '';
+            return String(rows[0]?.updated_at || '');
+          }catch(e){
+            return '';
+          }finally{
+            stampInFlight=null;
+          }
+        })();
+
+        return stampInFlight;
+      }
+
+      const wrappedMeta=async function(){
+        if(metaInFlight) return metaInFlight;
+
+        metaInFlight=(async function(){
+          try{
+            const now=Date.now();
+            const stamp=await lightStamp();
+
+            if(
+              cachedMeta &&
+              stamp &&
+              cachedStamp &&
+              stamp===cachedStamp &&
+              (now-lastFullAt)<FORCE_FULL_MS
+            ){
+              return cachedMeta;
+            }
+
+            const meta=await baseMeta();
+            cachedMeta=meta;
+            cachedStamp=String(
+              meta && meta.rows && meta.rows[0]
+                ? (meta.rows[0].updated_at || stamp || '')
+                : (stamp || '')
+            );
+            lastFullAt=Date.now();
+            return meta;
+          }catch(err){
+            /* En cas de doute reseau, on garde le comportement d'origine. */
+            const meta=await baseMeta();
+            cachedMeta=meta;
+            cachedStamp=String(
+              meta && meta.rows && meta.rows[0]
+                ? (meta.rows[0].updated_at || '')
+                : ''
+            );
+            lastFullAt=Date.now();
+            return meta;
+          }finally{
+            metaInFlight=null;
+          }
+        })();
+
+        return metaInFlight;
+      };
+
+      wrappedMeta.__lpEgressWrapped=true;
+      wrappedMeta.__lpEgressBase=baseMeta;
+      __lpRemoteMeta=wrappedMeta;
+      try{window.__lpRemoteMeta=__lpRemoteMeta;}catch(e){}
+    }
+  }catch(e){
+    console.warn('LP EGRESS remote meta',e);
+  }
+
+  console.log(MARK);
+})();
+

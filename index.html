@@ -357,13 +357,22 @@
 
   function stats(){
     const d=dateToday();
-    const ags=agencies();
-    const validSales=arr('sales').filter(x=>x&&x.date===d&&norm(x.status)!=='annulee'&&!norm(x.status).includes('annul'));
-    const expensesToday=arr('expenses').filter(x=>x&&x.date===d);
-    const products=arr('products');
-    const openRec=arr('receivables').filter(x=>x&&!isClosedStatus(x.status));
-    const openDebt=arr('debts').filter(x=>x&&!isClosedStatus(x.status));
-    const attendance=arr('attendance');
+    /* LEADER PHARMA F29.6.0.17 DG360 AGENCE STRICTE ACTIF */
+    let selectedAgency='';
+    try{ selectedAgency=String(typeof currentAgency!=='undefined'?currentAgency:'').trim(); }catch(e){}
+
+    const allAgs=agencies();
+    const ags=selectedAgency
+      ? allAgs.filter(a=>String(a.id)===selectedAgency)
+      : allAgs;
+
+    const inAgency=x=>!selectedAgency||String(x?.agency??x?.agence??'')===selectedAgency;
+    const validSales=arr('sales').filter(x=>x&&x.date===d&&inAgency(x)&&norm(x.status)!=='annulee'&&!norm(x.status).includes('annul'));
+    const expensesToday=arr('expenses').filter(x=>x&&x.date===d&&inAgency(x));
+    const products=arr('products').filter(x=>x&&(!selectedAgency||!x.agency||String(x.agency)===selectedAgency));
+    const openRec=arr('receivables').filter(x=>x&&inAgency(x)&&!isClosedStatus(x.status));
+    const openDebt=arr('debts').filter(x=>x&&inAgency(x)&&!isClosedStatus(x.status));
+    const attendance=arr('attendance').filter(x=>x&&inAgency(x));
 
     const now=Date.now(), soon=now+90*86400000;
     const critical=products.filter(p=>num(p.stock)<=num(p.min));
@@ -474,10 +483,10 @@
     const userRows=s.byUser.map(u=>`<tr><td><b>${esc360(u.user)}</b></td><td>${u.count}</td><td>${fmtMoney(u.amount)}</td></tr>`).join('');
     const alertHtml=s.alerts.slice(0,12).map(a=>`<div class="lp360-alert ${a.level==='danger'?'danger':''}"><i class="lp360-dot"></i><div><strong>${esc360(a.title)}</strong><div>${esc360(a.detail)}</div></div></div>`).join('');
     root.innerHTML=`<div id="lp-dg360-root" data-marker="${MARK}">
-      <div class="lp360-head"><div><div class="lp360-badge">DG 360 • LECTURE SEULE</div><h3>Centre de contrôle Direction Générale</h3><p>${esc360(s.d)} • toutes les agences • actualisé à ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</p></div><button id="lp360-refresh" class="lp360-btn">↻ Actualiser</button></div>
+      <div class="lp360-head"><div><div class="lp360-badge">DG 360 • LECTURE SEULE</div><h3>Centre de contrôle Direction Générale</h3><p>${esc360(s.d)} • agence sélectionnée • actualisé à ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</p></div><button id="lp360-refresh" class="lp360-btn">↻ Actualiser</button></div>
       <div class="lp360-grid">
         <div class="lp360-card"><small>Ventes du jour</small><b>${fmtMoney(s.totalRevenue)}</b><span>${s.byAgency.reduce((n,a)=>n+a.salesCount,0)} opération(s)</span></div>
-        <div class="lp360-card"><small>Bénéfice brut</small><b>${fmtMoney(s.totalProfit)}</b><span>toutes agences</span></div>
+        <div class="lp360-card"><small>Bénéfice brut</small><b>${fmtMoney(s.totalProfit)}</b><span>agence sélectionnée</span></div>
         <div class="lp360-card"><small>Dépenses du jour</small><b>${fmtMoney(s.totalExpenses)}</b><span>résultat estimé ${fmtMoney(s.totalProfit-s.totalExpenses)}</span></div>
         <div class="lp360-card"><small>Stock / péremption</small><b>${s.critical.length} critique(s)</b><span>${s.ruptures.length} rupture(s) • ${s.expiry.length} échéance(s)</span></div>
         <div class="lp360-card"><small>Créances / dettes</small><b>${fmtMoney(s.totalRec)}</b><span>dettes ${fmtMoney(s.totalDebt)}</span></div>
@@ -562,6 +571,7 @@
   try{new MutationObserver(tick).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}
   window.lpF296017DG360Render=render360;
   window.lpF296017DG360Marker=MARK;
+  window.lpF296017DG360AgencyStrict='LEADER PHARMA F29.6.0.17 DG360 AGENCE STRICTE ACTIF';
 })();
 
 </script>
