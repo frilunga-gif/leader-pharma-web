@@ -1,0 +1,228 @@
+name: Leader Pharma F29.6.0.17 WEB SUPABASE EGRESS MAITRISE
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  corriger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot Web
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verifier base Web validee
+        run: |
+          set -euo pipefail
+          test -s app.js
+          test -s index.html
+          test -s styles.css
+          test -s dg-security.js
+
+          node --check app.js
+          node --check dg-security.js
+
+          grep -Fq "LEADER PHARMA F29.6.0.17 RESET DONNEES DG SEUL ACTIF" app.js
+          grep -Fq "CENTRE DE CONTROLE DG 360 FINAL" index.html
+          grep -Fq "Actualisation..." index.html
+
+          sha256sum index.html > /tmp/index.sha
+          sha256sum styles.css > /tmp/styles.sha
+          sha256sum dg-security.js > /tmp/security.sha
+
+          echo "BASE WEB DG360 10/10 = OK"
+
+      - name: Ajouter uniquement protection Egress Supabase
+        run: |
+          set -euo pipefail
+
+          if grep -Fq "LEADER PHARMA F29.6.0.17 SUPABASE EGRESS MAITRISE ACTIF" app.js; then
+            echo "Correctif Egress deja present."
+            exit 0
+          fi
+
+          cat >> app.js <<'LP_EGRESS_PATCH'
+
+/* ============================================================
+   LEADER PHARMA F29.6.0.17
+   SUPABASE EGRESS MAITRISE - ETAT APPLICATION
+   - conserve les synchronisations et modules existants
+   - remplace les lectures completes repetees par un test updated_at leger
+   - telecharge le gros snapshot seulement si Supabase a reellement change
+   - rafraichissement complet de securite au plus tard toutes les 30 minutes
+   - aucun changement ventes / stock / RH / pointage / impression
+   ============================================================ */
+(function(){
+  'use strict';
+
+  const MARK='LEADER PHARMA F29.6.0.17 SUPABASE EGRESS MAITRISE ACTIF';
+  if(window.__LP_F296017_EGRESS_MASTER__) return;
+  window.__LP_F296017_EGRESS_MASTER__=true;
+
+  try{
+    if(typeof sbSchema==='function' && !sbSchema.__lpEgressWrapped){
+      const baseSchema=sbSchema;
+      let schemaPromise=null;
+
+      const wrappedSchema=async function(){
+        if(schemaPromise) return schemaPromise;
+        schemaPromise=Promise.resolve()
+          .then(()=>baseSchema())
+          .catch(err=>{
+            schemaPromise=null;
+            throw err;
+          });
+        return schemaPromise;
+      };
+      wrappedSchema.__lpEgressWrapped=true;
+      sbSchema=wrappedSchema;
+      try{window.sbSchema=sbSchema;}catch(e){}
+    }
+  }catch(e){
+    console.warn('LP EGRESS schema cache',e);
+  }
+
+  try{
+    if(typeof __lpRemoteMeta==='function' && !__lpRemoteMeta.__lpEgressWrapped){
+      const baseMeta=__lpRemoteMeta;
+      let cachedMeta=null;
+      let cachedStamp='';
+      let lastFullAt=0;
+      let metaInFlight=null;
+      let stampInFlight=null;
+      const FORCE_FULL_MS=30*60*1000;
+
+      async function lightStamp(){
+        if(stampInFlight) return stampInFlight;
+
+        stampInFlight=(async function(){
+          try{
+            if(
+              typeof SUPABASE==='undefined' ||
+              !SUPABASE ||
+              !SUPABASE.url ||
+              !SUPABASE.table ||
+              typeof sbHeaders!=='function'
+            ){
+              return '';
+            }
+
+            const base=String(SUPABASE.url).replace(/\/+$/,'');
+            const table=encodeURIComponent(String(SUPABASE.table));
+            const q=new URLSearchParams();
+            q.set('select','updated_at');
+            q.set('reference_locale','eq.lpmp_v13');
+            q.set('order','updated_at.desc');
+            q.set('limit','1');
+
+            const r=await fetch(
+              base+'/rest/v1/'+table+'?'+q.toString(),
+              {method:'GET',headers:sbHeaders()}
+            );
+
+            if(!r.ok) return '';
+            const rows=await r.json();
+            if(!Array.isArray(rows) || !rows.length) return '';
+            return String(rows[0]?.updated_at || '');
+          }catch(e){
+            return '';
+          }finally{
+            stampInFlight=null;
+          }
+        })();
+
+        return stampInFlight;
+      }
+
+      const wrappedMeta=async function(){
+        if(metaInFlight) return metaInFlight;
+
+        metaInFlight=(async function(){
+          try{
+            const now=Date.now();
+            const stamp=await lightStamp();
+
+            if(
+              cachedMeta &&
+              stamp &&
+              cachedStamp &&
+              stamp===cachedStamp &&
+              (now-lastFullAt)<FORCE_FULL_MS
+            ){
+              return cachedMeta;
+            }
+
+            const meta=await baseMeta();
+            cachedMeta=meta;
+            cachedStamp=String(
+              meta && meta.rows && meta.rows[0]
+                ? (meta.rows[0].updated_at || stamp || '')
+                : (stamp || '')
+            );
+            lastFullAt=Date.now();
+            return meta;
+          }catch(err){
+            /* En cas de doute reseau, on garde le comportement d'origine. */
+            const meta=await baseMeta();
+            cachedMeta=meta;
+            cachedStamp=String(
+              meta && meta.rows && meta.rows[0]
+                ? (meta.rows[0].updated_at || '')
+                : ''
+            );
+            lastFullAt=Date.now();
+            return meta;
+          }finally{
+            metaInFlight=null;
+          }
+        })();
+
+        return metaInFlight;
+      };
+
+      wrappedMeta.__lpEgressWrapped=true;
+      wrappedMeta.__lpEgressBase=baseMeta;
+      __lpRemoteMeta=wrappedMeta;
+      try{window.__lpRemoteMeta=__lpRemoteMeta;}catch(e){}
+    }
+  }catch(e){
+    console.warn('LP EGRESS remote meta',e);
+  }
+
+  console.log(MARK);
+})();
+
+LP_EGRESS_PATCH
+
+          node --check app.js
+          grep -Fq "LEADER PHARMA F29.6.0.17 SUPABASE EGRESS MAITRISE ACTIF" app.js
+
+          test "$(sha256sum index.html | awk '{print $1}')" = "$(awk '{print $1}' /tmp/index.sha)"
+          test "$(sha256sum styles.css | awk '{print $1}')" = "$(awk '{print $1}' /tmp/styles.sha)"
+          test "$(sha256sum dg-security.js | awk '{print $1}')" = "$(awk '{print $1}' /tmp/security.sha)"
+
+          echo "APP.JS = EGRESS MAITRISE"
+          echo "INDEX / STYLES / SECURITE = INCHANGES"
+
+      - name: Commit correctif Egress
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet; then
+            echo "Aucun changement a publier."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add app.js
+          git commit -m "F29.6.0.17 maitriser egress Supabase"
+          git push origin HEAD:main
+
+          echo "WEB EGRESS MAITRISE = PUBLIE"
