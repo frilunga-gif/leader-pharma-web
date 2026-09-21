@@ -148266,3 +148266,43 @@ console.log('LEADER PHARMA F29.6.0.16 AFFICHAGE UNIQUE UPDATE UTILISATEURS ACTIF
   console.log(MARK);
 })();
 
+/* LP_F296017_DG_QUOTA_402_OFFLINE_SECURE_START */
+(function(){
+  'use strict';
+
+  const MARK =
+    'LEADER PHARMA F29.6.0.17 DG QUOTA 402 OFFLINE SECURE ACTIF';
+
+  if(window.__LP_F296017_DG_QUOTA_402_OFFLINE_SECURE__){
+    return;
+  }
+
+  window.__LP_F296017_DG_QUOTA_402_OFFLINE_SECURE__ = true;
+
+  const baseFetch = window.fetch.bind(window);
+
+  window.fetch = async function(input, init){
+    const response = await baseFetch(input, init);
+
+    const url =
+      typeof input === 'string'
+        ? input
+        : String(input && input.url ? input.url : '');
+
+    if(
+      response &&
+      response.status === 402 &&
+      url.includes('/auth/v1/token') &&
+      url.includes('grant_type=password')
+    ){
+      throw new TypeError(
+        'Supabase quota 402 - bascule DG hors ligne securisee'
+      );
+    }
+
+    return response;
+  };
+
+  console.log(MARK);
+})();
+/* LP_F296017_DG_QUOTA_402_OFFLINE_SECURE_END */
