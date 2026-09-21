@@ -1,0 +1,47 @@
+name: Leader Pharma F29.6.0.17 WEB DG QUOTA 402 OFFLINE SECURE FIX2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  corriger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ajouter secours DG quota 402
+        shell: bash
+        run: |
+          set -euo pipefail
+          MARKER="LEADER PHARMA F29.6.0.17 DG QUOTA 402 OFFLINE SECURE ACTIF"
+
+          grep -Fq "LEADER PHARMA F29.6.0.17 SUPABASE EGRESS MAITRISE ACTIF" app.js
+          grep -Fq "LEADER PHARMA F29.6.0.17 RESET DONNEES DG SEUL ACTIF" app.js
+
+          if ! grep -Fq "$MARKER" app.js; then
+            printf '%s' 'LyogTFBfRjI5NjAxN19ER19RVU9UQV80MDJfT0ZGTElORV9TRUNVUkVfU1RBUlQgKi8KKGZ1bmN0aW9uKCl7CiAgJ3VzZSBzdHJpY3QnOwoKICBjb25zdCBNQVJLID0KICAgICdMRUFERVIgUEhBUk1BIEYyOS42LjAuMTcgREcgUVVPVEEgNDAyIE9GRkxJTkUgU0VDVVJFIEFDVElGJzsKCiAgaWYod2luZG93Ll9fTFBfRjI5NjAxN19ER19RVU9UQV80MDJfT0ZGTElORV9TRUNVUkVfXyl7CiAgICByZXR1cm47CiAgfQoKICB3aW5kb3cuX19MUF9GMjk2MDE3X0RHX1FVT1RBXzQwMl9PRkZMSU5FX1NFQ1VSRV9fID0gdHJ1ZTsKCiAgY29uc3QgYmFzZUZldGNoID0gd2luZG93LmZldGNoLmJpbmQod2luZG93KTsKCiAgd2luZG93LmZldGNoID0gYXN5bmMgZnVuY3Rpb24oaW5wdXQsIGluaXQpewogICAgY29uc3QgcmVzcG9uc2UgPSBhd2FpdCBiYXNlRmV0Y2goaW5wdXQsIGluaXQpOwoKICAgIGNvbnN0IHVybCA9CiAgICAgIHR5cGVvZiBpbnB1dCA9PT0gJ3N0cmluZycKICAgICAgICA/IGlucHV0CiAgICAgICAgOiBTdHJpbmcoaW5wdXQgJiYgaW5wdXQudXJsID8gaW5wdXQudXJsIDogJycpOwoKICAgIGlmKAogICAgICByZXNwb25zZSAmJgogICAgICByZXNwb25zZS5zdGF0dXMgPT09IDQwMiAmJgogICAgICB1cmwuaW5jbHVkZXMoJy9hdXRoL3YxL3Rva2VuJykgJiYKICAgICAgdXJsLmluY2x1ZGVzKCdncmFudF90eXBlPXBhc3N3b3JkJykKICAgICl7CiAgICAgIHRocm93IG5ldyBUeXBlRXJyb3IoCiAgICAgICAgJ1N1cGFiYXNlIHF1b3RhIDQwMiAtIGJhc2N1bGUgREcgaG9ycyBsaWduZSBzZWN1cmlzZWUnCiAgICAgICk7CiAgICB9CgogICAgcmV0dXJuIHJlc3BvbnNlOwogIH07CgogIGNvbnNvbGUubG9nKE1BUkspOwp9KSgpOwovKiBMUF9GMjk2MDE3X0RHX1FVT1RBXzQwMl9PRkZMSU5FX1NFQ1VSRV9FTkQgKi8K' | base64 --decode >> app.js
+          fi
+
+          grep -Fq "$MARKER" app.js
+          node --check app.js
+
+      - name: Commit et push
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- app.js; then
+            echo "Correctif deja present"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js
+          git commit -m "fix: DG secure offline fallback on Supabase 402 quota"
+          git push
