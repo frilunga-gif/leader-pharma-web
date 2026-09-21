@@ -1,0 +1,72 @@
+name: Leader Pharma F29.6.0.17 WEB DG QUOTA OFFLINE SECURE FIX3
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  corriger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Corriger le basculement DG si Supabase est restreint
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+
+          p = Path("app.js")
+          s = p.read_text(encoding="utf-8")
+
+          old = base64.b64decode("ICAgIGlmKAogICAgICAhcmVzcG9uc2Uub2sKICAgICAgfHwKICAgICAgIWRhdGEKICAgICAgfHwKICAgICAgIWRhdGEuYWNjZXNzX3Rva2VuCiAgICApewoKICAgICAgdGhyb3cgbmV3IEVycm9yKAogICAgICAgICJNb3QgZGUgcGFzc2UgREcgaW5jb3JyZWN0LiIKICAgICAgKTsKICAgIH0=").decode("utf-8")
+          new = base64.b64decode("ICAgIGlmKAogICAgICAhcmVzcG9uc2Uub2sKICAgICAgfHwKICAgICAgIWRhdGEKICAgICAgfHwKICAgICAgIWRhdGEuYWNjZXNzX3Rva2VuCiAgICApewoKICAgICAgY29uc3Qgc3RhdHVzID0KICAgICAgICBOdW1iZXIoCiAgICAgICAgICByZXNwb25zZSAmJgogICAgICAgICAgcmVzcG9uc2Uuc3RhdHVzCiAgICAgICAgICAgID8gcmVzcG9uc2Uuc3RhdHVzCiAgICAgICAgICAgIDogMAogICAgICAgICk7CgogICAgICBjb25zdCBlcnJvckNvZGUgPQogICAgICAgIFN0cmluZygKICAgICAgICAgIGRhdGEgJiYKICAgICAgICAgICgKICAgICAgICAgICAgZGF0YS5lcnJvcl9jb2RlCiAgICAgICAgICAgIHx8CiAgICAgICAgICAgIGRhdGEuY29kZQogICAgICAgICAgICB8fAogICAgICAgICAgICAiIgogICAgICAgICAgKQogICAgICAgICkKICAgICAgICAudHJpbSgpCiAgICAgICAgLnRvTG93ZXJDYXNlKCk7CgogICAgICBjb25zdCBlcnJvclRleHQgPQogICAgICAgIFN0cmluZygKICAgICAgICAgIGRhdGEgJiYKICAgICAgICAgICgKICAgICAgICAgICAgZGF0YS5tc2cKICAgICAgICAgICAgfHwKICAgICAgICAgICAgZGF0YS5tZXNzYWdlCiAgICAgICAgICAgIHx8CiAgICAgICAgICAgIGRhdGEuZXJyb3JfZGVzY3JpcHRpb24KICAgICAgICAgICAgfHwKICAgICAgICAgICAgZGF0YS5lcnJvcgogICAgICAgICAgICB8fAogICAgICAgICAgICAiIgogICAgICAgICAgKQogICAgICAgICkKICAgICAgICAudHJpbSgpCiAgICAgICAgLnRvTG93ZXJDYXNlKCk7CgogICAgICBjb25zdCBpbnZhbGlkQ3JlZGVudGlhbHMgPQogICAgICAgICgKICAgICAgICAgIHN0YXR1cyA9PT0gNDAwCiAgICAgICAgICAmJgogICAgICAgICAgKAogICAgICAgICAgICBlcnJvckNvZGUuaW5jbHVkZXMoCiAgICAgICAgICAgICAgImludmFsaWRfY3JlZGVudGlhbHMiCiAgICAgICAgICAgICkKICAgICAgICAgICAgfHwKICAgICAgICAgICAgZXJyb3JUZXh0LmluY2x1ZGVzKAogICAgICAgICAgICAgICJpbnZhbGlkIGxvZ2luIGNyZWRlbnRpYWxzIgogICAgICAgICAgICApCiAgICAgICAgICAgIHx8CiAgICAgICAgICAgIGVycm9yVGV4dC5pbmNsdWRlcygKICAgICAgICAgICAgICAiaW52YWxpZCBjcmVkZW50aWFscyIKICAgICAgICAgICAgKQogICAgICAgICAgKQogICAgICAgICk7CgogICAgICBpZigKICAgICAgICAhaW52YWxpZENyZWRlbnRpYWxzCiAgICAgICl7CiAgICAgICAgdGhyb3cgbmV3IFR5cGVFcnJvcigKICAgICAgICAgICJTdXBhYmFzZSBpbmRpc3BvbmlibGUgLSBiYXNjdWxlIERHIGhvcnMgbGlnbmUgc8OpY3VyaXPDqWUiCiAgICAgICAgKTsKICAgICAgfQoKICAgICAgdGhyb3cgbmV3IEVycm9yKAogICAgICAgICJNb3QgZGUgcGFzc2UgREcgaW5jb3JyZWN0LiIKICAgICAgKTsKICAgIH0=").decode("utf-8")
+
+          marker = "LEADER PHARMA F29.6.0.17 DG QUOTA OFFLINE SECURE FIX3 ACTIF"
+
+          if marker not in s:
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f"ERREUR: bloc DG attendu trouve {count} fois")
+
+              s = s.replace(old, new, 1)
+              s += "\n/* " + marker + " */\n"
+              p.write_text(s, encoding="utf-8")
+              print("FIX3 AJOUTE")
+          else:
+              print("FIX3 DEJA PRESENT")
+
+          out = p.read_text(encoding="utf-8")
+          assert marker in out
+          assert "invalid_credentials" in out
+          assert "Supabase indisponible - bascule DG hors ligne sécurisée" in out
+          assert "LEADER PHARMA F29.6.0.17 SUPABASE EGRESS MAITRISE ACTIF" in out
+          assert "LEADER PHARMA F29.6.0.17 RESET DONNEES DG SEUL ACTIF" in out
+          PY
+
+          node --check app.js
+
+      - name: Commit et push
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- app.js; then
+            echo "Correctif deja present"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js
+          git commit -m "fix: DG offline fallback when Supabase auth is restricted"
+          git push
