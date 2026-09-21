@@ -114194,6 +114194,73 @@ console.log(
       !data.access_token
     ){
 
+      const status =
+        Number(
+          response &&
+          response.status
+            ? response.status
+            : 0
+        );
+
+      const errorCode =
+        String(
+          data &&
+          (
+            data.error_code
+            ||
+            data.code
+            ||
+            ""
+          )
+        )
+        .trim()
+        .toLowerCase();
+
+      const errorText =
+        String(
+          data &&
+          (
+            data.msg
+            ||
+            data.message
+            ||
+            data.error_description
+            ||
+            data.error
+            ||
+            ""
+          )
+        )
+        .trim()
+        .toLowerCase();
+
+      const invalidCredentials =
+        (
+          status === 400
+          &&
+          (
+            errorCode.includes(
+              "invalid_credentials"
+            )
+            ||
+            errorText.includes(
+              "invalid login credentials"
+            )
+            ||
+            errorText.includes(
+              "invalid credentials"
+            )
+          )
+        );
+
+      if(
+        !invalidCredentials
+      ){
+        throw new TypeError(
+          "Supabase indisponible - bascule DG hors ligne sécurisée"
+        );
+      }
+
       throw new Error(
         "Mot de passe DG incorrect."
       );
@@ -148306,3 +148373,5 @@ console.log('LEADER PHARMA F29.6.0.16 AFFICHAGE UNIQUE UPDATE UTILISATEURS ACTIF
   console.log(MARK);
 })();
 /* LP_F296017_DG_QUOTA_402_OFFLINE_SECURE_END */
+
+/* LEADER PHARMA F29.6.0.17 DG QUOTA OFFLINE SECURE FIX3 ACTIF */
