@@ -1008,10 +1008,10 @@ function productsHere(){return db.products.filter(p=>!p.agency||p.agency===curre
 function dashboard(){setHeader('Tableau de bord Direction','Vue synthétique de '+agencyName());const s=db.sales.filter(x=>x.agency===currentAgency&&x.date===today()),rev=s.reduce((a,x)=>a+x.total,0),profit=s.reduce((a,x)=>a+x.profit,0),exp=db.expenses.filter(x=>x.agency===currentAgency&&x.date===today()).reduce((a,x)=>a+x.amount,0),low=productsHere().filter(p=>p.stock<=p.min).length,credits=db.receivables.filter(x=>x.agency===currentAgency&&x.status!=='Payé').reduce((a,x)=>a+x.balance,0);$('#content').innerHTML=`<div class="grid kpis"><div class="card kpi"><div class="label">Ventes du jour</div><div class="value">${money(rev)}</div></div><div class="card kpi"><div class="label">Bénéfice brut</div><div class="value">${money(profit)}</div></div><div class="card kpi"><div class="label">Dépenses du jour</div><div class="value">${money(exp)}</div></div><div class="card kpi"><div class="label">Créances ouvertes</div><div class="value">${money(credits)}</div></div></div><div class="grid two-col" style="margin-top:16px"><div class="card"><h3>Dernières ventes</h3>${salesTable(s.slice(-7).reverse())}</div><div class="card"><h3>Alertes opérationnelles</h3><div class="list"><div class="list-item"><span>Stock critique</span><b>${low}</b></div><div class="list-item"><span>Transferts en attente</span><b>${db.transfers.filter(x=>x.status==='En attente').length}</b></div><div class="list-item"><span>Version</span><b>V${db.version}</b></div></div></div></div>`}
 function salesTable(rows){return `<table><thead><tr><th>Facture</th><th>Date</th><th>Total</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.invoice)}</td><td>${x.date}</td><td>${money(x.total)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">Aucune vente</td></tr>'}</tbody></table>`}
 function sales(){setHeader('Ventes & facturation','Caisse, vendeurs, facture et impression');$('#content').innerHTML=`<div class="sale-layout"><div class="card"><div class="toolbar"><input id="productSearch" placeholder="Rechercher un produit..."></div><div id="productGrid" class="product-grid"></div></div><div class="card"><div class="section-title"><h3>Panier</h3><button class="secondary" id="clearCart">Vider</button></div><div id="cart"></div><div class="field"><label>Client</label><select id="saleClient">${db.clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label>Vendeur</label><input id="seller" value="${esc(currentUser?.name||currentUser?.username||'')}"></div><div class="field"><label>Paiement</label><select id="payment"><option>Espèces</option><option>Mobile Money</option><option>Carte</option><option>Crédit</option></select></div><div id="cartTotal" class="total">0 FC</div><button class="btn" id="checkout" style="width:100%;margin-top:12px">Valider & générer facture</button></div></div>`;$('#productSearch').oninput=e=>drawProducts(e.target.value);$('#clearCart').onclick=()=>{cart=[];drawCart()};$('#checkout').onclick=checkout;drawProducts('');drawCart()}
-function drawProducts(q){const arr=productsHere().filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));$('#productGrid').innerHTML=arr.map(p=>`<div class="product-card" data-id="${p.id}"><b>${esc(p.name)}</b><p>${money(p.price)}</p><small>Stock: ${p.stock} • Lot ${esc(p.lot||'—')}</small></div>`).join('');document.querySelectorAll('.product-card').forEach(x=>x.onclick=()=>addCart(+x.dataset.id))}
-function addCart(id){const p=db.products.find(p=>p.id===id);if(!p||p.stock<1)return toast('Stock insuffisant');const c=cart.find(x=>x.id===id);if(c)c.qty=Math.min(c.qty+1,p.stock);else cart.push({id,qty:1});drawCart()}
-function drawCart(){const r=$('#cart');if(!r)return;r.innerHTML=cart.map(c=>{const p=db.products.find(x=>x.id===c.id);return `<div class="cart-row"><span>${esc(p.name)}<br><small>${money(p.price)}</small></span><input data-q="${c.id}" type="number" min="1" max="${p.stock}" value="${c.qty}"><button data-r="${c.id}" class="secondary">×</button></div>`}).join('')||'<p class="muted">Panier vide</p>';document.querySelectorAll('[data-q]').forEach(i=>i.onchange=()=>{const c=cart.find(x=>x.id==+i.dataset.q),p=db.products.find(x=>x.id===c.id);c.qty=Math.max(1,Math.min(+i.value,p.stock));drawCart()});document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{cart=cart.filter(x=>x.id!=+b.dataset.r);drawCart()});$('#cartTotal').textContent=money(cart.reduce((a,c)=>{const p=db.products.find(x=>x.id===c.id);return a+p.price*c.qty},0))}
-function checkout(){if(!cart.length)return toast('Ajoutez des produits');const items=cart.map(c=>{const p=db.products.find(x=>x.id===c.id);return{id:p.id,name:p.name,qty:c.qty,price:p.price,cost:p.cost}});for(const i of items){const p=db.products.find(x=>x.id===i.id);if(i.qty>p.stock)return toast('Stock insuffisant : '+p.name)}const total=items.reduce((a,x)=>a+x.price*x.qty,0),profit=items.reduce((a,x)=>a+(x.price-x.cost)*x.qty,0);items.forEach(i=>db.products.find(p=>p.id===i.id).stock-=i.qty);const invoice='LP-'+new Date().getFullYear()+'-'+String(db.invoiceSeq++).padStart(5,'0'),payment=$('#payment').value,sale={id:uid(),invoice,date:today(),time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),agency:currentAgency,clientId:+$('#saleClient').value,payment,seller:$('#seller').value,items,total,profit};db.sales.push(sale);db.treasury.push({id:uid(),date:today(),agency:currentAgency,type:'Entrée',category:'Vente',desc:invoice,amount:payment==='Crédit'?0:total});if(payment==='Crédit')db.receivables.push({id:uid(),date:today(),agency:currentAgency,clientId:sale.clientId,ref:invoice,amount:total,balance:total,status:'Ouvert'});audit('Vente',invoice+' • '+money(total));cart=[];showReceipt(sale)}
+function drawProducts(q){const arr=productsHere().filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));$('#productGrid').innerHTML=arr.map(p=>`<div class="product-card" data-id="${p.id}"><b>${esc(p.name)}</b><p>${money(p.price)}</p><small>Stock: ${p.stock} • Lot ${esc(p.lot||'—')}</small></div>`).join('');document.querySelectorAll('.product-card').forEach(x=>x.onclick=()=>addCart(x.dataset.id))}
+function addCart(id){const p=db.products.find(p=>String(p.id)===String(id));if(!p||Number(p.stock)<1)return toast('Stock insuffisant');const c=cart.find(x=>String(x.id)===String(p.id));if(c)c.qty=Math.min(c.qty+1,Number(p.stock));else cart.push({id:p.id,qty:1});drawCart()}
+function drawCart(){const r=$('#cart');if(!r)return;r.innerHTML=cart.map(c=>{const p=db.products.find(x=>String(x.id)===String(c.id));return `<div class="cart-row"><span>${esc(p.name)}<br><small>${money(p.price)}</small></span><input data-q="${c.id}" type="number" min="1" max="${p.stock}" value="${c.qty}"><button data-r="${c.id}" class="secondary">×</button></div>`}).join('')||'<p class="muted">Panier vide</p>';document.querySelectorAll('[data-q]').forEach(i=>i.onchange=()=>{const c=cart.find(x=>String(x.id)===String(i.dataset.q)),p=db.products.find(x=>String(x.id)===String(c.id));c.qty=Math.max(1,Math.min(+i.value,p.stock));drawCart()});document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{cart=cart.filter(x=>String(x.id)!==String(b.dataset.r));drawCart()});$('#cartTotal').textContent=money(cart.reduce((a,c)=>{const p=db.products.find(x=>String(x.id)===String(c.id));return a+p.price*c.qty},0))}
+function checkout(){if(!cart.length)return toast('Ajoutez des produits');const items=cart.map(c=>{const p=db.products.find(x=>String(x.id)===String(c.id));return{id:p.id,name:p.name,qty:c.qty,price:p.price,cost:p.cost}});for(const i of items){const p=db.products.find(x=>String(x.id)===String(i.id));if(i.qty>p.stock)return toast('Stock insuffisant : '+p.name)}const total=items.reduce((a,x)=>a+x.price*x.qty,0),profit=items.reduce((a,x)=>a+(x.price-x.cost)*x.qty,0);items.forEach(i=>db.products.find(p=>String(p.id)===String(i.id)).stock-=i.qty);const invoice='LP-'+new Date().getFullYear()+'-'+String(db.invoiceSeq++).padStart(5,'0'),payment=$('#payment').value,sale={id:uid(),invoice,date:today(),time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),agency:currentAgency,clientId:+$('#saleClient').value,payment,seller:$('#seller').value,items,total,profit};db.sales.push(sale);db.treasury.push({id:uid(),date:today(),agency:currentAgency,type:'Entrée',category:'Vente',desc:invoice,amount:payment==='Crédit'?0:total});if(payment==='Crédit')db.receivables.push({id:uid(),date:today(),agency:currentAgency,clientId:sale.clientId,ref:invoice,amount:total,balance:total,status:'Ouvert'});audit('Vente',invoice+' • '+money(total));cart=[];showReceipt(sale)}
 function receiptText(s){const client=db.clients.find(c=>c.id===s.clientId)?.name||'Client';return `${ID.name}\n${ID.slogan}\nImpôt: ${ID.tax}\nRCCM: ${ID.rccm}\n${ID.address}, ${ID.city}\nTél: ${ID.phone}\n--------------------------------\n${s.invoice}  ${s.date} ${s.time}\nClient: ${client}\nVendeur: ${s.seller}\nPaiement: ${s.payment}\n--------------------------------\n${s.items.map(i=>`${i.name}\n${i.qty} x ${money(i.price)} = ${money(i.qty*i.price)}`).join('\n')}\n--------------------------------\nTOTAL: ${money(s.total)}\nMerci pour votre confiance\n${ID.website}`}
 async function printReceiptZ91(s){const text=receiptText(s);try{const printer=window.Capacitor?.Plugins?.Z91Printer;if(!printer)throw new Error('Pilote natif non disponible');const result=await printer.printReceipt({text});if(result?.printed===false)throw new Error('Statut imprimante : '+result.status);audit('Impression',s.invoice);toast('Reçu imprimé sur le POS Z91')}catch(error){console.error(error);toast(error?.message||'Impression impossible');setTimeout(()=>window.print(),300)}}
 function showReceipt(s){const text=receiptText(s);$('#content').innerHTML=`<div class="card"><div class="section-title"><h3>Facture ${esc(s.invoice)}</h3><div><button class="secondary" id="printReceipt">Imprimer sur Z91</button> <button class="btn" id="newSale">Nouvelle vente</button></div></div><div class="receipt">${esc(text)}</div></div>`;$('#printReceipt').onclick=()=>printReceiptZ91(s);$('#newSale').onclick=()=>{page='sales';render()};save();toast('Vente enregistrée')}
@@ -1084,10 +1084,10 @@ function sales(){
   $('#productSearch').oninput=e=>drawProducts(e.target.value);$('#clearCart').onclick=()=>{cart=[];drawCart()};$('#checkout').onclick=checkout;$('#priceMode').onchange=()=>{drawProducts($('#productSearch').value);drawCart()};$('#saleClient').onchange=()=>{const c=db.clients.find(x=>x.id==+$('#saleClient').value);if(c)$('#manualClient').value=c.name};$('#returnBtn').onclick=processReturn;drawProducts('');drawCart();
 }
 function salePrice(p){return $('#priceMode')?.value==='wholesale'?(p.wholesalePrice||p.price):(p.retailPrice||p.price)}
-function drawProducts(q){const arr=productsHere().filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));$('#productGrid').innerHTML=arr.map(p=>`<div class="product-card" data-id="${p.id}"><b>${esc(p.name)}</b><p>${money(salePrice(p))}</p><small>Stock: ${p.stock} • Lot ${esc(p.lot||'—')}</small></div>`).join('');document.querySelectorAll('.product-card').forEach(x=>x.onclick=()=>addCart(+x.dataset.id))}
-function drawCart(){const r=$('#cart');if(!r)return;r.innerHTML=cart.map(c=>{const p=db.products.find(x=>x.id===c.id),price=salePrice(p);return `<div class="cart-row"><span>${esc(p.name)}<br><small>${money(price)}</small></span><input data-q="${c.id}" type="number" min="1" max="${p.stock}" value="${c.qty}"><button data-r="${c.id}" class="secondary">×</button></div>`}).join('')||'<p class="muted">Panier vide</p>';document.querySelectorAll('[data-q]').forEach(i=>i.onchange=()=>{const c=cart.find(x=>x.id==+i.dataset.q),p=db.products.find(x=>x.id===c.id);c.qty=Math.max(1,Math.min(+i.value,p.stock));drawCart()});document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{cart=cart.filter(x=>x.id!=+b.dataset.r);drawCart()});$('#cartTotal').textContent=money(cart.reduce((a,c)=>a+salePrice(db.products.find(x=>x.id===c.id))*c.qty,0))}
-function checkout(){if(!cart.length)return toast('Ajoutez des produits');const mode=$('#priceMode').value,items=cart.map(c=>{const p=db.products.find(x=>x.id===c.id);return{id:p.id,name:p.name,qty:c.qty,price:salePrice(p),cost:p.cost}});for(const i of items){const p=db.products.find(x=>x.id===i.id);if(i.qty>p.stock)return toast('Stock insuffisant : '+p.name)}const total=items.reduce((a,x)=>a+x.price*x.qty,0),profit=items.reduce((a,x)=>a+(x.price-x.cost)*x.qty,0);items.forEach(i=>db.products.find(p=>p.id===i.id).stock-=i.qty);const invoice='LP-'+new Date().getFullYear()+'-'+String(db.invoiceSeq++).padStart(5,'0'),payment=$('#payment').value,manualClient=$('#manualClient').value.trim()||'Client comptoir',sale={id:uid(),invoice,date:today(),time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),agency:currentAgency,clientId:+$('#saleClient').value||null,clientName:manualClient,priceMode:mode,payment,seller:$('#seller').value,items,total,profit,status:'Validée'};db.sales.push(sale);db.treasury.push({id:uid(),date:today(),agency:currentAgency,type:'Entrée',category:'Vente',desc:invoice,amount:payment==='Crédit'?0:total});if(payment==='Crédit')db.receivables.push({id:uid(),date:today(),agency:currentAgency,clientId:sale.clientId,ref:invoice,amount:total,balance:total,status:'Ouvert'});audit('Vente',invoice+' • '+money(total));cart=[];showReceipt(sale)}
-function processReturn(){const s=db.sales.find(x=>x.id==+$('#returnSale').value),reason=$('#returnReason').value.trim();if(!s)return toast('Choisissez une facture');if(s.status==='Annulée')return toast('Cette facture est déjà annulée');if(!reason)return toast('Indiquez le motif');s.items.forEach(i=>{const p=db.products.find(x=>x.id===i.id);if(p)p.stock+=i.qty});s.status='Annulée';s.returnReason=reason;db.returns.push({id:uid(),saleId:s.id,invoice:s.invoice,date:today(),agency:currentAgency,amount:s.total,reason,user:currentUser?.username});db.treasury.push({id:uid(),date:today(),agency:currentAgency,type:'Sortie',category:'Retour vente',desc:s.invoice,amount:s.payment==='Crédit'?0:s.total});if(s.payment==='Crédit'){const debt=db.receivables.find(x=>x.ref===s.invoice&&x.status!=='Payé');if(debt){debt.balance=0;debt.status='Annulé'}}audit('Annulation/retour',s.invoice+' • '+reason);save();sales();toast('Vente annulée et stock restauré')}
+function drawProducts(q){const arr=productsHere().filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));$('#productGrid').innerHTML=arr.map(p=>`<div class="product-card" data-id="${p.id}"><b>${esc(p.name)}</b><p>${money(salePrice(p))}</p><small>Stock: ${p.stock} • Lot ${esc(p.lot||'—')}</small></div>`).join('');document.querySelectorAll('.product-card').forEach(x=>x.onclick=()=>addCart(x.dataset.id))}
+function drawCart(){const r=$('#cart');if(!r)return;r.innerHTML=cart.map(c=>{const p=db.products.find(x=>String(x.id)===String(c.id)),price=salePrice(p);return `<div class="cart-row"><span>${esc(p.name)}<br><small>${money(price)}</small></span><input data-q="${c.id}" type="number" min="1" max="${p.stock}" value="${c.qty}"><button data-r="${c.id}" class="secondary">×</button></div>`}).join('')||'<p class="muted">Panier vide</p>';document.querySelectorAll('[data-q]').forEach(i=>i.onchange=()=>{const c=cart.find(x=>String(x.id)===String(i.dataset.q)),p=db.products.find(x=>String(x.id)===String(c.id));c.qty=Math.max(1,Math.min(+i.value,p.stock));drawCart()});document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{cart=cart.filter(x=>String(x.id)!==String(b.dataset.r));drawCart()});$('#cartTotal').textContent=money(cart.reduce((a,c)=>a+salePrice(db.products.find(x=>String(x.id)===String(c.id)))*c.qty,0))}
+function checkout(){if(!cart.length)return toast('Ajoutez des produits');const mode=$('#priceMode').value,items=cart.map(c=>{const p=db.products.find(x=>String(x.id)===String(c.id));return{id:p.id,name:p.name,qty:c.qty,price:salePrice(p),cost:p.cost}});for(const i of items){const p=db.products.find(x=>String(x.id)===String(i.id));if(i.qty>p.stock)return toast('Stock insuffisant : '+p.name)}const total=items.reduce((a,x)=>a+x.price*x.qty,0),profit=items.reduce((a,x)=>a+(x.price-x.cost)*x.qty,0);items.forEach(i=>db.products.find(p=>String(p.id)===String(i.id)).stock-=i.qty);const invoice='LP-'+new Date().getFullYear()+'-'+String(db.invoiceSeq++).padStart(5,'0'),payment=$('#payment').value,manualClient=$('#manualClient').value.trim()||'Client comptoir',sale={id:uid(),invoice,date:today(),time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),agency:currentAgency,clientId:+$('#saleClient').value||null,clientName:manualClient,priceMode:mode,payment,seller:$('#seller').value,items,total,profit,status:'Validée'};db.sales.push(sale);db.treasury.push({id:uid(),date:today(),agency:currentAgency,type:'Entrée',category:'Vente',desc:invoice,amount:payment==='Crédit'?0:total});if(payment==='Crédit')db.receivables.push({id:uid(),date:today(),agency:currentAgency,clientId:sale.clientId,ref:invoice,amount:total,balance:total,status:'Ouvert'});audit('Vente',invoice+' • '+money(total));cart=[];showReceipt(sale)}
+function processReturn(){const s=db.sales.find(x=>x.id==+$('#returnSale').value),reason=$('#returnReason').value.trim();if(!s)return toast('Choisissez une facture');if(s.status==='Annulée')return toast('Cette facture est déjà annulée');if(!reason)return toast('Indiquez le motif');s.items.forEach(i=>{const p=db.products.find(x=>String(x.id)===String(i.id));if(p)p.stock+=i.qty});s.status='Annulée';s.returnReason=reason;db.returns.push({id:uid(),saleId:s.id,invoice:s.invoice,date:today(),agency:currentAgency,amount:s.total,reason,user:currentUser?.username});db.treasury.push({id:uid(),date:today(),agency:currentAgency,type:'Sortie',category:'Retour vente',desc:s.invoice,amount:s.payment==='Crédit'?0:s.total});if(s.payment==='Crédit'){const debt=db.receivables.find(x=>x.ref===s.invoice&&x.status!=='Payé');if(debt){debt.balance=0;debt.status='Annulé'}}audit('Annulation/retour',s.invoice+' • '+reason);save();sales();toast('Vente annulée et stock restauré')}
 function receiptText(s){const client=s.clientName||db.clients.find(c=>c.id===s.clientId)?.name||'Client',line='------------------------';return `${ID.name}\n${ID.slogan}\nImpôt: ${ID.tax}\nRCCM: ${ID.rccm}\nID NAT: ${ID.nationalId}\n${ID.address}, ${ID.city}\nTél: ${ID.phone}\n${line}\n${s.invoice}\n${s.date} ${s.time}\nClient: ${client}\nTarif: ${s.priceMode==='wholesale'?'Gros':'Détail'}\nVendeur: ${s.seller}\nPaiement: ${s.payment}\n${line}\n${s.items.map(i=>`${i.name}\n${i.qty} x ${money(i.price)}\n= ${money(i.qty*i.price)}`).join('\n')}\n${line}\nTOTAL: ${money(s.total)}\nMerci pour votre confiance\n${ID.website}`}
 
 function productForm(id){
@@ -148375,3 +148375,1651 @@ console.log('LEADER PHARMA F29.6.0.16 AFFICHAGE UNIQUE UPDATE UTILISATEURS ACTIF
 /* LP_F296017_DG_QUOTA_402_OFFLINE_SECURE_END */
 
 /* LEADER PHARMA F29.6.0.17 DG QUOTA OFFLINE SECURE FIX3 ACTIF */
+
+/* LEADER PHARMA F29.6.0.17 ACHAT APPROUVE STOCK CENTRAL FIX46 ACTIF */
+(function(){
+  'use strict';
+  if(window.__LP_FIX46_ACHAT_STOCK_CENTRAL__) return;
+  window.__LP_FIX46_ACHAT_STOCK_CENTRAL__=true;
+
+  const state={lines:[],busy:false,discountType:'percent',discountValue:0};
+  const norm=v=>{try{return String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){return String(v??'').trim().toLowerCase();}};
+  const esc43=v=>{try{return typeof esc==='function'?esc(String(v??'')):String(v??'');}catch(e){return String(v??'');}};
+  const cash=v=>{try{return typeof money==='function'?money(Number(v||0)):new Intl.NumberFormat('fr-CD').format(Number(v||0))+' FC';}catch(e){return Number(v||0)+' FC';}};
+  const now=()=>new Date().toISOString();
+  const day=()=>{try{return typeof today==='function'?today():now().slice(0,10);}catch(e){return now().slice(0,10);}};
+  const newid=()=>{try{return typeof uid==='function'?uid():Date.now()+Math.floor(Math.random()*100000);}catch(e){return Date.now()+Math.floor(Math.random()*100000);}};
+  const notify=m=>{try{if(typeof toast==='function')toast(m);}catch(e){}};
+  const persist=()=>{try{if(typeof save==='function')save();}catch(e){}};
+  const log=(a,d)=>{try{if(typeof audit==='function')audit(a,d||'');}catch(e){}};
+  const isDG=()=>norm(currentUser?.role)==='dg';
+  const actor=()=>currentUser?.username||currentUser?.name||'—';
+
+  function batches(){
+    if(!Array.isArray(db.purchaseBatches)) db.purchaseBatches=[];
+    return db.purchaseBatches;
+  }
+  function agencyBatches(){return batches().filter(x=>String(x.agency||'')===String(currentAgency||''));}
+  function batchRef(){
+    let n=Number(db.purchaseBatchSeq||1); if(!Number.isFinite(n)||n<1)n=1;
+    db.purchaseBatchSeq=n+1;
+    return 'ACHM-'+String(n).padStart(5,'0');
+  }
+  function productName(id){return (db.products||[]).find(p=>String(p.id)===String(id))?.name||'Produit';}
+  function supplierName(id,manual){return (db.suppliers||[]).find(s=>String(s.id)===String(id))?.name||String(manual||'').trim()||'—';}
+  function totalLines(lines){return (lines||[]).reduce((a,l)=>a+Number(l.total||0),0);}
+  function totals(lines){
+    const subtotal=totalLines(lines),value=Math.max(0,Number(state.discountValue||0));
+    const discountAmount=state.discountType==='percent'?Math.min(subtotal,subtotal*Math.min(100,value)/100):Math.min(subtotal,value);
+    return {subtotal,discountAmount,total:Math.max(0,subtotal-discountAmount)};
+  }
+  function pending(){return agencyBatches().filter(x=>norm(x.status)==='en attente dg'||(x.stockApplied&&!x.centralConfirmed));}
+  function invoiceDuplicate(supplierId,invoice){
+    const inv=norm(invoice);
+    const manual=norm(document.getElementById('lp50ManualSupplier')?.value||'');
+    if(!inv)return false;
+    const sameSupplier=b=>supplierId
+      ? String(b.supplierId||'')===String(supplierId)
+      : (!!manual&&norm(b.supplierNameManual||'')===manual);
+    const inBatch=agencyBatches().some(b=>sameSupplier(b)&&norm(b.supplierInvoice)===inv&&!['refusee dg','a corriger'].includes(norm(b.status)));
+    const inOld=(db.purchases||[]).some(p=>String(p.agency||'')===String(currentAgency||'')&&sameSupplier(p)&&norm(p.supplierInvoice)===inv);
+    return inBatch||inOld;
+  }
+
+  function style(){
+    if(document.getElementById('lpFix43Style'))return;
+    const s=document.createElement('style'); s.id='lpFix43Style'; s.textContent=`
+      .lp43-card{border:1px solid #dfe7e3;border-radius:18px;background:#fff;padding:16px;margin:0 0 16px;box-shadow:0 5px 18px rgba(20,54,43,.05)}
+      .lp43-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #edf1ef}.lp43-row:last-child{border:0}
+      .lp43-line{border:1px solid #e1e7e4;border-radius:13px;padding:11px;margin-top:9px}.lp43-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+      .lp43-total{font-size:21px;font-weight:900;color:#087a59}.lp43-badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#fff3cf;color:#805700;font-weight:800}
+      .lp43-discount{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:12px 0}.lp43-discount select,.lp43-discount input{width:100%!important;min-width:0!important}
+      .lp43-confirm{display:grid!important;grid-template-columns:28px minmax(0,1fr)!important;gap:10px!important;align-items:start!important;margin-top:14px!important;width:100%!important}.lp43-confirm span{min-width:0!important;overflow-wrap:anywhere!important}.lp43-confirm input,#lp43Verified{appearance:auto!important;width:24px!important;height:24px!important;min-width:24px!important;max-width:24px!important;margin:0!important;padding:0!important}
+      #lp43CartPanel .btn,#lp43DgPanel .btn{min-height:48px}@media(max-width:720px){.lp43-actions>*{width:100%}.lp43-discount{grid-template-columns:1fr}.lp43-card{padding:14px}}
+    `; document.head.appendChild(s);
+  }
+
+  function lineHtml(l,i,removable){return `<div class="lp43-line">
+    <b>${i+1}. ${esc43(l.productName)}</b>
+    <div class="lp43-row"><span>Commandée / reçue</span><b>${l.orderedQty} / ${l.receivedQty}</b></div>
+    <div class="lp43-row"><span>Lot / péremption</span><b>${esc43(l.lot)} / ${esc43(l.expiry||'Sans péremption')}</b></div>
+    <div class="lp43-row"><span>Prix d'achat unitaire (dépôt/gros)</span><b>${cash(l.cost)}</b></div>
+    <div class="lp43-row"><span>Prix de vente détail proposé</span><b>${cash(l.salePrice||0)}</b></div>
+    ${l.manualProduct?'<div class="lp43-row"><span>Produit</span><b>Nouveau produit • validation DG obligatoire</b></div>':''}
+    <div class="lp43-row"><span>Sous-total</span><b>${cash(l.total)}</b></div>
+    ${removable?`<button class="secondary" data-lp43-remove="${i}" style="margin-top:8px">Retirer ce produit</button>`:''}
+  </div>`;}
+
+  function cartPanel(){
+    let panel=document.getElementById('lp43CartPanel');
+    const saveBtn=document.getElementById('savePurchase');
+    if(!saveBtn)return null;
+    if(!panel){panel=document.createElement('div');panel.id='lp43CartPanel';panel.className='lp43-card';saveBtn.insertAdjacentElement('afterend',panel);}
+    const t=totals(state.lines);
+    const myBatches=agencyBatches().filter(b=>String(b.createdBy||'')===String(actor())).slice().reverse().slice(0,5);
+    panel.innerHTML=`<h3 style="margin-top:0">🧺 Produits de cette facture</h3>
+      <p class="muted">Ajoutez tous les produits avant de transmettre la réception au DG. Le stock reste inchangé jusqu’à son approbation.</p>
+      <div id="lp43Lines">${state.lines.map((l,i)=>lineHtml(l,i,true)).join('')||'<p class="muted">Aucun produit ajouté.</p>'}</div>
+      <div class="lp43-discount"><div><label>Type de remise</label><select id="lp43DiscountType"><option value="percent" ${state.discountType==='percent'?'selected':''}>Remise en %</option><option value="amount" ${state.discountType==='amount'?'selected':''}>Remise en FC</option></select></div><div><label>Valeur de la remise</label><input id="lp43DiscountValue" type="number" min="0" ${state.discountType==='percent'?'max="100"':''} value="${Number(state.discountValue||0)}"></div></div>
+      <div class="lp43-row"><span>Sous-total</span><b>${cash(t.subtotal)}</b></div><div class="lp43-row"><span>Remise</span><b>− ${cash(t.discountAmount)}</b></div><div class="lp43-row"><b>Total net facture</b><span class="lp43-total">${cash(t.total)}</span></div>
+      <label class="lp43-confirm"><input type="checkbox" id="lp43Verified"><span>Je confirme avoir vérifié les produits, les quantités, les lots et les péremptions reçus.</span></label>
+      <button class="btn" id="lp43Submit" style="width:100%;margin-top:14px" ${state.lines.length?'':'disabled'}>📤 Vérifier et transmettre au DG</button>
+      <h3>📋 Mes dernières transmissions</h3>${myBatches.map(b=>`<div class="lp43-line"><b>${esc43(b.ref)} • ${esc43(b.supplierInvoice)}</b><div class="lp43-row"><span>Statut</span><b>${esc43(b.status)}</b></div>${b.dgComment?`<div class="lp43-row"><span>Commentaire DG</span><b>${esc43(b.dgComment)}</b></div>`:''}</div>`).join('')||'<p class="muted">Aucune transmission.</p>'}`;
+    panel.querySelectorAll('[data-lp43-remove]').forEach(b=>b.onclick=()=>{state.lines.splice(Number(b.dataset.lp43Remove),1);cartPanel();});
+    const discountType=panel.querySelector('#lp43DiscountType'),discountValue=panel.querySelector('#lp43DiscountValue');
+    if(discountType)discountType.onchange=()=>{state.discountType=discountType.value==='amount'?'amount':'percent';cartPanel();};
+    if(discountValue)discountValue.onchange=()=>{state.discountValue=Math.max(0,Number(discountValue.value||0));cartPanel();};
+    const submit=panel.querySelector('#lp43Submit'); if(submit)submit.onclick=submitBatch;
+    return panel;
+  }
+
+  function readLine(){
+    const supplierRaw=String(document.getElementById('buySupplier')?.value||'');
+    const supplierId=Number(supplierRaw||0)||null;
+    const supplierManual=String(document.getElementById('lp50ManualSupplier')?.value||'').trim();
+    const productId=document.getElementById('buyProduct')?.value||'';
+    const manualProduct=String(productId)==='__manual_product__';
+    const product=manualProduct?null:(db.products||[]).find(p=>String(p.id)===String(productId));
+    const manualProductName=String(document.getElementById('lp50ManualProductName')?.value||'').trim();
+    const orderedQty=Number(document.getElementById('buyOrderedQty')?.value||0);
+    const receivedQty=Number(document.getElementById('buyQty')?.value||0);
+    const cost=Number(document.getElementById('buyCost')?.value||0);
+    const salePrice=Number(document.getElementById('buySalePrice')?.value||0);
+    const lot=String(document.getElementById('buyLot')?.value||'').trim();
+    const noExpiry=!!document.getElementById('buyNoExpiry')?.checked;
+    const expiry=noExpiry?'':String(document.getElementById('buyExpiry')?.value||'').trim();
+
+    if(!supplierId&&!supplierManual)throw new Error('Choisissez un fournisseur ou écrivez son nom');
+    if(!product&&!manualProduct)throw new Error('Produit obligatoire');
+    if(manualProduct&&!manualProductName)throw new Error('Nom du nouveau produit obligatoire');
+    if(!(orderedQty>0))throw new Error('Quantité commandée invalide');
+    if(!(receivedQty>0)||receivedQty>orderedQty)throw new Error('Quantité reçue invalide');
+    if(!(cost>=0))throw new Error("Prix d'achat unitaire invalide");
+    if(!(salePrice>=0))throw new Error('Prix de vente détail invalide');
+    if(!lot)throw new Error('Numéro de lot obligatoire');
+    if(!noExpiry&&!expiry)throw new Error('Péremption obligatoire ou cochez sans péremption');
+
+    return {
+      id:newid(),
+      productId:manualProduct?('new-'+newid()):product.id,
+      productName:manualProduct?manualProductName:product.name,
+      manualProduct,
+      orderedQty,receivedQty,cost,salePrice,lot,expiry,noExpiry,
+      total:receivedQty*cost
+    };
+  }
+
+  function addLine(){
+    if(state.busy)return;
+    try{
+      const line=readLine();
+      state.lines.push(line); cartPanel();
+      const qty=document.getElementById('buyQty'),ordered=document.getElementById('buyOrderedQty');
+      if(qty)qty.value='1'; if(ordered)ordered.value='1';
+      notify('Produit ajouté à la facture • appuyez ensuite sur Vérifier et transmettre au DG');
+      document.getElementById('lp43CartPanel')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }catch(e){notify(e.message||'Données produit invalides');}
+  }
+
+  function submitBatch(){
+    if(state.busy)return;
+    try{
+      if(!state.lines.length)throw new Error('Ajoutez au moins un produit');
+      if(!document.getElementById('lp43Verified')?.checked)throw new Error('Confirmez la vérification de la réception');
+      const supplierRaw=String(document.getElementById('buySupplier')?.value||'');
+      const supplierId=Number(supplierRaw||0)||null;
+      const supplierNameManual=String(document.getElementById('lp50ManualSupplier')?.value||'').trim();
+      const invoice=String(document.getElementById('buyInvoiceNo')?.value||'').trim();
+      const invoiceDate=String(document.getElementById('buyInvoiceDate')?.value||day()).trim();
+      const orderRef=String(document.getElementById('buyOrderRef')?.value||'').trim();
+      const orderDate=String(document.getElementById('buyOrderDate')?.value||day()).trim();
+      const payment=String(document.getElementById('buyPay')?.value||'Payé');
+      const t=totals(state.lines),subtotal=t.subtotal,discountAmount=t.discountAmount,total=t.total;
+      let paidAmount=norm(payment)==='paye'?total:(norm(payment).includes('partiellement')?Number(document.getElementById('buyPaidAmount')?.value||0):0);
+      if(!supplierId&&!supplierNameManual)throw new Error('Choisissez un fournisseur ou écrivez son nom');
+      if(!invoice)throw new Error('Numéro de facture fournisseur obligatoire');
+      if(invoiceDuplicate(supplierId,invoice))throw new Error('Cette facture fournisseur existe déjà');
+      if(!(paidAmount>=0&&paidAmount<=total))throw new Error('Montant payé invalide');
+      state.busy=true;
+      const ref=batchRef();
+      batches().push({
+        id:newid(),ref,agency:currentAgency,
+        supplierId,
+        supplierNameManual:supplierId?'':supplierNameManual,
+        supplierInvoice:invoice,invoiceDate,orderRef,orderDate,
+        payment,paidAmount,balance:Math.max(0,total-paidAmount),
+        subtotal,discountType:state.discountType,
+        discountValue:Number(state.discountValue||0),discountAmount,total,
+        status:'En attente DG',
+        lines:state.lines.map(x=>({...x})),
+        createdBy:actor(),
+        orderedByName:currentUser?.name||currentUser?.username||actor(),
+        receivedByName:currentUser?.name||currentUser?.username||actor(),
+        createdAt:now(),submittedAt:now(),stockApplied:false,financeApplied:false
+      });
+      log('Achat multi-produits transmis DG',ref+' • '+invoice+' • '+state.lines.length+' produit(s) • '+cash(total));
+      persist(); state.lines=[];state.discountType='percent';state.discountValue=0;state.busy=false;
+      try{purchases();}catch(e){try{window.purchases();}catch(x){}}
+      notify('Réception transmise au DG • stock en attente');
+    }catch(e){state.busy=false;notify(e.message||'Échec de transmission');}
+  }
+
+  function sameProduct(base,line){return String(base.agency||'')===String(currentAgency||'')&&norm(base.name)===norm(line.productName)&&norm(base.lot)===norm(line.lot);}
+  function applyStockLine(line){
+    const existing=(db.products||[]).find(p=>sameProduct(p,line));
+    if(existing){
+      existing.cost=Number(line.cost||0);
+      if(Number.isFinite(Number(line.salePrice)))existing.price=Number(line.salePrice||0);
+      existing.lot=line.lot;
+      if(line.expiry)existing.expiry=line.expiry;
+      return existing;
+    }
+
+    const base=(db.products||[]).find(p=>String(p.id)===String(line.productId));
+
+    if(!base&&line.manualProduct){
+      const created={
+        id:line.productId||newid(),agency:currentAgency,
+        name:line.productName,lot:line.lot,expiry:line.expiry||'',
+        cost:Number(line.cost||0),price:Number(line.salePrice||0),
+        stock:0,min:0
+      };
+      db.products.push(created);
+      return created;
+    }
+
+    if(!base)throw new Error('Produit introuvable : '+line.productName);
+
+    const created={
+      ...base,id:newid(),agency:currentAgency,
+      name:line.productName,lot:line.lot,expiry:line.expiry||'',
+      cost:Number(line.cost||0),
+      price:Number.isFinite(Number(line.salePrice))?Number(line.salePrice||0):Number(base.price||0),
+      stock:0
+    };
+    db.products.push(created);
+    return created;
+  }
+  async function centralCurrent(product,agency){
+    const token=String(window.lpDGAccessToken||'').trim();if(!token)throw new Error('Session DG centrale absente : reconnectez le DG');
+    const headers={apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'};
+    const r=await fetch(SUPABASE.url+'/rest/v1/lp_stock_central?select=stock&agence_id=eq.'+encodeURIComponent(String(agency))+'&produit_ref=eq.'+encodeURIComponent(String(product.id))+'&limit=1',{headers,cache:'no-store'});
+    if(!r.ok)throw new Error('Lecture stock central '+r.status);const rows=await r.json();const n=Number(rows?.[0]?.stock);return Number.isFinite(n)?n:0;
+  }
+  async function setCentralStock(product,agency,quantity){
+    const token=String(window.lpDGAccessToken||'').trim();
+    if(!token)throw new Error('Session DG centrale absente : reconnectez le DG');
+    const headers={apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'};
+    const response=await fetch(SUPABASE.url+'/rest/v1/rpc/lp_set_stock_dg',{method:'POST',headers,body:JSON.stringify({p_agence_id:String(agency||product.agency||currentAgency||'kamina'),p_produit_ref:String(product.id),p_produit_nom:String(product.name||''),p_lot:String(product.lot||''),p_stock:Math.trunc(Number(quantity))})});
+    if(!response.ok)throw new Error('Stock central refusé '+response.status+' '+(await response.text()).slice(0,120));
+    const verify=await fetch(SUPABASE.url+'/rest/v1/lp_stock_central?select=stock&agence_id=eq.'+encodeURIComponent(String(agency))+'&produit_ref=eq.'+encodeURIComponent(String(product.id))+'&limit=1',{headers,cache:'no-store'});
+    if(!verify.ok)throw new Error('Vérification stock central '+verify.status);
+    const rows=await verify.json(),central=Number(rows?.[0]?.stock);
+    if(!Number.isFinite(central)||central!==Math.trunc(Number(quantity)))throw new Error('Stock central non confirmé');
+    product.stock=central;return central;
+  }
+  async function approveBatch(id){
+    if(state.busy)return notify('Approbation déjà en cours');
+    if(!isDG())return notify('Validation réservée au DG');
+    const b=batches().find(x=>String(x.id)===String(id)); if(!b)return;
+    if(b.stockApplied&&b.centralConfirmed)return notify('Stock central déjà confirmé : aucun doublon possible');
+    if(norm(b.status)!=='en attente dg'&&!b.stockApplied)return notify('Cette réception n’est plus en attente');
+    if(!confirm('Approuver cette facture et ajouter tous ses produits au stock ?'))return;
+    state.busy=true;
+    try{
+      (b.lines||[]).forEach(line=>{if(line&&line.manualProduct===true)return;if(!(db.products||[]).some(p=>String(p.id)===String(line.productId))&&!(db.products||[]).some(p=>sameProduct(p,line)))throw new Error('Produit introuvable : '+line.productName);});
+      let targets=Array.isArray(b.centralTargets)&&b.centralTargets.length?b.centralTargets:null;
+      if(!targets){
+        targets=[];const running=new Map();
+        for(const line of (b.lines||[])){
+          const p=applyStockLine(line),key=String(p.id);let base=running.has(key)?running.get(key):await centralCurrent(p,b.agency);
+          const desired=Number(base||0)+Number(line.receivedQty||0);running.set(key,desired);targets.push({productId:p.id,stock:desired});
+        }
+        b.centralTargets=targets;b.centralStartedAt=now();b.centralError='';persist();
+      }
+      try{if(typeof syncTimer!=='undefined'&&syncTimer){clearTimeout(syncTimer);syncTimer=null;}}catch(e){}
+      const applied=targets.map(t=>{const p=(db.products||[]).find(x=>String(x.id)===String(t.productId));if(!p)throw new Error('Produit cible introuvable');p.stock=Number(t.stock||0);return p;});
+      for(let i=0;i<applied.length;i++)await setCentralStock(applied[i],b.agency,targets[i].stock);
+      if(typeof lp171019CentralPull==='function')await lp171019CentralPull();
+      if(!(db.purchases||[]).some(x=>String(x.sourceBatchId||'')===String(b.id)))(b.lines||[]).forEach((line,index)=>{const p=applied[index];(db.purchases||(db.purchases=[])).push({id:newid(),ref:b.ref+'-'+String(index+1).padStart(2,'0'),batchRef:b.ref,date:day(),agency:b.agency,supplierId:b.supplierId,productId:p.id,productName:line.productName,qty:Number(line.receivedQty||0),orderedQty:Number(line.orderedQty||0),receivedQty:Number(line.receivedQty||0),remainingQty:Math.max(0,Number(line.orderedQty||0)-Number(line.receivedQty||0)),cost:Number(line.cost||0),salePrice:Number(line.salePrice||p.price||0),total:Number(line.total||0),supplierNameManual:b.supplierNameManual||'',orderedByName:b.orderedByName||b.createdBy,receivedByName:b.receivedByName||b.createdBy,payment:b.payment,paidAmount:0,balance:0,orderRef:b.orderRef,orderDate:b.orderDate,supplierInvoice:b.supplierInvoice,invoiceDate:b.invoiceDate,lot:line.lot,expiry:line.expiry||'',receiptStatus:Number(line.receivedQty||0)<Number(line.orderedQty||0)?'Partielle':'Complète',validationStatus:'Validé DG',createdBy:b.createdBy,validatedBy:actor(),validatedAt:now(),sourceBatchId:b.id,receptions:[]});});
+      if(!b.financeApplied){
+        if(Number(b.paidAmount||0)>0)(db.treasury||(db.treasury=[])).push({id:newid(),date:day(),agency:b.agency,type:'Sortie',category:'Achat',desc:b.ref+' • '+b.supplierInvoice+' • '+(b.lines||[]).length+' produit(s)',amount:Number(b.paidAmount||0),sourceBatchId:b.id});
+        if(Number(b.balance||0)>0)(db.debts||(db.debts=[])).push({id:newid(),date:day(),agency:b.agency,supplierId:b.supplierId,ref:b.ref,amount:Number(b.total||0),paid:Number(b.paidAmount||0),balance:Number(b.balance||0),status:'Ouvert',orderRef:b.orderRef,supplierInvoice:b.supplierInvoice,sourceBatchId:b.id});
+        b.financeApplied=true;
+      }
+      b.stockApplied=true;b.centralConfirmed=true;b.centralConfirmedAt=now();b.centralError='';b.status='Approuvée DG';b.approvedBy=actor();b.approvedAt=now();b.dgComment=prompt('Commentaire DG (facultatif) :','')||'';
+      log('Approbation achat multi-produits DG',b.ref+' • stock central confirmé • '+(b.lines||[]).length+' produit(s)');persist();state.busy=false;
+      try{purchases();}catch(e){} notify('Facture approuvée • stock et finances mis à jour');
+    }catch(e){console.error(e);b.centralError=String(e.message||'Erreur stock central');b.centralLastTry=now();persist();state.busy=false;try{purchases();}catch(x){}notify('Approbation en attente : '+b.centralError);}
+  }
+  function decideBatch(id,status){
+    if(!isDG())return;
+    const b=batches().find(x=>String(x.id)===String(id));if(!b||b.stockApplied)return;
+    const comment=prompt(status==='Refusée DG'?'Motif du refus :':'Correction demandée :','');if(comment===null)return;
+    if(!String(comment).trim())return notify('Commentaire DG obligatoire');
+    b.status=status;b.dgComment=String(comment).trim();b.decidedBy=actor();b.decidedAt=now();persist();
+    try{purchases();}catch(e){}notify(status==='Refusée DG'?'Achat refusé sans modifier le stock':'Achat retourné pour correction');
+  }
+
+  function dgPanel(){
+    if(!isDG())return;
+    const content=document.getElementById('content');if(!content)return;
+    let panel=document.getElementById('lp43DgPanel');if(!panel){panel=document.createElement('section');panel.id='lp43DgPanel';panel.className='lp43-card';content.prepend(panel);}
+    const rows=pending();
+    panel.innerHTML=`<h2 style="margin-top:0">🛡️ Réceptions multi-produits à valider</h2><p class="muted">Le stock et les finances restent bloqués jusqu’à votre approbation.</p>${rows.map(b=>`<div class="lp43-card" style="background:#f9fbfa">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>${esc43(b.ref)} • ${esc43(b.supplierInvoice)}</b><span class="lp43-badge">${esc43(b.status)}</span></div>
+      <div class="lp43-row"><span>Compte utilisateur</span><b>${esc43(b.createdBy)}</b></div>
+      <div class="lp43-row"><span>Commandé par</span><b>${esc43(b.orderedByName||b.createdBy||'—')}</b></div>
+      <div class="lp43-row"><span>Réceptionné par</span><b>${esc43(b.receivedByName||b.createdBy||'—')}</b></div>
+      <div class="lp43-row"><span>Fournisseur</span><b>${esc43(supplierName(b.supplierId,b.supplierNameManual))}</b></div>
+      ${(b.lines||[]).map((l,i)=>lineHtml(l,i,false)).join('')}<div class="lp43-row"><span>Sous-total</span><b>${cash(b.subtotal??b.total)}</b></div><div class="lp43-row"><span>Remise</span><b>− ${cash(b.discountAmount||0)}</b></div><div class="lp43-row"><b>Total net</b><span class="lp43-total">${cash(b.total)}</span></div>
+      <div class="lp43-actions"><button class="btn" data-lp43-approve="${b.id}">✅ Approuver et ajouter au stock</button><button class="secondary" data-lp43-correct="${b.id}">↩️ Demander correction</button><button class="danger" data-lp43-reject="${b.id}">❌ Refuser</button></div>
+    </div>`).join('')||'<p class="muted">Aucune réception en attente du DG.</p>'}`;
+    panel.querySelectorAll('[data-lp43-approve]').forEach(b=>b.onclick=()=>approveBatch(b.dataset.lp43Approve));
+    panel.querySelectorAll('[data-lp43-correct]').forEach(b=>b.onclick=()=>decideBatch(b.dataset.lp43Correct,'À corriger'));
+    panel.querySelectorAll('[data-lp43-reject]').forEach(b=>b.onclick=()=>decideBatch(b.dataset.lp43Reject,'Refusée DG'));
+  }
+
+  function enhance(){
+    if(String(typeof page!=='undefined'?page:'')!=='purchases')return;
+    style();batches();
+    if(isDG()){dgPanel();return;}
+    const saveBtn=document.getElementById('savePurchase');if(!saveBtn)return;
+    saveBtn.textContent='➕ Ajouter ce produit à la facture';saveBtn.disabled=false;saveBtn.onclick=addLine;
+    const title=document.getElementById('u8FormTitle');if(title)title.textContent='Nouvelle facture multi-produits';
+    cartPanel();
+  }
+
+  try{
+    const base=typeof purchases==='function'?purchases:null;
+    if(base){purchases=function(){const r=base.apply(this,arguments);enhance();setTimeout(enhance,0);return r;};window.purchases=purchases;}
+  }catch(e){}
+  window.lpFix46Enhance=enhance;
+  console.log('LEADER PHARMA F29.6.0.17 ACHAT APPROUVE STOCK CENTRAL FIX46 ACTIF');
+})();
+
+/* LEADER PHARMA F29.6.0.17 ACHATS UTILISATEURS DISTANTS FIX47 ACTIF */
+(function(){
+  'use strict';
+  if(window.__LP_FIX47_ACHATS_USERS__)return;
+  window.__LP_FIX47_ACHATS_USERS__=true;
+
+  function norm47(v){
+    try{return String(v||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+    catch(e){return String(v||'').trim().toLowerCase();}
+  }
+  function purchaseValue(v){
+    const x=norm47(v);
+    return x==='purchases'||x==='purchase'||x==='achats'||x==='achat'||x.includes('purchases')||x.includes('achats');
+  }
+
+  try{
+    if(typeof allowed==='function'){
+      const baseAllowed47=allowed;
+      allowed=function(id){if(currentUser&&purchaseValue(id))return true;return baseAllowed47.apply(this,arguments);};
+      window.allowed=allowed;
+    }
+  }catch(e){console.warn('FIX47 allowed',e);}
+
+  try{
+    if(typeof lpSellerPageAllowed==='function'){
+      const baseSellerPage47=lpSellerPageAllowed;
+      lpSellerPageAllowed=function(value){if(purchaseValue(value))return true;return baseSellerPage47.apply(this,arguments);};
+      window.lpSellerPageAllowed=lpSellerPageAllowed;
+    }
+  }catch(e){console.warn('FIX47 seller page',e);}
+
+  try{
+    if(typeof lpSellerTextAllowed==='function'){
+      const baseSellerText47=lpSellerTextAllowed;
+      lpSellerTextAllowed=function(value){if(purchaseValue(value))return true;return baseSellerText47.apply(this,arguments);};
+      window.lpSellerTextAllowed=lpSellerTextAllowed;
+    }
+  }catch(e){console.warn('FIX47 seller text',e);}
+
+  console.log('LEADER PHARMA F29.6.0.17 ACHATS UTILISATEURS DISTANTS FIX47 ACTIF');
+})();
+
+/* LEADER PHARMA F29.6.0.17 ACHATS CIRCUIT BIDIRECTIONNEL FIX49 ACTIF */
+(function(){
+  'use strict';
+  if(window.__LP_FIX49_ACHATS_CIRCUIT__) return;
+  window.__LP_FIX49_ACHATS_CIRCUIT__=true;
+
+  let busy49=false;
+  let lastPull49=0;
+  let basePurchases49=null;
+
+  function t49(v){return String(v==null?'':v).trim();}
+  function n49(v){
+    try{return t49(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+    catch(e){return t49(v).toLowerCase();}
+  }
+  function page49(){try{return n49(typeof page!=='undefined'?page:'');}catch(e){return '';}}
+  function clone49(v){try{return JSON.parse(JSON.stringify(v));}catch(e){return v;}}
+  function user49(){try{return t49(currentUser&&(currentUser.username||currentUser.name));}catch(e){return '';}}
+  function isDG49(){try{return n49(currentUser&&currentUser.role)==='dg';}catch(e){return false;}}
+  function agency49(){try{return t49(currentAgency||'');}catch(e){return '';}}
+
+  function stamp49(x){
+    if(!x||typeof x!=='object')return 0;
+    let z=0;
+    [x.centralConfirmedAt,x.approvedAt,x.decidedAt,x.updatedAt,x.submittedAt,x.createdAt].forEach(function(v){
+      if(v==null||v==='')return;
+      let q=0;
+      if(typeof v==='number'&&isFinite(v))q=v;
+      else{
+        const s=t49(v);
+        if(/^\d+$/.test(s))q=Number(s);
+        else{const d=Date.parse(s);q=isFinite(d)?d:0;}
+      }
+      if(q>z)z=q;
+    });
+    return z;
+  }
+
+  function rank49(x){
+    const s=n49(x&&x.status);
+    if(s.includes('approuv')||s.includes('valide'))return 60;
+    if(s.includes('refus')||s.includes('corriger')||s.includes('correction'))return 55;
+    if(x&&x.centralConfirmed)return 60;
+    if(s.includes('en attente dg')||s==='en attente'||s==='pending')return 10;
+    return s?20:0;
+  }
+
+  function key49(x,i){
+    if(!x||typeof x!=='object')return 'p:'+i+':'+t49(x);
+    if(t49(x.id))return 'id:'+n49(x.id);
+    if(t49(x.ref))return 'ref:'+n49(x.ref)+':'+n49(x.agency);
+    return ['s',n49(x.agency),n49(x.createdBy),n49(x.supplierInvoice),t49(x.submittedAt||x.createdAt||i)].join(':');
+  }
+
+  function choose49(a,b){
+    if(!a)return clone49(b);
+    if(!b)return clone49(a);
+    let newer=a,older=b;
+    const ra=rank49(a),rb=rank49(b);
+    if(rb>ra){newer=b;older=a;}
+    else if(ra===rb&&stamp49(b)>stamp49(a)){newer=b;older=a;}
+    return Object.assign({},clone49(older),clone49(newer));
+  }
+
+  function merge49(remote,local){
+    const out=[],pos=new Map();
+    function add(x,i){
+      const k=key49(x,i);
+      if(!pos.has(k)){pos.set(k,out.length);out.push(clone49(x));return;}
+      const p=pos.get(k);out[p]=choose49(out[p],x);
+    }
+    (Array.isArray(remote)?remote:[]).forEach(add);
+    (Array.isArray(local)?local:[]).forEach(add);
+    return out;
+  }
+
+  try{
+    if(typeof __lpMergeArray==='function'&&!__lpMergeArray.__lp49Wrapped){
+      const oldMerge49=__lpMergeArray;
+      const wrapped49=function(remote,local,kind){
+        if(kind==='purchaseBatches')return merge49(remote,local);
+        return oldMerge49.apply(this,arguments);
+      };
+      wrapped49.__lp49Wrapped=true;
+      __lpMergeArray=wrapped49;
+      try{window.__lpMergeArray=__lpMergeArray;}catch(e){}
+    }
+  }catch(e){console.warn('FIX49 merge',e);}
+
+  function headers49(){
+    const key=t49(typeof SUPABASE!=='undefined'&&SUPABASE?SUPABASE.key:'');
+    return {apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'};
+  }
+
+  function rpc49(name){
+    if(typeof SUPABASE==='undefined'||!SUPABASE)throw new Error('Supabase indisponible');
+    return t49(SUPABASE.url).replace(/\/+$/,'')+'/rest/v1/rpc/'+name;
+  }
+
+  async function list49(createdBy){
+    const r=await fetch(rpc49('lp_purchase_batches_v1'),{
+      method:'POST',
+      headers:headers49(),
+      body:JSON.stringify({p_agency:agency49()||null,p_created_by:createdBy||null}),
+      cache:'no-store'
+    });
+    if(!r.ok)throw new Error('Lecture circuit achats '+r.status);
+    let data=await r.json();
+    if(typeof data==='string'){try{data=JSON.parse(data);}catch(e){data=[];}}
+    return Array.isArray(data)?data:[];
+  }
+
+  async function upsert49(batch){
+    if(!batch)return false;
+    const r=await fetch(rpc49('lp_purchase_batch_upsert_v1'),{
+      method:'POST',
+      headers:headers49(),
+      body:JSON.stringify({p_batch:batch})
+    });
+    if(!r.ok){
+      let msg='';try{msg=await r.text();}catch(e){}
+      throw new Error('Transmission achat '+r.status+' '+msg.slice(0,100));
+    }
+    return true;
+  }
+
+  function saveLocal49(){try{localStorage.setItem('lpmp_v13',JSON.stringify(db));}catch(e){}}
+  function notify49(msg){try{if(typeof toast==='function')toast(msg);}catch(e){}}
+
+  function compact49(){
+    const active=page49()==='purchases';
+    try{document.body.classList.toggle('lp-fix49-purchases',active);}catch(e){}
+    if(!active)return;
+
+    if(!document.getElementById('lpFix49Style')){
+      const st=document.createElement('style');
+      st.id='lpFix49Style';
+      st.textContent=`
+        body.lp-fix49-purchases #content .field{margin-bottom:8px!important}
+        body.lp-fix49-purchases #content label{margin-bottom:4px!important;line-height:1.2!important}
+        body.lp-fix49-purchases #content input:not([type="checkbox"]),
+        body.lp-fix49-purchases #content select,
+        body.lp-fix49-purchases #content textarea{
+          min-height:42px!important;padding:8px 10px!important;font-size:16px!important;
+          line-height:1.2!important;border-radius:10px!important;box-sizing:border-box!important
+        }
+        body.lp-fix49-purchases #content button,
+        body.lp-fix49-purchases #content .btn,
+        body.lp-fix49-purchases #content .secondary,
+        body.lp-fix49-purchases #content .danger{min-height:44px!important;padding:8px 12px!important}
+        body.lp-fix49-purchases .lp43-card{padding:12px!important}
+        body.lp-fix49-purchases .lp43-line{padding:8px!important;margin-top:7px!important}
+        body.lp-fix49-purchases .lp43-row{padding:6px 0!important}
+        body.lp-fix49-purchases .lp43-actions{gap:7px!important;margin-top:9px!important}
+        @media(max-width:720px){
+          body.lp-fix49-purchases #content{padding-left:10px!important;padding-right:10px!important}
+          body.lp-fix49-purchases .lp43-card{border-radius:14px!important}
+        }`;
+      document.head.appendChild(st);
+    }
+
+    ['buyOrderedQty','buyQty'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el){el.setAttribute('inputmode','numeric');el.setAttribute('enterkeyhint','next');}
+    });
+    ['buyCost','buyPaidAmount','lp43DiscountValue'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el){el.setAttribute('inputmode','decimal');el.setAttribute('enterkeyhint','next');}
+    });
+
+    installRefresh49();
+  }
+
+  function render49(){
+    try{
+      if(basePurchases49){basePurchases49();setTimeout(compact49,0);return;}
+    }catch(e){}
+    try{if(typeof render==='function')render();}catch(e){}
+  }
+
+  async function recover49(force){
+    if(busy49||page49()!=='purchases')return false;
+    const now=Date.now();
+    if(!force&&now-lastPull49<30000)return false;
+    busy49=true;lastPull49=now;
+    try{
+      if(!Array.isArray(db.purchaseBatches))db.purchaseBatches=[];
+      const remote=await list49(isDG49()?null:user49());
+      const before=JSON.stringify(db.purchaseBatches);
+      db.purchaseBatches=merge49(remote,db.purchaseBatches);
+      saveLocal49();
+      const changed=before!==JSON.stringify(db.purchaseBatches);
+      if(changed)render49();else compact49();
+      return changed;
+    }catch(e){
+      console.warn('FIX49 recover',e);
+      return false;
+    }finally{busy49=false;}
+  }
+
+  function installRefresh49(){
+    if(page49()!=='purchases')return;
+    const content=document.getElementById('content');
+    if(!content)return;
+
+    let bar=document.getElementById('lp49CircuitBar');
+    if(!bar){
+      bar=document.createElement('div');
+      bar.id='lp49CircuitBar';
+      bar.className='card';
+      bar.style.marginBottom='12px';
+      bar.innerHTML='<button type="button" class="secondary" id="lp49Refresh" style="width:100%">'+
+        (isDG49()?'↻ Actualiser les achats distants':'↻ Actualiser mes réponses DG')+
+        '</button><div class="muted" id="lp49Status" style="margin-top:7px"></div>';
+      content.prepend(bar);
+    }
+
+    const b=document.getElementById('lp49Refresh');
+    const status=document.getElementById('lp49Status');
+    if(!b||b.dataset.lp49==='1')return;
+    b.dataset.lp49='1';
+    b.onclick=async function(){
+      const old=b.textContent;
+      b.disabled=true;b.textContent='↻ Actualisation…';
+      const changed=await recover49(true);
+      if(status)status.textContent=changed?'✓ Nouvelles données récupérées':'✓ Circuit vérifié';
+      b.textContent='✓ Actualisé';
+      setTimeout(function(){
+        if(document.body.contains(b)){b.disabled=false;b.textContent=old;}
+      },1100);
+    };
+  }
+
+  function latestMine49(){
+    if(!Array.isArray(db.purchaseBatches))return null;
+    const u=user49();
+    return db.purchaseBatches.filter(function(x){return x&&t49(x.createdBy)===u;})
+      .slice().sort(function(a,b){return stamp49(b)-stamp49(a);})[0]||null;
+  }
+
+  document.addEventListener('click',function(e){
+    const btn=e.target&&e.target.closest?e.target.closest('#lp43Submit'):null;
+    if(!btn)return;
+    setTimeout(async function(){
+      try{
+        const batch=latestMine49();
+        if(!batch)return;
+        await upsert49(batch);
+        notify49('Achat reçu sur le serveur • en attente du DG');
+        await recover49(true);
+      }catch(err){
+        console.warn('FIX49 envoi utilisateur',err);
+        notify49('Achat gardé localement • toucher Actualiser pour reprendre');
+      }
+    },650);
+  },true);
+
+  document.addEventListener('click',function(e){
+    const btn=e.target&&e.target.closest
+      ? e.target.closest('[data-lp43-approve],[data-lp43-correct],[data-lp43-reject]')
+      : null;
+    if(!btn||!isDG49())return;
+
+    const id=btn.getAttribute('data-lp43-approve')||
+      btn.getAttribute('data-lp43-correct')||
+      btn.getAttribute('data-lp43-reject')||'';
+
+    const started=Date.now();
+    const timer=setInterval(async function(){
+      try{
+        const batch=Array.isArray(db.purchaseBatches)
+          ? db.purchaseBatches.find(function(x){return x&&t49(x.id)===t49(id);})
+          : null;
+
+        if(batch&&rank49(batch)>=55){
+          clearInterval(timer);
+          await upsert49(batch);
+          notify49('Décision DG envoyée à l’utilisateur');
+          return;
+        }
+
+        if(Date.now()-started>20000)clearInterval(timer);
+      }catch(err){
+        clearInterval(timer);
+        console.warn('FIX49 retour DG',err);
+        notify49('Décision enregistrée localement • actualisez pour reprendre l’envoi');
+      }
+    },500);
+  },true);
+
+  window.addEventListener('focus',function(){
+    if(page49()==='purchases')setTimeout(function(){recover49(false);},250);
+  });
+
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden&&page49()==='purchases')setTimeout(function(){recover49(false);},250);
+  });
+
+  try{
+    if(typeof purchases==='function'){
+      basePurchases49=purchases;
+      purchases=function(){
+        const r=basePurchases49.apply(this,arguments);
+        setTimeout(compact49,0);
+        setTimeout(function(){recover49(false);},180);
+        return r;
+      };
+      window.purchases=purchases;
+    }
+  }catch(e){console.warn('FIX49 purchases wrapper',e);}
+
+  window.lpFix49RecoverPurchases=recover49;
+  window.lpFix49UpsertPurchase=upsert49;
+  window.lpFix49MergePurchaseBatches=merge49;
+  setTimeout(compact49,0);
+  console.log('LEADER PHARMA F29.6.0.17 ACHATS CIRCUIT BIDIRECTIONNEL FIX49 ACTIF');
+})();
+
+/* LEADER PHARMA F29.6.0.17 ACHAT PROFESSIONNEL FIX50 ACTIF */
+(function(){
+  'use strict';
+  if(window.__LP_FIX50_ACHAT_PRO__)return;
+  window.__LP_FIX50_ACHAT_PRO__=true;
+
+  const text=v=>String(v==null?'':v).trim();
+  const norm=v=>{try{return text(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){return text(v).toLowerCase();}};
+  const isDG=()=>norm(currentUser?.role)==='dg';
+  const isPurchases=()=>{try{return String(page||'')==='purchases';}catch(e){return false;}};
+  const displayName=()=>text(currentUser?.name||currentUser?.username)||'—';
+
+  function style50(){
+    if(document.getElementById('lp50Style'))return;
+    const st=document.createElement('style');
+    st.id='lp50Style';
+    st.textContent=`
+      #lp50Identity,#lp50ManualSupplierWrap,#lp50ManualProductWrap{
+        border:1px dashed #cbd8d2;border-radius:12px;padding:10px;margin-top:8px;background:#fafcfb
+      }
+      #lp50Identity .lp50row{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
+      body.lp-fix50-purchases #content input:not([type="checkbox"]),
+      body.lp-fix50-purchases #content select{
+        min-height:42px!important;padding:8px 10px!important;font-size:16px!important
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  function enhance50(){
+    if(!isPurchases())return;
+    style50();
+    document.body.classList.add('lp-fix50-purchases');
+
+    const supplier=document.getElementById('buySupplier');
+    const product=document.getElementById('buyProduct');
+    const cost=document.getElementById('buyCost');
+
+    if(supplier){
+      const toggle=document.getElementById('u8ToggleSupplier');
+      const quick=document.getElementById('u8SupplierQuick');
+
+      if(!isDG()){
+        if(toggle)toggle.style.setProperty('display','none','important');
+        if(quick)quick.style.setProperty('display','none','important');
+
+        if(!Array.from(supplier.options).some(o=>o.value==='__manual_supplier__')){
+          const o=document.createElement('option');
+          o.value='__manual_supplier__';
+          o.textContent='✍ Fournisseur non enregistré — écrire le nom';
+          supplier.appendChild(o);
+        }
+
+        let wrap=document.getElementById('lp50ManualSupplierWrap');
+        if(!wrap){
+          wrap=document.createElement('div');
+          wrap.id='lp50ManualSupplierWrap';
+          wrap.style.display='none';
+          wrap.innerHTML='<label>Nom du fournisseur *</label><input id="lp50ManualSupplier" placeholder="Écrire le nom du fournisseur" autocomplete="off"><div class="muted" style="margin-top:5px">Ce nom reste sur cette facture. Il ne crée pas un fournisseur dans la base.</div>';
+          supplier.insertAdjacentElement('afterend',wrap);
+        }
+
+        const show=()=>{wrap.style.display=supplier.value==='__manual_supplier__'?'':'none';};
+        if(supplier.dataset.lp51SupplierBound!=='1'){
+          supplier.dataset.lp51SupplierBound='1';
+          supplier.addEventListener('change',show);
+        }
+        show();
+      }else{
+        const op=supplier.querySelector('option[value="__manual_supplier__"]');
+        if(op)op.remove();
+        const wrap=document.getElementById('lp50ManualSupplierWrap');
+        if(wrap)wrap.remove();
+      }
+    }
+
+    if(product){
+      if(!Array.from(product.options).some(o=>o.value==='__manual_product__')){
+        const o=document.createElement('option');
+        o.value='__manual_product__';
+        o.textContent='✍ Produit non enregistré — saisie manuelle';
+        product.appendChild(o);
+      }
+
+      let wrap=document.getElementById('lp50ManualProductWrap');
+      if(!wrap){
+        wrap=document.createElement('div');
+        wrap.id='lp50ManualProductWrap';
+        wrap.style.display='none';
+        wrap.innerHTML='<label>Nom du nouveau produit *</label><input id="lp50ManualProductName" placeholder="Nom du produit et dosage" autocomplete="off"><div class="muted" style="margin-top:5px">Le produit sera créé dans le stock uniquement après approbation du DG.</div>';
+        product.insertAdjacentElement('afterend',wrap);
+      }
+
+      const sync=()=>{
+        const manual=product.value==='__manual_product__';
+        const wasManual=product.dataset.lp50ManualActive==='1';
+        wrap.style.display=manual?'':'none';
+        const sale=document.getElementById('buySalePrice');
+
+        /* FIX51: nettoyer uniquement lors du passage vers
+           "Produit non enregistré". Ensuite on conserve
+           lot, péremption, prix achat et prix détail saisis. */
+        if(manual){
+          if(!wasManual){
+            if(cost)cost.value='';
+            if(sale)sale.value='';
+            const lot=document.getElementById('buyLot');if(lot)lot.value='';
+            const exp=document.getElementById('buyExpiry');if(exp)exp.value='';
+            const noExp=document.getElementById('buyNoExpiry');if(noExp)noExp.checked=false;
+          }
+        }else{
+          const p=(db.products||[]).find(x=>String(x.id)===String(product.value));
+          if(p&&sale)sale.value=Number(p.price||0);
+        }
+
+        product.dataset.lp50ManualActive=manual?'1':'0';
+      };
+
+      if(product.dataset.lp51Bound!=='1'){
+        product.dataset.lp51Bound='1';
+        product.addEventListener('change',()=>setTimeout(sync,0));
+      }
+      setTimeout(sync,0);
+    }
+
+    if(cost){
+      const field=cost.closest('.field');
+      const label=field?.querySelector('label');
+      if(label)label.textContent="Prix d'achat unitaire (dépôt/gros) *";
+
+      if(!document.getElementById('buySalePrice')){
+        const box=document.createElement('div');
+        box.className='field';
+        box.id='lp50SalePriceField';
+        box.innerHTML='<label>Prix de vente détail proposé *</label><input id="buySalePrice" type="number" min="0" inputmode="decimal" placeholder="Prix détail"><div class="muted" style="margin-top:4px">Le prix officiel ne change qu’après validation du DG.</div>';
+        field.insertAdjacentElement('afterend',box);
+
+        const p=(db.products||[]).find(x=>String(x.id)===String(product?.value||''));
+        if(p)document.getElementById('buySalePrice').value=Number(p.price||0);
+      }
+    }
+
+    const title=document.getElementById('u8FormTitle');
+    if(title&&!document.getElementById('lp50Identity')){
+      const box=document.createElement('div');
+      box.id='lp50Identity';
+      box.innerHTML='<b>👤 Identification automatique</b><div class="lp50row"><span>Commandé par</span><b>'+displayName()+'</b></div><div class="lp50row"><span>Réceptionné par</span><b>'+displayName()+'</b></div><div class="muted">Ces identités sont enregistrées automatiquement.</div>';
+      title.parentElement?.insertAdjacentElement('afterend',box);
+    }
+
+    ['buyOrderedQty','buyQty'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){el.setAttribute('inputmode','numeric');el.setAttribute('enterkeyhint','next');}
+    });
+
+    ['buyCost','buySalePrice','buyPaidAmount','lp43DiscountValue'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){el.setAttribute('inputmode','decimal');el.setAttribute('enterkeyhint','next');}
+    });
+  }
+
+  try{
+    if(typeof purchases==='function'){
+      const base=purchases;
+      purchases=function(){
+        const r=base.apply(this,arguments);
+        setTimeout(enhance50,0);
+        setTimeout(enhance50,120);
+        return r;
+      };
+      window.purchases=purchases;
+    }
+  }catch(e){console.warn('FIX50 purchases',e);}
+
+  /* FIX51: ne plus relancer enhance50 à chaque clic.
+     Cela évite d'effacer la saisie lot/péremption/prix. */
+  window.addEventListener('focus',()=>{if(isPurchases())setTimeout(enhance50,100);});
+  window.lpFix50Enhance=enhance50;
+  setTimeout(enhance50,0);
+
+  console.log('LEADER PHARMA F29.6.0.17 ACHAT MANUEL SAISIE FIX51 ACTIF');
+  console.log('LEADER PHARMA F29.6.0.17 ACHAT PROFESSIONNEL FIX50 ACTIF');
+})();
+
+/* LEADER PHARMA F29.6.0.17 FOURNISSEUR UTILISATEUR ENVOI CLAIR FIX52 ACTIF */
+(function(){
+  'use strict';
+  if(window.__LP_FIX52_SUPPLIER_USER__)return;
+  window.__LP_FIX52_SUPPLIER_USER__=true;
+
+  const t=v=>String(v==null?'':v).trim();
+  const n=v=>{try{return t(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){return t(v).toLowerCase();}};
+  const dg=()=>{try{return n(currentUser?.role)==='dg';}catch(e){return false;}};
+  const pg=()=>{try{return String(page||'');}catch(e){return '';}};
+  const note=m=>{try{if(typeof toast==='function')toast(m);}catch(e){}};
+
+  function supplierPurchaseUI(){
+    if(pg()!=='purchases'||dg())return;
+
+    /* Chez l'utilisateur: suppression REELLE, pas simple masquage,
+       du créateur de fournisseur hérité U8. */
+    document.getElementById('u8ToggleSupplier')?.remove();
+    document.getElementById('u8SupplierQuick')?.remove();
+
+    const sel=document.getElementById('buySupplier');
+    if(!sel)return;
+
+    let option=Array.from(sel.options).find(o=>o.value==='__manual_supplier__');
+    if(!option){
+      option=document.createElement('option');
+      option.value='__manual_supplier__';
+      option.textContent='✍ Fournisseur non enregistré — écrire le nom';
+      sel.appendChild(option);
+    }
+
+    let wrap=document.getElementById('lp50ManualSupplierWrap');
+    if(!wrap){
+      wrap=document.createElement('div');
+      wrap.id='lp50ManualSupplierWrap';
+      wrap.style.display='none';
+      wrap.innerHTML=
+        '<label>Nom du fournisseur *</label>'+
+        '<input id="lp50ManualSupplier" autocomplete="off" placeholder="Écrire simplement le nom du fournisseur">'+
+        '<div class="muted" style="margin-top:5px">Nom utilisé seulement pour cette facture • aucune création dans la base.</div>';
+      sel.insertAdjacentElement('afterend',wrap);
+    }
+
+    const input=document.getElementById('lp50ManualSupplier');
+    if(input){
+      input.removeAttribute('readonly');
+      input.removeAttribute('disabled');
+      input.setAttribute('autocomplete','off');
+      input.setAttribute('enterkeyhint','next');
+    }
+
+    const sync=()=>{
+      const manual=sel.value==='__manual_supplier__';
+      wrap.style.display=manual?'':'none';
+      if(manual)input?.focus();
+    };
+
+    if(sel.dataset.lp52ManualBound!=='1'){
+      sel.dataset.lp52ManualBound='1';
+      sel.addEventListener('change',sync);
+    }
+    sync();
+  }
+
+  function suppliersReadOnly(){
+    if(pg()!=='suppliers'||dg())return;
+
+    /* La liste peut rester consultable, mais toute création
+       fournisseur est interdite chez les non-DG. */
+    const btn=document.getElementById('saveSupplier');
+    if(btn){
+      const card=btn.closest('.card');
+      if(card)card.remove();
+      else btn.remove();
+    }
+
+    ['sname','sphone','saddr'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.closest('.field')?.remove();
+    });
+
+    const content=document.getElementById('content');
+    if(content&&!document.getElementById('lp52SupplierNotice')){
+      const x=document.createElement('div');
+      x.id='lp52SupplierNotice';
+      x.className='card';
+      x.style.marginBottom='12px';
+      x.innerHTML='<b>Fournisseurs • consultation</b><div class="muted" style="margin-top:5px">La création d’un fournisseur est réservée au DG. Dans Achats, utilisez un fournisseur existant ou saisissez un nom manuel pour la facture.</div>';
+      content.prepend(x);
+    }
+  }
+
+  function apply52(){
+    supplierPurchaseUI();
+    suppliersReadOnly();
+  }
+
+  /* Blocage de sécurité UI: même si un ancien bouton réapparaît
+     par un ancien rendu, un utilisateur ne peut pas créer. */
+  document.addEventListener('click',function(e){
+    if(dg())return;
+
+    const blocked=e.target?.closest?.('#u8ToggleSupplier,#u8CreateSupplier,#saveSupplier');
+    if(blocked){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      note('Création fournisseur réservée au DG');
+      return false;
+    }
+
+    const action=e.target?.closest?.('#savePurchase,#lp43Submit');
+    if(action&&pg()==='purchases'){
+      const sel=document.getElementById('buySupplier');
+      const manual=document.getElementById('lp50ManualSupplier');
+
+      if(sel?.value==='__manual_supplier__'&&!t(manual?.value)){
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        note('Écrivez le nom du fournisseur');
+        manual?.focus();
+        return false;
+      }
+    }
+  },true);
+
+  try{
+    if(typeof purchases==='function'){
+      const baseP=purchases;
+      purchases=function(){
+        const r=baseP.apply(this,arguments);
+        setTimeout(apply52,0);
+        setTimeout(apply52,100);
+        return r;
+      };
+      window.purchases=purchases;
+    }
+  }catch(e){console.warn('FIX52 purchases',e);}
+
+  try{
+    if(typeof suppliers==='function'){
+      const baseS=suppliers;
+      suppliers=function(){
+        const r=baseS.apply(this,arguments);
+        setTimeout(apply52,0);
+        return r;
+      };
+      window.suppliers=suppliers;
+    }
+  }catch(e){console.warn('FIX52 suppliers',e);}
+
+  /* Après ajout d'une ligne manuelle, guider clairement vers
+     la validation finale de la facture multi-produits. */
+  document.addEventListener('click',function(e){
+    const b=e.target?.closest?.('#savePurchase');
+    if(!b||dg()||pg()!=='purchases')return;
+    setTimeout(function(){
+      const submit=document.getElementById('lp43Submit');
+      if(submit){
+        submit.insertAdjacentHTML(
+          'beforebegin',
+          document.getElementById('lp52TransmitHint')?'':'<div id="lp52TransmitHint" class="muted" style="margin:10px 0"><b>Étape finale :</b> cochez la vérification puis appuyez sur « Vérifier et transmettre au DG ». Ajouter une ligne ne l’envoie pas encore.</div>'
+        );
+      }
+    },80);
+  },false);
+
+  window.addEventListener('focus',()=>setTimeout(apply52,80));
+  setTimeout(apply52,0);
+  console.log('LEADER PHARMA F29.6.0.17 FOURNISSEUR UTILISATEUR ENVOI CLAIR FIX52 ACTIF');
+})();
+
+/* LEADER PHARMA F29.6.0.17 SAISIE MANUELLE VISIBLE FIX53 ACTIF */
+(function(){
+  'use strict';
+  if(window.__LP_FIX53_VISIBLE_MANUAL__)return;
+  window.__LP_FIX53_VISIBLE_MANUAL__=true;
+
+  const txt=v=>String(v==null?'':v).trim();
+  const norm=v=>{
+    try{return txt(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+    catch(e){return txt(v).toLowerCase();}
+  };
+  const isDG=()=>{try{return norm(currentUser?.role)==='dg';}catch(e){return false;}};
+  const currentPage=()=>{try{return String(page||'');}catch(e){return '';}};
+  const notify=m=>{try{if(typeof toast==='function')toast(m);}catch(e){}};
+
+  function style53(){
+    if(document.getElementById('lp53Style'))return;
+    const st=document.createElement('style');
+    st.id='lp53Style';
+    st.textContent=`
+      .lp53-manual-box{
+        display:block!important;
+        border:1px dashed #b8c9c1;
+        border-radius:12px;
+        padding:10px;
+        margin-top:8px;
+        background:#fbfdfc
+      }
+      .lp53-manual-box label{display:block;font-weight:700;margin-bottom:5px}
+      .lp53-manual-box input{
+        display:block!important;
+        width:100%!important;
+        min-height:42px!important;
+        padding:8px 10px!important;
+        font-size:16px!important;
+        box-sizing:border-box!important
+      }
+      .lp53-or{font-weight:800;color:#087a59;margin-bottom:6px}
+    `;
+    document.head.appendChild(st);
+  }
+
+              function supplierManual53(){
+              if(currentPage()!=='purchases'||isDG()){
+                try{document.body.classList.remove('lp55-user-purchases');}catch(e){}
+                return;
+              }
+
+              try{document.body.classList.add('lp55-user-purchases');}catch(e){}
+
+              document.getElementById('u8ToggleSupplier')?.remove();
+              document.getElementById('u8SupplierQuick')?.remove();
+
+              const sel=document.getElementById('buySupplier');
+              if(!sel)return;
+
+              let op=Array.from(sel.options).find(o=>o.value==='__manual_supplier__');
+              if(!op){
+                op=document.createElement('option');
+                op.value='__manual_supplier__';
+                op.textContent='Fournisseur saisi manuellement';
+                sel.appendChild(op);
+              }
+
+              let wrap=document.getElementById('lp50ManualSupplierWrap');
+              if(!wrap){
+                wrap=document.createElement('div');
+                wrap.id='lp50ManualSupplierWrap';
+                wrap.className='lp53-manual-box lp55-stable-manual';
+                wrap.innerHTML=
+                  '<div class="lp53-or">OU écrire le fournisseur manuellement</div>'+
+                  '<label>Nom du fournisseur</label>'+
+                  '<input id="lp50ManualSupplier" autocomplete="off" enterkeyhint="next" placeholder="Ex. Dépôt Central Kamina">'+
+                  '<div class="muted" style="margin-top:5px">Ce nom reste sur cette facture et ne crée pas un fournisseur.</div>';
+                sel.insertAdjacentElement('afterend',wrap);
+              }
+
+              wrap.classList.add('lp53-manual-box','lp55-stable-manual');
+              wrap.style.setProperty('display','block','important');
+
+              const input=document.getElementById('lp50ManualSupplier');
+              if(!input)return;
+
+              input.removeAttribute('readonly');
+              input.removeAttribute('disabled');
+              input.setAttribute('autocomplete','off');
+              input.setAttribute('enterkeyhint','next');
+
+              if(input.dataset.lp55Bound!=='1'){
+                input.dataset.lp55Bound='1';
+                input.addEventListener('input',function(){
+                  if(txt(input.value)){
+                    sel.value='__manual_supplier__';
+                  }
+                });
+              }
+            }
+
+            function productManual53(){
+              if(currentPage()!=='purchases'||isDG())return;
+
+              const sel=document.getElementById('buyProduct');
+              if(!sel)return;
+
+              let op=Array.from(sel.options).find(o=>o.value==='__manual_product__');
+              if(!op){
+                op=document.createElement('option');
+                op.value='__manual_product__';
+                op.textContent='Produit saisi manuellement';
+                sel.appendChild(op);
+              }
+
+              let wrap=document.getElementById('lp50ManualProductWrap');
+              if(!wrap){
+                wrap=document.createElement('div');
+                wrap.id='lp50ManualProductWrap';
+                wrap.className='lp53-manual-box lp55-stable-manual';
+                wrap.innerHTML=
+                  '<div class="lp53-or">OU écrire un nouveau produit</div>'+
+                  '<label>Nom du nouveau produit</label>'+
+                  '<input id="lp50ManualProductName" autocomplete="off" enterkeyhint="next" placeholder="Ex. Désarmement 500 mg">'+
+                  '<div class="muted" style="margin-top:5px">Le produit sera créé dans le stock seulement après validation du DG.</div>';
+                sel.insertAdjacentElement('afterend',wrap);
+              }
+
+              wrap.classList.add('lp53-manual-box','lp55-stable-manual');
+              wrap.style.setProperty('display','block','important');
+
+              const input=document.getElementById('lp50ManualProductName');
+              if(!input)return;
+
+              input.removeAttribute('readonly');
+              input.removeAttribute('disabled');
+              input.setAttribute('autocomplete','off');
+              input.setAttribute('enterkeyhint','next');
+
+              if(input.dataset.lp55Bound!=='1'){
+                input.dataset.lp55Bound='1';
+                input.addEventListener('input',function(){
+                  if(txt(input.value)){
+                    sel.value='__manual_product__';
+                  }
+                });
+              }
+            }
+
+function suppliersPage53(){
+    if(currentPage()!=='suppliers'||isDG())return;
+
+    /* Le non-DG peut consulter uniquement. */
+    document.getElementById('saveSupplier')?.closest('.card')?.remove();
+    document.getElementById('saveSupplier')?.remove();
+
+    ['sname','sphone','saddr'].forEach(id=>{
+      const el=document.getElementById(id);
+      el?.closest('.field')?.remove();
+    });
+
+    const content=document.getElementById('content');
+    if(content&&!document.getElementById('lp53SupplierReadOnly')){
+      const x=document.createElement('div');
+      x.id='lp53SupplierReadOnly';
+      x.className='card';
+      x.style.marginBottom='12px';
+      x.innerHTML='<b>Fournisseurs • consultation uniquement</b><div class="muted" style="margin-top:5px">Seul le DG crée les fournisseurs. Dans Achats, l’utilisateur peut écrire un nom manuel pour sa facture.</div>';
+      content.prepend(x);
+    }
+  }
+
+  function apply53(){
+    style53();
+    supplierManual53();
+    productManual53();
+    suppliersPage53();
+  }
+
+  /* Blocage de securite contre les anciens controles fournisseur. */
+  document.addEventListener('click',function(e){
+    if(isDG())return;
+    const blocked=e.target?.closest?.('#u8ToggleSupplier,#u8CreateSupplier,#saveSupplier');
+    if(blocked){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      notify('Création fournisseur réservée au DG');
+    }
+  },true);
+
+  /* Réappliquer après chaque rendu DOM sans aucun appel réseau. */
+  let scheduled=false;
+  const observer=new MutationObserver(function(){
+    if(scheduled)return;
+    scheduled=true;
+    setTimeout(function(){
+      scheduled=false;
+      apply53();
+    },30);
+  });
+  observer.observe(document.body,{childList:true,subtree:true});
+
+  window.addEventListener('focus',()=>setTimeout(apply53,50));
+  window.lpFix53Apply=apply53;
+  setTimeout(apply53,0);
+
+  console.log('LEADER PHARMA F29.6.0.17 SAISIE MANUELLE VISIBLE FIX53 ACTIF');
+})();
+
+/* LEADER PHARMA F29.6.0.17 ACHAT MANUEL STABLE FINAL FIX55C ACTIF */
+(function(){
+  'use strict';
+  if(window.__LP_FIX55C_FINAL__)return;
+  window.__LP_FIX55C_FINAL__=true;
+
+  if(!document.getElementById('lp55Style')){
+    const st=document.createElement('style');
+    st.id='lp55Style';
+    st.textContent=`
+      body.lp55-user-purchases #u8ToggleSupplier,
+      body.lp55-user-purchases #u8SupplierQuick{
+        display:none!important;
+        visibility:hidden!important;
+        pointer-events:none!important;
+      }
+
+      body.lp55-user-purchases #lp50ManualSupplierWrap,
+      body.lp55-user-purchases #lp50ManualProductWrap{
+        display:block!important;
+      }
+
+      body.lp55-user-purchases #lp50ManualSupplier,
+      body.lp55-user-purchases #lp50ManualProductName{
+        display:block!important;
+        width:100%!important;
+        min-height:42px!important;
+        pointer-events:auto!important;
+        user-select:text!important;
+        -webkit-user-select:text!important;
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  document.addEventListener('click',function(e){
+    let role='';
+    try{role=String(currentUser?.role||'').toLowerCase();}catch(x){}
+    if(role==='dg')return;
+
+    const old=e.target?.closest?.('#u8ToggleSupplier,#u8CreateSupplier');
+    if(!old)return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    try{
+      if(typeof toast==='function'){
+        toast('Création fournisseur réservée au DG');
+      }
+    }catch(x){}
+  },true);
+
+  console.log('LEADER PHARMA F29.6.0.17 ACHAT MANUEL STABLE FINAL FIX55C ACTIF');
+})();
+
+/* LEADER PHARMA F29.6.0.17 PRIX DETAIL DG NOUVEAU PRODUIT FIX56 ACTIF */
+(function(){
+  'use strict';
+
+  if(window.__LP_FIX56_RETAIL_DG__)return;
+  window.__LP_FIX56_RETAIL_DG__=true;
+
+  const text56=v=>String(v==null?'':v).trim();
+
+  function norm56(v){
+    try{
+      return text56(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    }catch(e){
+      return text56(v).toLowerCase();
+    }
+  }
+
+  function isDG56(){
+    try{return norm56(currentUser?.role)==='dg';}
+    catch(e){return false;}
+  }
+
+  function notify56(m){
+    try{if(typeof toast==='function')toast(m);}
+    catch(e){}
+  }
+
+  function actor56(){
+    try{
+      return text56(currentUser?.name||currentUser?.username||currentUser?.login||'DG')||'DG';
+    }catch(e){
+      return 'DG';
+    }
+  }
+
+  function num56(v){
+    const n=Number(String(v??'').replace(/\s+/g,'').replace(',','.'));
+    return Number.isFinite(n)?n:NaN;
+  }
+
+  function batch56(id){
+    try{
+      return (db.purchaseBatches||[]).find(x=>String(x.id)===String(id));
+    }catch(e){
+      return null;
+    }
+  }
+
+  function requireRetail56(batch){
+    const manual=(batch?.lines||[]).filter(l=>l&&l.manualProduct===true);
+
+    if(!manual.length)return true;
+
+    for(const line of manual){
+      const current=Number(line.salePrice||0);
+      const raw=window.prompt(
+        'Prix de vente détail DG obligatoire pour « '+text56(line.productName||'Nouveau produit')+' » :',
+        current>0?String(current):''
+      );
+
+      if(raw===null){
+        notify56('Approbation annulée • prix détail DG obligatoire');
+        return false;
+      }
+
+      const price=num56(raw);
+
+      if(!(price>0)){
+        notify56('Prix de vente détail obligatoire et supérieur à 0');
+        return false;
+      }
+
+      line.salePrice=price;
+      line.salePriceApprovedBy=actor56();
+      line.salePriceApprovedAt=new Date().toISOString();
+    }
+
+    batch.retailPriceConfirmed=true;
+    batch.retailPriceApprovedBy=actor56();
+    batch.retailPriceApprovedAt=new Date().toISOString();
+
+    return true;
+  }
+
+  document.addEventListener('click',function(e){
+    const btn=e.target?.closest?.('[data-lp43-approve]');
+    if(!btn||!isDG56())return;
+
+    const batch=batch56(btn.dataset.lp43Approve);
+    if(!batch)return;
+
+    if(!requireRetail56(batch)){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      return false;
+    }
+  },true);
+
+  function decorate56(){
+    if(!isDG56())return;
+
+    document.querySelectorAll('[data-lp43-approve]').forEach(btn=>{
+      const batch=batch56(btn.dataset.lp43Approve);
+      if(!batch)return;
+
+      const manual=(batch.lines||[]).some(l=>l&&l.manualProduct===true);
+
+      if(manual){
+        btn.textContent='✅ Définir prix détail et approuver';
+        btn.title='Prix détail obligatoire avant ajout au stock';
+      }
+    });
+  }
+
+  const obs56=new MutationObserver(()=>setTimeout(decorate56,20));
+  obs56.observe(document.body,{childList:true,subtree:true});
+
+  window.addEventListener('focus',()=>setTimeout(decorate56,50));
+  setTimeout(decorate56,0);
+
+  console.log('LEADER PHARMA F29.6.0.17 PRIX DETAIL DG NOUVEAU PRODUIT FIX56 ACTIF');
+})();
+
+/* LEADER PHARMA F29.6.0.17 NOUVEAU PRODUIT STOCK FIX57 ACTIF */
+
+/* LEADER PHARMA F29.6.0.17 VENTE ID PRODUIT MANUEL FIX58 ACTIF */
+
+/* LEADER PHARMA F29.6.0.17 RETOUR DG SERVEUR FIX59 ACTIF */
+(function(){
+  'use strict';
+
+  if(window.__LP_FIX59__)return;
+  window.__LP_FIX59__=true;
+
+  const sent=new Set();
+  let busy=false;
+  let autoDone=false;
+
+  const txt=v=>String(v==null?'':v).trim();
+  const norm=v=>{
+    try{return txt(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+    catch(e){return txt(v).toLowerCase();}
+  };
+
+  function isDG(){
+    try{return norm(currentUser?.role)==='dg';}
+    catch(e){return false;}
+  }
+
+  function onPurchases(){
+    try{return norm(page)==='purchases';}
+    catch(e){return false;}
+  }
+
+  function isFinal(b){
+    if(!b)return false;
+    const s=norm(b.status);
+    return !!(
+      b.centralConfirmed ||
+      s.includes('approuv') ||
+      s.includes('valide') ||
+      s.includes('refus') ||
+      s.includes('corriger') ||
+      s.includes('correction')
+    );
+  }
+
+  function signature(b){
+    return [
+      txt(b?.id||b?.ref),
+      txt(b?.status),
+      txt(b?.approvedAt||b?.decidedAt||b?.centralConfirmedAt||'')
+    ].join('|');
+  }
+
+  function toast59(m){
+    try{if(typeof toast==='function')toast(m);}
+    catch(e){}
+  }
+
+  async function pushDecision(b,show){
+    if(!b||!isFinal(b))return false;
+    if(typeof window.lpFix49UpsertPurchase!=='function')return false;
+
+    const k=signature(b);
+    if(sent.has(k))return true;
+
+    await window.lpFix49UpsertPurchase(b);
+    sent.add(k);
+
+    if(show)toast59('Décision DG confirmée sur le serveur');
+    return true;
+  }
+
+  async function resendAll(show){
+    if(busy||!isDG()||!onPurchases())return false;
+    busy=true;
+
+    try{
+      if(typeof window.lpFix49RecoverPurchases==='function'){
+        try{await window.lpFix49RecoverPurchases(true);}catch(e){}
+      }
+
+      const rows=Array.isArray(db?.purchaseBatches)?db.purchaseBatches:[];
+      let sentCount=0;
+
+      for(const b of rows){
+        if(!isFinal(b))continue;
+        try{
+          if(await pushDecision(b,false))sentCount++;
+        }catch(e){
+          console.warn('FIX59 resend',e);
+        }
+      }
+
+      if(show){
+        toast59(
+          sentCount
+            ? 'Réponses DG renvoyées au serveur'
+            : 'Circuit réponses DG vérifié'
+        );
+      }
+
+      return sentCount>0;
+    }finally{
+      busy=false;
+    }
+  }
+
+  function watchDecision(id){
+    const started=Date.now();
+
+    const timer=setInterval(async function(){
+      try{
+        const rows=Array.isArray(db?.purchaseBatches)?db.purchaseBatches:[];
+        const b=rows.find(x=>x&&txt(x.id)===txt(id));
+
+        if(b&&isFinal(b)){
+          clearInterval(timer);
+          await pushDecision(b,true);
+          return;
+        }
+
+        if(Date.now()-started>120000){
+          clearInterval(timer);
+          toast59('Décision gardée localement • toucher Renvoyer réponses DG');
+        }
+      }catch(e){
+        clearInterval(timer);
+        console.warn('FIX59 watch',e);
+        toast59('Décision gardée localement • toucher Renvoyer réponses DG');
+      }
+    },700);
+  }
+
+  document.addEventListener('click',function(e){
+    if(!isDG())return;
+
+    const btn=e.target?.closest?.(
+      '[data-lp43-approve],[data-lp43-correct],[data-lp43-reject]'
+    );
+
+    if(!btn)return;
+
+    const id=
+      btn.getAttribute('data-lp43-approve')||
+      btn.getAttribute('data-lp43-correct')||
+      btn.getAttribute('data-lp43-reject')||'';
+
+    if(id)watchDecision(id);
+  },true);
+
+  function installButton(){
+    if(!isDG()||!onPurchases())return;
+
+    const content=document.getElementById('content');
+    if(!content)return;
+
+    let btn=document.getElementById('lp59Resend');
+
+    if(!btn){
+      btn=document.createElement('button');
+      btn.id='lp59Resend';
+      btn.type='button';
+      btn.className='secondary';
+      btn.style.width='100%';
+      btn.style.marginBottom='10px';
+      btn.textContent='↻ Renvoyer les réponses DG au serveur';
+
+      const bar=document.getElementById('lp49CircuitBar');
+      if(bar)bar.insertAdjacentElement('afterend',btn);
+      else content.prepend(btn);
+    }
+
+    if(btn.dataset.lp59==='1')return;
+    btn.dataset.lp59='1';
+
+    btn.onclick=async function(){
+      const old=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='↻ Envoi des réponses DG…';
+      await resendAll(true);
+      btn.textContent='✓ Réponses vérifiées';
+
+      setTimeout(function(){
+        if(document.body.contains(btn)){
+          btn.disabled=false;
+          btn.textContent=old;
+        }
+      },1200);
+    };
+  }
+
+  function apply59(){
+    installButton();
+
+    if(autoDone||!isDG()||!onPurchases())return;
+    autoDone=true;
+
+    /* Reprend aussi l'achat déjà approuvé avant installation FIX59. */
+    /* FREE WEB: reprise globale uniquement sur demande manuelle */
+  }
+
+  const observer=new MutationObserver(function(){
+    setTimeout(apply59,40);
+  });
+
+  observer.observe(document.body,{childList:true,subtree:true});
+
+  window.addEventListener('focus',function(){
+    if(onPurchases())setTimeout(apply59,80);
+  });
+
+  window.lpFix59ResendDG=resendAll;
+
+  setTimeout(apply59,0);
+
+  console.log(
+    'LEADER PHARMA F29.6.0.17 RETOUR DG SERVEUR FIX59 ACTIF'
+  );
+})();
+
+/* LEADER PHARMA F29.6.0.17 WEB ACHATS FIX59 FREE EGRESS ACTIF */
