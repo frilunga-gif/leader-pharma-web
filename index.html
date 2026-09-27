@@ -478,12 +478,12 @@
     if(!root) return;
     css();
     const s=stats();
-    try{if(typeof setHeader==='function')setHeader('Centre de contrôle DG 360','Pilotage multi-agences • lecture seule • décisions rapides');else{const t=document.getElementById('pageTitle');if(t)t.textContent='Centre de contrôle DG 360'}}catch(e){}
+    try{if(typeof setHeader==='function')setHeader('DG.fr','Pilotage multi-agences • lecture seule • décisions rapides');else{const t=document.getElementById('pageTitle');if(t)t.textContent='DG.fr'}}catch(e){}
     const rows=s.byAgency.map(a=>`<tr><td><b>${esc360(a.name)}</b></td><td>${fmtMoney(a.revenue)}</td><td>${fmtMoney(a.profit)}</td><td>${fmtMoney(a.expenses)}</td><td>${a.critical}</td><td>${fmtMoney(a.receivables)}</td><td>${fmtMoney(a.debts)}</td><td>${a.incomplete+a.noPhoto}</td></tr>`).join('');
     const userRows=s.byUser.map(u=>`<tr><td><b>${esc360(u.user)}</b></td><td>${u.count}</td><td>${fmtMoney(u.amount)}</td></tr>`).join('');
     const alertHtml=s.alerts.slice(0,12).map(a=>`<div class="lp360-alert ${a.level==='danger'?'danger':''}"><i class="lp360-dot"></i><div><strong>${esc360(a.title)}</strong><div>${esc360(a.detail)}</div></div></div>`).join('');
     root.innerHTML=`<div id="lp-dg360-root" data-marker="${MARK}">
-      <div class="lp360-head"><div><div class="lp360-badge">DG 360 • LECTURE SEULE</div><h3>Centre de contrôle Direction Générale</h3><p>${esc360(s.d)} • agence sélectionnée • actualisé à ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</p></div><button id="lp360-refresh" class="lp360-btn">↻ Actualiser</button></div>
+      <div class="lp360-head"><div><div class="lp360-badge">DG.fr • LECTURE SEULE</div><h3>Centre de contrôle Direction Générale</h3><p>${esc360(s.d)} • agence sélectionnée • actualisé à ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</p></div><button id="lp360-refresh" class="lp360-btn">↻ Actualiser</button></div>
       <div class="lp360-grid">
         <div class="lp360-card"><small>Ventes du jour</small><b>${fmtMoney(s.totalRevenue)}</b><span>${s.byAgency.reduce((n,a)=>n+a.salesCount,0)} opération(s)</span></div>
         <div class="lp360-card"><small>Bénéfice brut</small><b>${fmtMoney(s.totalProfit)}</b><span>agence sélectionnée</span></div>
@@ -531,8 +531,8 @@
       b.id='lp-dg360-nav';
       b.type='button';
       b.className='nav-btn';
-      b.textContent='DG 360';
-      b.title='Centre de contrôle DG 360';
+      b.textContent='DG.fr';
+      b.title='DG.fr • Centre de contrôle';
       b.onclick=e=>{e.preventDefault();e.stopPropagation();window.__LP_DG360_ACTIVE__=true;render360()};
       const target=Array.from(nav.querySelectorAll('.nav-btn')).find(x=>norm(x.textContent).includes('controle dg'));
       if(target&&target.nextSibling) nav.insertBefore(b,target.nextSibling); else if(target) nav.appendChild(b); else nav.prepend(b);
@@ -575,5 +575,7 @@
 })();
 
 </script>
+
+<!-- LEADER PHARMA F29.6.0.17 WEB DG.FR VISIBLE ACTIF -->
 </body>
 </html>
