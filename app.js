@@ -150029,3 +150029,105 @@ function suppliersPage53(){
 /* LEADER PHARMA F29.6.0.17 WEB DG LOGIN LOCAL HORS LIGNE FINAL V2 ACTIF */
 
 /* LEADER PHARMA F29.6.0.17 WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF */
+
+
+/* LEADER PHARMA F29.6.0.17 WEB RH ACTUALISER CONTROLE DG EN TETE FINAL V5 ACTIF */
+(function(){
+  'use strict';
+  if(window.__LP_WEB_RH_V5__)return;
+  window.__LP_WEB_RH_V5__=true;
+
+  const text=v=>String(v==null?'':v).trim();
+  const norm=v=>{try{return text(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){return text(v).toLowerCase();}};
+  const isDG=()=>{try{return norm(currentUser&&currentUser.role)==='dg';}catch(e){return false;}};
+  const isPayroll=()=>{try{return norm(page)==='payroll';}catch(e){return false;}};
+
+  function panel(){
+    const direct=document.getElementById('lpU12DGPhotoControl');
+    if(direct)return direct;
+    const headings=[...document.querySelectorAll('h1,h2,h3,h4,strong')];
+    const title=headings.find(function(el){
+      const value=norm(el.textContent);
+      return value.includes('pointages du personnel') ||
+        value.includes('controle dg des pointages');
+    });
+    return title ? (title.closest('.card,section,article') || title.parentElement) : null;
+  }
+
+  function placeFirst(box){
+    if(!box||!box.parentElement)return;
+    const parent=box.parentElement;
+    if(parent.firstElementChild!==box)parent.prepend(box);
+    box.style.order='-999';
+  }
+
+  async function refreshPointage(button){
+    if(!isDG()||!isPayroll())return false;
+    const old=button.textContent;
+    button.disabled=true;
+    button.textContent='↻ Actualisation…';
+    try{
+      if(typeof window.lpF2945RecoverAttendanceDG==='function'){
+        await window.lpF2945RecoverAttendanceDG(true);
+      }else if(typeof window.syncPull==='function'){
+        await window.syncPull();
+      }else if(typeof syncPull==='function'){
+        await syncPull();
+      }else if(typeof window.syncAll==='function'){
+        await window.syncAll();
+      }
+      if(typeof lpU12MountPhotoPointage==='function')lpU12MountPhotoPointage();
+      if(typeof lpU12MountDGPhotoControl==='function')lpU12MountDGPhotoControl();
+      if(typeof payroll==='function')payroll();
+      install();
+      button.textContent='✓ Pointages et photos actualisés';
+      if(typeof toast==='function')toast('Présences, départs et photos actualisés');
+      return true;
+    }catch(e){
+      console.warn('WEB RH V5',e);
+      button.textContent='Actualisation impossible • réessayer';
+      if(typeof toast==='function')toast('Connexion indisponible • données locales conservées');
+      return false;
+    }finally{
+      setTimeout(function(){
+        const current=document.getElementById('lpWebV5RefreshPointage');
+        if(current){current.disabled=false;current.textContent=old;}
+      },1600);
+    }
+  }
+
+  function install(){
+    if(!isDG()||!isPayroll())return;
+    const box=panel();
+    if(!box)return;
+
+    placeFirst(box);
+
+    let button=document.getElementById('lpWebV5RefreshPointage');
+    if(!button){
+      button=document.createElement('button');
+      button.id='lpWebV5RefreshPointage';
+      button.type='button';
+      button.className='secondary';
+      button.style.cssText='width:100%;margin:0 0 14px;padding:14px;font-weight:800';
+      button.textContent='↻ Actualiser les pointages et les photos';
+      box.prepend(button);
+    }
+
+    if(button.dataset.ready==='1')return;
+    button.dataset.ready='1';
+    button.addEventListener('click',function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      refreshPointage(button);
+    },true);
+  }
+
+  const observer=new MutationObserver(function(){setTimeout(install,40);});
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+  window.addEventListener('focus',function(){setTimeout(install,80);});
+  window.lpWebV5RefreshPointage=refreshPointage;
+  setTimeout(install,0);
+
+  console.log('LEADER PHARMA F29.6.0.17 WEB RH ACTUALISER CONTROLE DG EN TETE FINAL V5 ACTIF');
+})();
