@@ -1,0 +1,168 @@
+name: Leader Pharma WEB RH POINTAGE ACTUALISER EN TETE STABLE V5
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  corriger_rh_web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot Web
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Identifier fonction RH existante
+        run: |
+          set -euo pipefail
+          test -s index.html
+
+          if [ -s app.js ] && grep -Fq "function lpU12MountDGPhotoControl()" app.js; then
+            echo "app.js" > /tmp/lp-rh-file.txt
+          elif grep -Fq "function lpU12MountDGPhotoControl()" index.html; then
+            echo "index.html" > /tmp/lp-rh-file.txt
+          else
+            echo "Fonction RH Pointage existante introuvable."
+            exit 1
+          fi
+
+          RH_FILE="$(cat /tmp/lp-rh-file.txt)"
+          grep -Fq "WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF" app.js index.html 2>/dev/null || true
+          grep -Fq "Contrôle DG des pointages photo" "$RH_FILE"
+          grep -Fq "content.appendChild(panel);" "$RH_FILE"
+          echo "FONCTION RH EXISTANTE = OK"
+
+      - name: Modifier uniquement cadre RH Pointage
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path(Path('/tmp/lp-rh-file.txt').read_text().strip())
+          code = path.read_text(encoding='utf-8')
+          marker = 'LEADER PHARMA WEB RH POINTAGE ACTUALISER EN TETE STABLE V5 ACTIF'
+
+          if marker not in code:
+              start = code.find('  function lpU12MountDGPhotoControl(){')
+              if start < 0:
+                  raise SystemExit('Debut fonction RH introuvable')
+
+              end = code.find('\n  try{', start)
+              if end < 0:
+                  raise SystemExit('Fin fonction RH introuvable')
+
+              block = code[start:end]
+
+              heading = '      <h3>📸 Contrôle DG des pointages photo</h3>'
+              button = '\n'.join([
+                  '      <button type="button" id="lpWebRHRefreshV5" class="secondary" style="width:100%;margin:0 0 14px;padding:14px;font-weight:800">',
+                  '        ↻ Actualiser les pointages et les photos',
+                  '      </button>',
+                  '      <h3>📸 Contrôle DG des pointages photo</h3>',
+              ])
+
+              if block.count(heading) != 1:
+                  raise SystemExit('Titre Controle DG absent ou duplique')
+              block = block.replace(heading, button, 1)
+
+              old_mount = '    content.appendChild(panel);'
+              new_mount = '\n'.join([
+                  '    content.prepend(panel);',
+                  '',
+                  "    const refresh = panel.querySelector('#lpWebRHRefreshV5');",
+                  '    if(refresh){',
+                  '      refresh.onclick = async function(event){',
+                  '        event.preventDefault();',
+                  '        const oldText = refresh.textContent;',
+                  '        refresh.disabled = true;',
+                  "        refresh.textContent = '↻ Actualisation…';",
+                  '        try{',
+                  "          if(typeof syncPull === 'function'){",
+                  '            await syncPull();',
+                  '          }',
+                  "          if(typeof lpU12MountPhotoPointage === 'function'){",
+                  '            lpU12MountPhotoPointage();',
+                  '          }',
+                  '          lpU12MountDGPhotoControl();',
+                  "          if(typeof toast === 'function'){",
+                  "            toast('Pointages et photos actualisés');",
+                  '          }',
+                  '        }catch(error){',
+                  "          console.warn('RH POINTAGE V5',error);",
+                  '          refresh.disabled = false;',
+                  '          refresh.textContent = oldText;',
+                  "          if(typeof toast === 'function'){",
+                  "            toast('Connexion indisponible • données locales conservées');",
+                  '          }',
+                  '        }',
+                  '      };',
+                  '    }',
+              ])
+
+              if block.count(old_mount) != 1:
+                  raise SystemExit('Position actuelle du cadre RH absente ou dupliquee')
+              block = block.replace(old_mount, new_mount, 1)
+
+              code = code[:start] + block + code[end:]
+              if path.suffix.lower() == '.html':
+                  code += '\n<!-- ' + marker + ' -->\n'
+              else:
+                  code += '\n/* ' + marker + ' */\n'
+              path.write_text(code, encoding='utf-8')
+          PY
+
+      - name: Controle strict RH et login
+        run: |
+          set -euo pipefail
+          RH_FILE="$(cat /tmp/lp-rh-file.txt)"
+          FILES=(index.html)
+          if [ -s app.js ]; then FILES+=(app.js); fi
+
+          grep -Fq "LEADER PHARMA WEB RH POINTAGE ACTUALISER EN TETE STABLE V5 ACTIF" "$RH_FILE"
+          grep -Fq "lpWebRHRefreshV5" "$RH_FILE"
+          grep -Fq "Actualiser les pointages et les photos" "$RH_FILE"
+          grep -Fq "content.prepend(panel);" "$RH_FILE"
+          grep -Fq "await syncPull();" "$RH_FILE"
+          grep -Fq "LP_DG_PASSWORD_SUPABASE_V5_START" "${FILES[@]}"
+          grep -Fq "LP_DG_OFFLINE_SECURE_V7_START" "${FILES[@]}"
+          grep -Fq "leader_pharma_dg_password_v15" "${FILES[@]}"
+
+          if grep -Fq "window.__LP_WEB_RH_V5__" "${FILES[@]}"; then
+            echo "Ancien observateur V5 encore present. Lancez d'abord la restauration V4."
+            exit 1
+          fi
+
+          if [ "$RH_FILE" = "app.js" ]; then
+            node --check app.js
+          fi
+
+          echo "LOGIN V4 ONLINE / OFFLINE = CONSERVE"
+          echo "LISTE AGENCES = NON MODIFIEE"
+          echo "CONTROLE DG POINTAGES = EN TETE"
+          echo "BOUTON ACTUALISER RH = ACTIF"
+
+      - name: Publier correction RH stable
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          RH_FILE="$(cat /tmp/lp-rh-file.txt)"
+          git add "$RH_FILE"
+
+          if git diff --cached --quiet; then
+            echo "Correction RH V5 deja installee."
+          else
+            git commit -m "Web RH pointage Actualiser et controle DG en tete stable V5"
+            git push origin HEAD:main
+          fi
+
+          echo "WEB RH POINTAGE ACTUALISER EN TETE STABLE V5 = PRET"
