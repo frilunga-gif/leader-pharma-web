@@ -107242,6 +107242,9 @@ console.log(
     panel.className = 'card';
     panel.style.marginTop = '18px';
     panel.innerHTML = `
+      <button type="button" id="lpWebRHRefreshV5" class="secondary" style="width:100%;margin:0 0 14px;padding:14px;font-weight:800">
+        ↻ Actualiser les pointages et les photos
+      </button>
       <h3>📸 Contrôle DG des pointages photo</h3>
       <p class="muted">
         Vérification visuelle des arrivées et départs enregistrés par les utilisateurs.
@@ -107264,7 +107267,36 @@ console.log(
       </div>
     `;
 
-    content.appendChild(panel);
+    content.prepend(panel);
+
+    const refresh = panel.querySelector('#lpWebRHRefreshV5');
+    if(refresh){
+      refresh.onclick = async function(event){
+        event.preventDefault();
+        const oldText = refresh.textContent;
+        refresh.disabled = true;
+        refresh.textContent = '↻ Actualisation…';
+        try{
+          if(typeof syncPull === 'function'){
+            await syncPull();
+          }
+          if(typeof lpU12MountPhotoPointage === 'function'){
+            lpU12MountPhotoPointage();
+          }
+          lpU12MountDGPhotoControl();
+          if(typeof toast === 'function'){
+            toast('Pointages et photos actualisés');
+          }
+        }catch(error){
+          console.warn('RH POINTAGE V5',error);
+          refresh.disabled = false;
+          refresh.textContent = oldText;
+          if(typeof toast === 'function'){
+            toast('Connexion indisponible • données locales conservées');
+          }
+        }
+      };
+    }
   }
 
   try{
@@ -150029,3 +150061,5 @@ function suppliersPage53(){
 /* LEADER PHARMA F29.6.0.17 WEB DG LOGIN LOCAL HORS LIGNE FINAL V2 ACTIF */
 
 /* LEADER PHARMA F29.6.0.17 WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF */
+
+/* LEADER PHARMA WEB RH POINTAGE ACTUALISER EN TETE STABLE V5 ACTIF */
