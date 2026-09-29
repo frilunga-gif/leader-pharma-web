@@ -114003,8 +114003,7 @@ console.log(
 
   function lpIsDGV5(){
 
-    /* WEB V2: le login FIX59 local fonctionne avec ou sans Internet. */
-    return false;
+    /* WEB V4: validation Supabase en ligne puis acces local hors ligne. */
 
     const field =
       lpUsernameFieldV5();
@@ -150028,3 +150027,5 @@ function suppliersPage53(){
 /* LEADER PHARMA F29.6.0.17 WEB ACHATS FIX59 FREE EGRESS ACTIF */
 
 /* LEADER PHARMA F29.6.0.17 WEB DG LOGIN LOCAL HORS LIGNE FINAL V2 ACTIF */
+
+/* LEADER PHARMA F29.6.0.17 WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF */
