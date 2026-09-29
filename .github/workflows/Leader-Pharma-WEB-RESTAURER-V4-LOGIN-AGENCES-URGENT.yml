@@ -1,0 +1,87 @@
+name: Leader Pharma WEB RESTAURER V4 LOGIN AGENCES URGENT
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  restaurer_web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot Web
+        uses: actions/checkout@v4
+
+      - name: Restaurer Web V4 valide
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          files = [p for p in (Path('app.js'), Path('index.html')) if p.is_file()]
+          marker = '/* LEADER PHARMA F29.6.0.17 WEB RH ACTUALISER CONTROLE DG EN TETE FINAL V5 ACTIF */'
+          restored = []
+
+          for path in files:
+              code = path.read_text(encoding='utf-8')
+              pos = code.find(marker)
+              if pos < 0:
+                  continue
+
+              cut = pos
+              if path.suffix.lower() == '.html':
+                  script_pos = code.rfind('<script>', 0, pos)
+                  if script_pos >= 0 and not code[script_pos + len('<script>'):pos].strip():
+                      cut = script_pos
+
+              path.write_text(code[:cut].rstrip() + '\n', encoding='utf-8')
+              restored.append(path.name)
+
+          if not restored:
+              raise SystemExit('Bloc V5 a retirer introuvable dans app.js et index.html')
+
+          print('V5 retire de:', ', '.join(restored))
+          PY
+
+      - name: Verifier retour V4
+        run: |
+          set -euo pipefail
+          FILES=(index.html)
+          if [ -s app.js ]; then FILES+=(app.js); fi
+
+          grep -Fq "WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF" "${FILES[@]}"
+          grep -Fq "LP_DG_PASSWORD_SUPABASE_V5_START" "${FILES[@]}"
+          grep -Fq "LP_DG_OFFLINE_SECURE_V7_START" "${FILES[@]}"
+          grep -Fq "leader_pharma_dg_password_v15" "${FILES[@]}"
+
+          if grep -Fq "WEB RH ACTUALISER CONTROLE DG EN TETE FINAL V5 ACTIF" "${FILES[@]}"; then
+            echo "Le bloc V5 est encore present."
+            exit 1
+          fi
+
+          if [ -s app.js ]; then node --check app.js; fi
+
+          echo "WEB V4 LOGIN ONLINE / OFFLINE = RESTAURE"
+          echo "AGENCES = RESTAUREES"
+          echo "DONNEES / FIX59 / PHOTOS / MINUIT = CONSERVES"
+
+      - name: Publier restauration V4
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add index.html
+          if [ -s app.js ]; then git add app.js; fi
+
+          if git diff --cached --quiet; then
+            echo "Web V4 deja restaure."
+          else
+            git commit -m "Restaurer Web V4 login et agences apres V5"
+            git push origin HEAD:main
+          fi
+
+          echo "RESTAURATION WEB V4 TERMINEE"
