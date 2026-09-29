@@ -1,0 +1,98 @@
+name: Leader Pharma WEB FIX59 LOGIN ONLINE PUIS OFFLINE FINAL V3
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  corriger_web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot Web
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Identifier moteur Web V2
+        run: |
+          set -euo pipefail
+          test -s index.html
+          if [ -s app.js ]; then
+            echo "app.js" > /tmp/lp-code-file.txt
+          elif grep -Fq "function login()" index.html; then
+            echo "index.html" > /tmp/lp-code-file.txt
+          else
+            echo "Moteur Web introuvable."
+            exit 1
+          fi
+
+          CODE="$(cat /tmp/lp-code-file.txt)"
+          grep -Fq "WEB DG LOGIN LOCAL HORS LIGNE FINAL V2 ACTIF" "$CODE"
+          grep -Fq "AUTH FINALE DG USERS FIX10 ACTIF" "$CODE"
+
+      - name: Retablir validation Internet puis memorisation locale
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path(Path('/tmp/lp-code-file.txt').read_text().strip())
+          code = path.read_text(encoding='utf-8')
+          marker = 'LEADER PHARMA F29.6.0.17 WEB LOGIN ONLINE PUIS OFFLINE FINAL V3 ACTIF'
+
+          if marker not in code:
+              old = "window.__LP_F296017_AUTH_FINAL_FIX10__ = true;\n\n  /* WEB V2: conserver le moteur login local FIX59. */\n  return;\n\n  const AUTH_URL"
+              new = "window.__LP_F296017_AUTH_FINAL_FIX10__ = true;\n\n  /* WEB V3: validation Supabase en ligne, puis mot de passe memorise localement. */\n  const AUTH_URL"
+              if code.count(old) != 1:
+                  raise SystemExit('Bloc Web V2 attendu une fois, introuvable ou duplique')
+              code = code.replace(old, new, 1)
+              code += f'\n/* {marker} */\n'
+              path.write_text(code, encoding='utf-8')
+          PY
+
+      - name: Controle final Web V3
+        run: |
+          set -euo pipefail
+          CODE="$(cat /tmp/lp-code-file.txt)"
+
+          grep -Fq "LEADER PHARMA F29.6.0.17 WEB LOGIN ONLINE PUIS OFFLINE FINAL V3 ACTIF" "$CODE"
+          grep -Fq "AUTH FINALE DG USERS FIX10 ACTIF" "$CODE"
+          grep -Fq "grant_type=password" "$CODE"
+          grep -Fq "result.localUser.password=password" "$CODE"
+          grep -Fq "if(!navigator.onLine) return baseLogin.apply" "$CODE"
+          grep -Fq "RETOUR DG SERVEUR FIX59 ACTIF" "$CODE"
+          grep -Fq "RESET DONNEES DG SEUL ACTIF" "$CODE"
+          grep -Fq "exitPhoto" "$CODE"
+          grep -Fq "row.exitDate" "$CODE"
+          grep -Fq "POINTAGE 24H" "$CODE"
+
+          if [ "$CODE" = "app.js" ]; then
+            node --check app.js
+          fi
+
+          echo "LOGIN INTERNET PUIS HORS LIGNE = OK"
+          echo "MOT DE PASSE SUPABASE MEMORISE LOCALEMENT = OK"
+
+      - name: Publier Web V3
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          CODE="$(cat /tmp/lp-code-file.txt)"
+          git add "$CODE"
+
+          if git diff --cached --quiet; then
+            echo "Web V3 deja installe."
+          else
+            git commit -m "Leader Pharma Web login Internet puis hors ligne V3"
+            git push origin HEAD:main
+          fi
+
+          echo "WEB LOGIN ONLINE PUIS OFFLINE FINAL V3 = PRET"
