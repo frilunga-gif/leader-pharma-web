@@ -578,5 +578,15 @@
 
 <!-- LEADER PHARMA F29.6.0.17 WEB DG.FR VISIBLE ACTIF -->
 <!-- LEADER PHARMA F29.6.0.17 DG.FR NOM VISIBLE ACTIF -->
+<script>
+/* LEADER PHARMA WEB ENREGISTREMENT CACHE HORS LIGNE STABLE FINAL V6 ACTIF */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+      .then(function (registration) { registration.update(); })
+      .catch(function (error) { console.warn('Cache hors ligne Leader Pharma', error); });
+  });
+}
+</script>
 </body>
 </html>
