@@ -1,0 +1,229 @@
+name: Leader Pharma WEB FIX59 RH ACTUALISER CONTROLE DG EN TETE FINAL V5 CORRIGE
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  corriger_web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot Web
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Identifier Web V4 valide
+        run: |
+          set -euo pipefail
+          test -s index.html
+
+          if [ -s app.js ] && grep -Fq "WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF" app.js; then
+            echo "app.js" > /tmp/lp-code-file.txt
+          elif grep -Fq "WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF" index.html; then
+            echo "index.html" > /tmp/lp-code-file.txt
+          else
+            echo "Marqueur du Web V4 valide introuvable dans app.js et index.html."
+            exit 1
+          fi
+
+          CODE="$(cat /tmp/lp-code-file.txt)"
+          FILES=(index.html)
+          if [ -s app.js ]; then FILES+=(app.js); fi
+          grep -Fq "WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF" "$CODE"
+          grep -Fq "LP_DG_PASSWORD_SUPABASE_V5_START" "${FILES[@]}"
+          grep -Fq "LP_DG_OFFLINE_SECURE_V7_START" "${FILES[@]}"
+          grep -Fq "lpF2945RecoverAttendanceDG" "${FILES[@]}"
+          grep -Fq "lpU12DGPhotoControl" "${FILES[@]}"
+          echo "BASE WEB V4 VALIDEE = OK"
+
+      - name: Ajouter Actualiser et placer controle DG en tete
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path(Path('/tmp/lp-code-file.txt').read_text().strip())
+          code = path.read_text(encoding='utf-8')
+          marker = 'LEADER PHARMA F29.6.0.17 WEB RH ACTUALISER CONTROLE DG EN TETE FINAL V5 ACTIF'
+
+          if marker not in code:
+              block = r'''
+
+          /* LEADER PHARMA F29.6.0.17 WEB RH ACTUALISER CONTROLE DG EN TETE FINAL V5 ACTIF */
+          (function(){
+            'use strict';
+            if(window.__LP_WEB_RH_V5__)return;
+            window.__LP_WEB_RH_V5__=true;
+
+            const text=v=>String(v==null?'':v).trim();
+            const norm=v=>{try{return text(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){return text(v).toLowerCase();}};
+            const isDG=()=>{try{return norm(currentUser&&currentUser.role)==='dg';}catch(e){return false;}};
+            const isPayroll=()=>{try{return norm(page)==='payroll';}catch(e){return false;}};
+
+            function panel(){
+              return document.getElementById('lpU12DGPhotoControl');
+            }
+
+            function placeFirst(box){
+              if(!box||!box.parentElement)return;
+              const parent=box.parentElement;
+              if(parent.firstElementChild!==box)parent.prepend(box);
+              box.style.order='-999';
+            }
+
+            async function refreshPointage(button){
+              if(!isDG()||!isPayroll())return false;
+              if(typeof window.lpF2945RecoverAttendanceDG!=='function'){
+                throw new Error('Synchronisation distante du pointage indisponible');
+              }
+
+              const old=button.textContent;
+              button.disabled=true;
+              button.textContent='↻ Actualisation…';
+              try{
+                await window.lpF2945RecoverAttendanceDG(true);
+                if(typeof lpU12MountPhotoPointage==='function')lpU12MountPhotoPointage();
+                if(typeof lpU12MountDGPhotoControl==='function')lpU12MountDGPhotoControl();
+                install();
+                button.textContent='✓ Pointages et photos actualisés';
+                if(typeof toast==='function')toast('Présences, départs et photos actualisés');
+                return true;
+              }catch(e){
+                console.warn('WEB RH V5',e);
+                button.textContent='Actualisation impossible • réessayer';
+                if(typeof toast==='function')toast('Connexion indisponible • données locales conservées');
+                return false;
+              }finally{
+                setTimeout(function(){
+                  const current=document.getElementById('lpWebV5RefreshPointage');
+                  if(current){current.disabled=false;current.textContent=old;}
+                },1600);
+              }
+            }
+
+            function install(){
+              if(!isDG()||!isPayroll())return;
+              const box=panel();
+              if(!box)return;
+
+              placeFirst(box);
+
+              let button=document.getElementById('lpWebV5RefreshPointage');
+              if(!button){
+                button=document.createElement('button');
+                button.id='lpWebV5RefreshPointage';
+                button.type='button';
+                button.className='secondary';
+                button.style.cssText='width:100%;margin:0 0 14px;padding:14px;font-weight:800';
+                button.textContent='↻ Actualiser les pointages et les photos';
+                box.prepend(button);
+              }
+
+              if(button.dataset.ready==='1')return;
+              button.dataset.ready='1';
+              button.addEventListener('click',function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                refreshPointage(button);
+              },true);
+            }
+
+            const observer=new MutationObserver(function(){setTimeout(install,40);});
+            observer.observe(document.documentElement,{childList:true,subtree:true});
+            window.addEventListener('focus',function(){setTimeout(install,80);});
+            window.lpWebV5RefreshPointage=refreshPointage;
+            setTimeout(install,0);
+
+            console.log('LEADER PHARMA F29.6.0.17 WEB RH ACTUALISER CONTROLE DG EN TETE FINAL V5 ACTIF');
+          })();
+          '''
+              if path.suffix.lower() == '.html':
+                  code += '\n<script>\n' + block + '\n</script>\n'
+              else:
+                  code += block
+              path.write_text(code, encoding='utf-8')
+          PY
+
+      - name: Controle final Web V5
+        run: |
+          set -euo pipefail
+          CODE="$(cat /tmp/lp-code-file.txt)"
+          FILES=(index.html)
+          if [ -s app.js ]; then FILES+=(app.js); fi
+
+          grep -Fq "WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF" "$CODE"
+          grep -Fq "WEB RH ACTUALISER CONTROLE DG EN TETE FINAL V5 ACTIF" "$CODE"
+          grep -Fq "Actualiser les pointages et les photos" "$CODE"
+          grep -Fq "lpWebV5RefreshPointage" "$CODE"
+          grep -Fq "parent.prepend(box)" "$CODE"
+          grep -Fq "lpF2945RecoverAttendanceDG(true)" "$CODE"
+          grep -Fq "LP_DG_OFFLINE_SECURE_V7_START" "${FILES[@]}"
+          grep -Fq "leader_pharma_dg_password_v15" "${FILES[@]}"
+          grep -Fq "RETOUR DG SERVEUR FIX59 ACTIF" "${FILES[@]}"
+          grep -Fq "RESET DONNEES DG SEUL ACTIF" "${FILES[@]}"
+
+          for required in "POINTAGE 24H" "exitPhoto" "row.exitDate"; do
+            if ! grep -Fq "$required" "${FILES[@]}"; then
+              echo "Controle Web absent: $required"
+              exit 1
+            fi
+          done
+
+          if [ "$CODE" = "app.js" ]; then
+            node --check app.js
+          else
+            python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.inside=False
+                  self.parts=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag.lower()=='script' and not dict(attrs).get('src'):
+                      self.inside=True
+                      self.parts.append('')
+              def handle_endtag(self,tag):
+                  if tag.lower()=='script':self.inside=False
+              def handle_data(self,data):
+                  if self.inside:self.parts[-1]+=data
+
+          parser=Scripts()
+          parser.feed(Path('index.html').read_text(encoding='utf-8'))
+          Path('/tmp/web-inline.js').write_text('\n'.join(parser.parts),encoding='utf-8')
+          PY
+            node --check /tmp/web-inline.js
+          fi
+
+          echo "BOUTON ACTUALISER RH = OK"
+          echo "CONTROLE DG POINTAGES EN TETE = OK"
+          echo "LOGIN ONLINE / OFFLINE V4 = CONSERVE"
+          echo "PHOTOS DEPART / MINUIT / FIX59 = CONSERVES"
+
+      - name: Publier Web V5
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          CODE="$(cat /tmp/lp-code-file.txt)"
+          git add "$CODE"
+
+          if git diff --cached --quiet; then
+            echo "Web V5 deja installe."
+          else
+            git commit -m "Leader Pharma Web RH Actualiser et controle DG en tete V5 corrige"
+            git push origin HEAD:main
+          fi
+
+          echo "WEB FIX59 RH ACTUALISER CONTROLE DG EN TETE FINAL V5 = PRET"
