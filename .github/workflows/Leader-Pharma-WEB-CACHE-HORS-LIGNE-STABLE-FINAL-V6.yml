@@ -1,0 +1,182 @@
+name: Leader Pharma WEB CACHE HORS LIGNE STABLE FINAL V6
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  corriger_cache_web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot Web
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verifier la version Web validee
+        run: |
+          set -euo pipefail
+          test -s index.html
+          test -s app.js
+          test -s styles.css
+          test -s dg-security.js
+          test -s assets/leader-pharma-logo.png
+
+          grep -Fq "WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF" app.js index.html
+          grep -Fq "LEADER PHARMA WEB RH POINTAGE ACTUALISER EN TETE STABLE V5 ACTIF" app.js index.html
+          grep -Fq "LP_DG_OFFLINE_SECURE_V7_START" app.js index.html
+          grep -Fq "leader_pharma_dg_password_v15" app.js index.html
+          grep -Fq "Actualiser les pointages et les photos" app.js index.html
+
+          node --check app.js
+          node --check dg-security.js
+          echo "BASE WEB V4 + RH V5 = OK"
+
+      - name: Installer le cache Web hors ligne
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          sw = r'''/* LEADER PHARMA WEB CACHE HORS LIGNE STABLE FINAL V6 ACTIF */
+          const CACHE_NAME = 'leader-pharma-web-stable-v6-20260929';
+          const APP_SHELL = [
+            './',
+            './index.html',
+            './app.js',
+            './dg-security.js',
+            './styles.css',
+            './assets/leader-pharma-logo.png'
+          ];
+
+          self.addEventListener('install', event => {
+            event.waitUntil(
+              caches.open(CACHE_NAME)
+                .then(cache => cache.addAll(APP_SHELL))
+                .then(() => self.skipWaiting())
+            );
+          });
+
+          self.addEventListener('activate', event => {
+            event.waitUntil(
+              caches.keys()
+                .then(keys => Promise.all(
+                  keys
+                    .filter(key => key.startsWith('leader-pharma-web-') && key !== CACHE_NAME)
+                    .map(key => caches.delete(key))
+                ))
+                .then(() => self.clients.claim())
+            );
+          });
+
+          self.addEventListener('fetch', event => {
+            if (event.request.method !== 'GET') return;
+            const url = new URL(event.request.url);
+            if (url.origin !== self.location.origin) return;
+
+            if (event.request.mode === 'navigate') {
+              event.respondWith(
+                fetch(event.request)
+                  .then(response => {
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
+                    return response;
+                  })
+                  .catch(async () =>
+                    (await caches.match(event.request)) ||
+                    (await caches.match('./index.html')) ||
+                    (await caches.match('./'))
+                  )
+              );
+              return;
+            }
+
+            event.respondWith(
+              caches.match(event.request).then(cached => {
+                const online = fetch(event.request)
+                  .then(response => {
+                    if (response && response.ok) {
+                      const copy = response.clone();
+                      caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+                    }
+                    return response;
+                  })
+                  .catch(() => cached);
+                return cached || online;
+              })
+            );
+          });
+          '''
+          Path('service-worker.js').write_text(sw.strip() + '\n', encoding='utf-8')
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          marker = 'LEADER PHARMA WEB ENREGISTREMENT CACHE HORS LIGNE STABLE FINAL V6 ACTIF'
+
+          if marker not in html:
+              registration = r'''
+          <script>
+          /* LEADER PHARMA WEB ENREGISTREMENT CACHE HORS LIGNE STABLE FINAL V6 ACTIF */
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+              navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+                .then(function (registration) { registration.update(); })
+                .catch(function (error) { console.warn('Cache hors ligne Leader Pharma', error); });
+            });
+          }
+          </script>
+          '''
+              if '</body>' not in html:
+                  raise SystemExit('Balise </body> introuvable dans index.html')
+              html = html.replace('</body>', registration.strip() + '\n</body>', 1)
+              index.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Controle final sans regression
+        run: |
+          set -euo pipefail
+
+          test -s service-worker.js
+          grep -Fq "LEADER PHARMA WEB CACHE HORS LIGNE STABLE FINAL V6 ACTIF" service-worker.js
+          grep -Fq "caches.open(CACHE_NAME)" service-worker.js
+          grep -Fq "caches.match('./index.html')" service-worker.js
+          grep -Fq "LEADER PHARMA WEB ENREGISTREMENT CACHE HORS LIGNE STABLE FINAL V6 ACTIF" index.html
+          grep -Fq "navigator.serviceWorker.register('./service-worker.js'" index.html
+
+          grep -Fq "WEB DG V7 ONLINE OFFLINE FINAL V4 ACTIF" app.js index.html
+          grep -Fq "LEADER PHARMA WEB RH POINTAGE ACTUALISER EN TETE STABLE V5 ACTIF" app.js index.html
+          grep -Fq "LP_DG_OFFLINE_SECURE_V7_START" app.js index.html
+          grep -Fq "leader_pharma_dg_password_v15" app.js index.html
+          grep -Fq "Actualiser les pointages et les photos" app.js index.html
+
+          node --check app.js
+          node --check dg-security.js
+          node --check service-worker.js
+
+          echo "PAGE WEB DISPONIBLE HORS LIGNE = OK"
+          echo "LOGIN V4 ONLINE / OFFLINE = CONSERVE"
+          echo "RH POINTAGE V5 = CONSERVE"
+
+      - name: Publier cache Web V6
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add index.html service-worker.js
+
+          if git diff --cached --quiet; then
+            echo "Cache Web V6 deja installe."
+          else
+            git commit -m "Leader Pharma Web cache hors ligne stable V6"
+            git push origin HEAD:main
+          fi
+
+          echo "WEB CACHE HORS LIGNE STABLE FINAL V6 = PRET"
