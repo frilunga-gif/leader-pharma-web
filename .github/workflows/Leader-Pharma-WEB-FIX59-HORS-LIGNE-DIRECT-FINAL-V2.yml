@@ -1,0 +1,162 @@
+name: Leader Pharma WEB FIX59 HORS LIGNE DIRECT FINAL V2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  corriger_web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Recuperer depot Web
+        uses: actions/checkout@v4
+
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Identifier base Web FIX59
+        run: |
+          set -euo pipefail
+          test -s index.html
+
+          if [ -s app.js ]; then
+            echo "app.js" > /tmp/lp-code-file.txt
+          elif grep -Fq "function login()" index.html; then
+            echo "index.html" > /tmp/lp-code-file.txt
+          else
+            echo "Moteur Web Leader Pharma introuvable."
+            exit 1
+          fi
+
+          CODE="$(cat /tmp/lp-code-file.txt)"
+          grep -Fq "function login()" "$CODE"
+          grep -Fq "leader.fr" "$CODE"
+          grep -Fq "LP_DG_PASSWORD_SUPABASE_V5_START" "$CODE"
+          echo "BASE WEB PRESENTE = OK"
+
+      - name: Activer connexion DG locale avec ou sans Internet
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          code_path = Path(Path('/tmp/lp-code-file.txt').read_text().strip())
+          index_path = Path('index.html')
+          code = code_path.read_text(encoding='utf-8')
+          html = index_path.read_text(encoding='utf-8')
+          marker = 'LEADER PHARMA F29.6.0.17 WEB DG LOGIN LOCAL HORS LIGNE FINAL V2 ACTIF'
+
+          if marker not in code:
+              old = "  function lpIsDGV5(){\n\n    const field =\n      lpUsernameFieldV5();"
+              new = "  function lpIsDGV5(){\n\n    /* WEB V2: le login FIX59 local fonctionne avec ou sans Internet. */\n    return false;\n\n    const field =\n      lpUsernameFieldV5();"
+              if code.count(old) != 1:
+                  raise SystemExit('Intercepteur Supabase DG V7 introuvable ou duplique')
+              code = code.replace(old, new, 1)
+
+              fix10_old = "window.__LP_F296017_AUTH_FINAL_FIX10__ = true;\n\n  const AUTH_URL"
+              if fix10_old in code:
+                  fix10_new = "window.__LP_F296017_AUTH_FINAL_FIX10__ = true;\n\n  /* WEB V2: conserver le moteur login local FIX59. */\n  return;\n\n  const AUTH_URL"
+                  if code.count(fix10_old) != 1:
+                      raise SystemExit('Login FIX10 duplique')
+                  code = code.replace(fix10_old, fix10_new, 1)
+
+              code += f'\n/* {marker} */\n'
+              code_path.write_text(code, encoding='utf-8')
+
+          # Si une ancienne interception tactile FIX61 existe, garder son bouton RH
+          # mais desactiver uniquement son controle de connexion.
+          touch = '  window.addEventListener("touchstart",intercept,{capture:true,passive:false});'
+          click = '  window.addEventListener("click",intercept,true);'
+          changed = False
+          if touch in html:
+              if html.count(touch) != 1:
+                  raise SystemExit('Interception touch FIX61 dupliquee')
+              html = html.replace(touch, '  /* WEB V2: interception touch DG retiree */', 1)
+              changed = True
+          if click in html:
+              if html.count(click) != 1:
+                  raise SystemExit('Interception click FIX61 dupliquee')
+              html = html.replace(click, '  /* WEB V2: interception click DG retiree */', 1)
+              changed = True
+          if changed:
+              index_path.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Controle final Web
+        run: |
+          set -euo pipefail
+          CODE="$(cat /tmp/lp-code-file.txt)"
+
+          if [ "$CODE" = "app.js" ]; then
+            node --check app.js
+          else
+            python3 - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class Scripts(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.inside = False
+                  self.parts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag.lower() == 'script' and not dict(attrs).get('src'):
+                      self.inside = True
+                      self.parts.append('')
+              def handle_endtag(self, tag):
+                  if tag.lower() == 'script':
+                      self.inside = False
+              def handle_data(self, data):
+                  if self.inside:
+                      self.parts[-1] += data
+
+          parser = Scripts()
+          parser.feed(Path('index.html').read_text(encoding='utf-8'))
+          Path('/tmp/web-inline.js').write_text('\n'.join(parser.parts), encoding='utf-8')
+          PY
+            node --check /tmp/web-inline.js
+          fi
+
+          grep -Fq "LEADER PHARMA F29.6.0.17 WEB DG LOGIN LOCAL HORS LIGNE FINAL V2 ACTIF" "$CODE"
+          grep -Fq "function login()" "$CODE"
+          grep -Fq "leader.fr" "$CODE"
+          grep -Fq "RESET DONNEES DG SEUL ACTIF" "$CODE"
+
+          for marker in \
+            "RETOUR DG SERVEUR FIX59 ACTIF" \
+            "POINTAGE 24H" \
+            "exitPhoto" \
+            "row.exitDate"; do
+            if ! grep -Fq "$marker" "$CODE" index.html; then
+              echo "Controle Web absent: $marker"
+              exit 1
+            fi
+          done
+
+          echo "WEB HORS LIGNE = OK"
+          echo "FIX59 / PHOTOS / MINUIT / RESET = CONSERVES"
+
+      - name: Publier Web corrige
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          CODE="$(cat /tmp/lp-code-file.txt)"
+          git add index.html
+          if [ "$CODE" != "index.html" ]; then git add "$CODE"; fi
+
+          if git diff --cached --quiet; then
+            echo "Web hors ligne V2 deja installe."
+          else
+            git commit -m "Leader Pharma Web FIX59 connexion hors ligne V2"
+            git push origin HEAD:main
+          fi
+
+          echo "WEB FIX59 HORS LIGNE DIRECT FINAL V2 = PRET"
