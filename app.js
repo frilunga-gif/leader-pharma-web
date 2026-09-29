@@ -114003,6 +114003,9 @@ console.log(
 
   function lpIsDGV5(){
 
+    /* WEB V2: le login FIX59 local fonctionne avec ou sans Internet. */
+    return false;
+
     const field =
       lpUsernameFieldV5();
 
@@ -150023,3 +150026,5 @@ function suppliersPage53(){
 })();
 
 /* LEADER PHARMA F29.6.0.17 WEB ACHATS FIX59 FREE EGRESS ACTIF */
+
+/* LEADER PHARMA F29.6.0.17 WEB DG LOGIN LOCAL HORS LIGNE FINAL V2 ACTIF */
