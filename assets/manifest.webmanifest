@@ -1,0 +1,1 @@
+{"id": "/leader-pharma-web/", "name": "Leader Pharma Manager Pro", "short_name": "Leader Pharma", "start_url": "../index.html", "scope": "../", "display": "standalone", "background_color": "#ffffff", "theme_color": "#0b6b4f", "icons": [{"src": "leader-pharma-logo.png?v=2026100304", "sizes": "256x256", "type": "image/png", "purpose": "any"}]}
