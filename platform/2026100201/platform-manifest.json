@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "build": 2026100201,
+  "version": "29.6.0.55",
+  "base": "Android V42",
+  "files": {
+    "index.html": "228def5a1176b0878c6d454f2f030b61090d5aa445e96b0d49cf9dba2659d92d",
+    "app.js": "70d1a62af085abe8b838d0d0939991ba64df51a462969da473fafeab534bfa12",
+    "dg-security.js": "0e83b7043fd35d6445a4b874741a8b3b17b14e27f2ed67fec78ebf893faf30e7",
+    "platform-update.js": "6073df219082969a8a603f56bf83ba3c71cde96daa6e2ec0960f3f54ce7ab9bb",
+    "styles.css": "a83f82707f68b4a2850ce49d9898428ee4246c4dc0047a4136268f7a91ebed53",
+    "assets/leader-pharma-logo.png": "13704aa0bf0400d80e2f058a6ddcbca9723db38991cfd5447e61b8e5eb74a466"
+  }
+}
