@@ -1,0 +1,113 @@
+name: Leader Pharma WEB 72 BASE ANDROID VALIDEE
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: leader-pharma-web-publication
+  cancel-in-progress: false
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Reprendre APK 72 valide depuis MASTER
+      shell: python
+      run: "from pathlib import Path\nimport urllib.request,json,hashlib,zipfile,io,shutil\nreq=urllib.request.Request('https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update',headers={'x-leader-update':'LP-MASTER-PRO-2026','x-leader-current-version':'29.6.0.28'})\n\
+        meta=json.loads(urllib.request.urlopen(req,timeout=60).read())\nassert meta.get('ok') is True and meta.get('technical_version')=='29.6.0.72','Le\
+        \ canal Android doit contenir la version 72 validee'\nurl=meta['download_url'];assert url.startswith('https://')\n\
+        data=urllib.request.urlopen(url,timeout=120).read()\nif meta.get('sha256'):assert hashlib.sha256(data).hexdigest()==meta['sha256']\n\
+        z=zipfile.ZipFile(io.BytesIO(data))\nr=Path('release-web');r.mkdir(exist_ok=True)\nfor name in ['index.html','app.js','dg-security.js','styles.css','assets/leader-pharma-logo.png']:\n\
+        \ p=r/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read('assets/public/'+name))\napp=(r/'app.js').read_text();html=(r/'index.html').read_text()\n\
+        assert '29.6.0.72' in app and 'V50 FIX6 RH ACTUALISATION' in app\nassert 'V71 SUPPRESSION CIBLEE DEUX VENTES DG' in\
+        \ app and 'V72 PHOTOS POINTAGE SUPPRESSION DG' in app\nassert 'lpFix61RefreshPointage' not in html,'Ancien bouton\
+        \ RH interdit'\nhtml=html.replace('</head>','<script src=\"platform-update.js\"></script>\\n</head>',1)\n(r/'index.html').write_text(html)\n\
+        (r/'platform-update.js').write_text(\"/* Web/Windows updates: never reload an active operation. */\\n(function(){\\\
+        n 'use strict';\\n const backupKey='lp_upgrade_backup_config_v43';\\n if(!localStorage.getItem('lp_data_generation_v39')&&!localStorage.getItem(backupKey)){\\\
+        n   const raw=localStorage.getItem('lpmp_v13')||localStorage.getItem('lpmp_v12');\\n   if(raw){\\n     // Fail closed\
+        \ if an archive cannot fit: do not run the generation reset.\\n     localStorage.setItem(backupKey,JSON.stringify({date:new\
+        \ Date().toISOString(),raw}));\\n   }\\n }\\n window.LP_PLATFORM_BUILD='72 / base Android validee';\\n if(location.protocol==='https:'&&'serviceWorker'\
+        \ in navigator){\\n   navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).then(reg=>{\\\
+        n     function offer(){\\n       if(!reg.waiting||document.getElementById('lp-platform-update'))return;\\n       const\
+        \ b=document.createElement('button');b.id='lp-platform-update';\\n       b.textContent='Nouvelle version disponible';b.style.cssText='position:fixed;bottom:64px;right:16px;z-index:99999;padding:12px;background:#0b6b4f;color:white;border-radius:10px';\\\
+        n       b.onclick=()=>{if(confirm('Terminez et enregistrez vos opérations. Recharger maintenant ?')){\\n         let\
+        \ once=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!once){once=true;location.reload();}});\\\
+        n         reg.waiting.postMessage({type:'ACTIVATE'});\\n       }};document.body.append(b);\\n     }\\n     offer();reg.addEventListener('updatefound',()=>{const\
+        \ w=reg.installing;if(w)w.addEventListener('statechange',offer);});\\n     setInterval(()=>reg.update().catch(()=>{}),300000);\\\
+        n   }).catch(()=>{});\\n }\\n // Intercept platform updates before legacy Android download handlers.\\n document.addEventListener('click',async\
+        \ e=>{\\n   const b=e.target.closest('button,a');if(!b)return;\\n   if(!/Vérifier maintenant|Vérifier les mises à\
+        \ jour/i.test(b.textContent))return;\\n   e.preventDefault();e.stopImmediatePropagation();\\n   if(location.protocol==='file:'){\\\
+        n     if(window.leaderPlatform)window.leaderPlatform.checkUpdates();\\n     else alert('Mise à jour du moteur Windows\
+        \ requise.');\\n   }else{\\n     const reg=await navigator.serviceWorker?.getRegistration();\\n     if(reg){await\
+        \ reg.update();if(reg.waiting)reg.waiting.postMessage({type:'SHOW'});}\\n     alert(reg?.waiting?'Une nouvelle version\
+        \ est disponible. Utilisez le bouton de mise à jour.':'Vérification terminée. Les mises à jour seront proposées ici.');\\\
+        n   }\\n },true);\\n})();\\n\",encoding='utf-8')\n(r/'service-worker.js').write_text(\"const CACHE_NAME='leader-pharma-web-v72';\\\
+        nconst FILES=['./index.html','./app.js','./dg-security.js','./platform-update.js','./styles.css','./assets/leader-pharma-logo.png'];\\\
+        nself.addEventListener('install',e=>e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(FILES))));\\nself.addEventListener('message',e=>{if(e.data?.type==='ACTIVATE')self.skipWaiting();});\\\
+        nself.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('leader-pharma-web-')&&k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));\\\
+        nself.addEventListener('fetch',e=>{\\n if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin)return;\\\
+        n const url=new URL(e.request.url),base=new URL('./',self.location.href);\\n const rel=url.pathname.slice(base.pathname.length);\\\
+        n if(e.request.mode==='navigate'){e.respondWith(caches.open(CACHE_NAME).then(c=>c.match('./index.html')).then(r=>r||fetch(e.request)));return;}\\\
+        n if(FILES.includes('./'+rel)){e.respondWith(caches.open(CACHE_NAME).then(c=>c.match('./'+rel)).then(r=>r||fetch(e.request)));}\\\
+        n});\\n\",encoding='utf-8')\nfiles=['index.html','app.js','dg-security.js','platform-update.js','styles.css','assets/leader-pharma-logo.png']\n\
+        m={'schema':1,'build':2026100802,'version':'29.6.0.72','base':'Android 72 valide','files':{n:hashlib.sha256((r/n).read_bytes()).hexdigest()\
+        \ for n in files}}\n(r/'platform-manifest.json').write_text(json.dumps(m,indent=2))\nfor p in r.iterdir():\n if p.is_file():shutil.copy2(p,p.name)\n\
+        shutil.copytree(r/'assets','assets',dirs_exist_ok=True)\nshutil.copytree(r,Path('platform')/str(m['build']),dirs_exist_ok=True)\n\
+        shutil.rmtree(r)\n"
+    - name: Verifier JavaScript
+      run: 'node --check app.js
+
+        node --check dg-security.js
+
+        node --check platform-update.js
+
+        node --check service-worker.js'
+    - name: Publier fichiers sur main
+      run: 'git config user.name ''github-actions[bot]''
+
+        git config user.email ''41898282+github-actions[bot]@users.noreply.github.com''
+
+        git add index.html app.js dg-security.js platform-update.js service-worker.js styles.css assets platform platform-manifest.json
+
+        if ! git diff --cached --quiet; then git commit -m ''Web 72 depuis APK FIX6 valide''; git push origin main; fi'
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Leader-Pharma-Web-72
+        path: 'index.html
+
+          app.js
+
+          dg-security.js
+
+          platform-update.js
+
+          service-worker.js
+
+          styles.css
+
+          assets
+
+          platform
+
+          platform-manifest.json'
+    - name: Preparer publication Pages
+      shell: python
+      run: "from pathlib import Path\nimport shutil\nr=Path('_site');r.mkdir(exist_ok=True)\nfor n in ['index.html','app.js','dg-security.js','platform-update.js','service-worker.js','styles.css','platform-manifest.json']:\n\
+        \ shutil.copy2(n,r/n)\nfor n in ['assets','platform']:\n shutil.copytree(n,r/n,dirs_exist_ok=True)\n(r/'.nojekyll').touch()"
+    - uses: actions/configure-pages@v5
+    - uses: actions/upload-pages-artifact@v3
+      with:
+        path: _site
+    - name: Publier Web maintenant
+      id: deployment
+      uses: actions/deploy-pages@v4
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
