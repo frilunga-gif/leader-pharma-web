@@ -9,7 +9,7 @@
      localStorage.setItem(backupKey,JSON.stringify({date:new Date().toISOString(),raw}));
    }
  }
- window.LP_PLATFORM_BUILD='72 / base Android validee';
+ window.LP_PLATFORM_BUILD='29.6.0.75 / moteur commun Android';
  if(location.protocol==='https:'&&'serviceWorker' in navigator){
    navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).then(reg=>{
      function offer(){
