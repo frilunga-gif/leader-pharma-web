@@ -1,0 +1,79 @@
+name: Leader Pharma V73 FIX1 ACTIVATION WEB WINDOWS
+'on':
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+    - name: Verifier la base RH 73 publiee
+      shell: python
+      run: "from pathlib import Path\nimport urllib.request,json,hashlib,shutil\n\
+        base='https://frilunga-gif.github.io/leader-pharma-web/'\nm=json.loads(urllib.request.urlopen(base+'platform-manifest.json',timeout=30).read())\n\
+        assert m['build']==2026101401, 'La base publiee a change: reexaminer avant\
+        \ correction'\nr=Path('site');r.mkdir(exist_ok=True)\nfor source in Path('.').iterdir():\n\
+        \ if source.name in ['.git','.github','site']:continue\n if source.is_dir():shutil.copytree(source,r/source.name,dirs_exist_ok=True)\n\
+        \ elif source.is_file():shutil.copy2(source,r/source.name)\nfor n,h in m['files'].items():\n\
+        \ data=urllib.request.urlopen(base+'platform/'+str(m['build'])+'/'+n,timeout=60).read()\n\
+        \ assert hashlib.sha256(data).hexdigest()==h,n\n p=r/n;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data)\n"
+    - name: Activer le cache et afficher V73
+      shell: python
+      run: 'from pathlib import Path
+
+        r=Path(''site'')
+
+        p=r/''app.js'';s=p.read_text();assert ''lastRunAt=0'' in s
+
+        s=s.replace("''F29.6.0.72 MASTER PRO''", "''F29.6.0.73 MASTER PRO''").replace("''29.6.0.72''",
+        "''29.6.0.73''")
+
+        p.write_text(s)
+
+        p=r/''platform-update.js'';s=p.read_text();assert ''72 / base Android validee''
+        in s
+
+        p.write_text(s.replace(''72 / base Android validee'',''73 / RH stable''))
+
+        (r/''service-worker.js'').write_text("const CACHE_NAME=''leader-pharma-web-v73-fix1'';\nconst
+        FILES=[''./index.html'',''./app.js'',''./dg-security.js'',''./platform-update.js'',''./styles.css'',''./assets/leader-pharma-logo.png''];\nself.addEventListener(''install'',e=>e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(FILES))));\nself.addEventListener(''message'',e=>{if(e.data?.type===''ACTIVATE'')self.skipWaiting();});\nself.addEventListener(''activate'',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith(''leader-pharma-web-'')&&k!==CACHE_NAME).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));\nself.addEventListener(''fetch'',e=>{\n
+        if(e.request.method!==''GET''||new URL(e.request.url).origin!==self.location.origin)return;\n
+        const url=new URL(e.request.url),base=new URL(''./'',self.location.href);\n
+        const rel=url.pathname.slice(base.pathname.length);\n if(e.request.mode===''navigate''){e.respondWith(caches.open(CACHE_NAME).then(c=>c.match(''./index.html'')).then(r=>r||fetch(e.request)));return;}\n
+        if(FILES.includes(''./''+rel)){e.respondWith(caches.open(CACHE_NAME).then(c=>c.match(''./''+rel)).then(r=>r||fetch(e.request)));}\n});\n")
+
+        '
+    - name: Verifier JavaScript
+      run: 'node --check site/app.js
+
+        node --check site/dg-security.js
+
+        node --check site/platform-update.js'
+    - name: Creer manifeste controle
+      shell: python
+      run: "from pathlib import Path\nimport json,hashlib,shutil\nr=Path('site');names=['index.html','app.js','dg-security.js','platform-update.js','styles.css','assets/leader-pharma-logo.png']\n\
+        m={'schema':1,'build':2026101402,'version':'29.6.0.73','base':'Android 72\
+        \ - RH stable','files':{n:hashlib.sha256((r/n).read_bytes()).hexdigest() for\
+        \ n in names}}\nfor n in names:\n p=r/'platform'/str(m['build'])/n;p.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(r/n,p)\n\
+        (r/'platform-manifest.json').write_text(json.dumps(m))\n(r/'platform'/str(m['build'])/'platform-manifest.json').write_text(json.dumps(m))\n"
+    - uses: actions/configure-pages@v5
+    - uses: actions/upload-pages-artifact@v3
+      with:
+        path: site
+    - id: deploy
+      uses: actions/deploy-pages@v4
