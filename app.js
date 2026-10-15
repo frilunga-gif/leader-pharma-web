@@ -13518,6 +13518,11 @@ function lp1794UpdateNetwork(){
         'Connexion Internet disponible';
 
     }
+    else if(navigator.onLine&&window.lpOfflineV41){
+      box.textContent='◌ Session locale · reconnexion';
+      box.style.background='#fff4dc';box.style.color='#805800';
+      box.title='Internet détecté ; authentification serveur non confirmée. Données locales conservées.';
+    }
     else{
 
       box.textContent =
@@ -131424,6 +131429,9 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
    * Pas d'interception globale des clics.
    */
   function lpF2941LogoutSafe(){
+    if(typeof window.lpWebResetAuthFlightV75==='function')window.lpWebResetAuthFlightV75();
+    window.lpAccessToken='';window.lpDGAccessToken='';window.lpRefreshToken='';window.lpDGRefreshToken='';
+    try{sessionStorage.removeItem('lp_f296017_jwt_session_v1');}catch(e){}
     try{
       if(
         typeof currentUser !==
@@ -147146,6 +147154,8 @@ function suppliersPage53(){
     '/rest/v1/rpc/lp_save_product_dg_v41',
     '/rest/v1/rpc/lp_set_product_expiry_dg',
   ];
+  let sessionEpoch=0;
+  window.lpWebResetAuthFlightV75=function(){sessionEpoch++;tokenPromise=null;tokenPromiseUser='';};
   function localCredentials(){
     const u=(typeof currentUser!=='undefined'&&currentUser)||{};
     return {
@@ -147154,6 +147164,7 @@ function suppliersPage53(){
     };
   }
   async function acquireToken(){
+    const epochAtStart=sessionEpoch;
     const cached=S(window.lpDGAccessToken||window.lpAccessToken||'').trim();
     function norm(v){return S(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').trim();}
     function tokenBelongsToLocalUser(token){
@@ -147174,12 +147185,13 @@ function suppliersPage53(){
     const c=localCredentials();
     if(!c.username||!c.password)throw new Error('SESSION_SUPABASE_RECONNEXION_REQUISE');
     const base=S(SUPABASE&&SUPABASE.url).replace(/\/$/,'');
-    const authController=new AbortController(),authTimer=setTimeout(()=>authController.abort(),10000);
+    const authController=new AbortController(),authTimer=setTimeout(()=>authController.abort(),30000);
     let ar;try{ar=await nativeFetch(base+'/functions/v1/leader-pharma-login-v37',{
       method:'POST',headers:{apikey:SUPABASE.key,'Content-Type':'application/json'},body:JSON.stringify({username:c.username.trim().toLowerCase().replace(/\s+/g,' '),password:c.password}),signal:authController.signal
     });}finally{clearTimeout(authTimer); }
     const auth=await ar.json();
     if(!ar.ok||!auth.ok||!auth.access_token||String(auth.profile?.username||'').trim().toLowerCase()!==c.username.trim().toLowerCase())throw new Error('SESSION_SUPABASE_AUTH_REFUSEE');
+    if(epochAtStart!==sessionEpoch)throw new Error('SESSION_SUPABASE_UTILISATEUR_CHANGE');
     window.lpOfflineV41=false;
     window.lpAccessToken=auth.access_token;
     window.lpDGAccessToken=auth.access_token;
@@ -147190,7 +147202,10 @@ function suppliersPage53(){
   window.lpGetSessionTokenV16=async function(){
     const activeUserKey=S(localCredentials().username).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'').trim();
     if(tokenPromiseUser!==activeUserKey){tokenPromise=null;tokenPromiseUser=activeUserKey;}
-    if(!tokenPromise)tokenPromise=acquireToken().catch(e=>{tokenPromise=null;throw e});
+    if(!tokenPromise){
+      const flight=acquireToken().catch(e=>{if(tokenPromise===flight)tokenPromise=null;throw e});
+      tokenPromise=flight;
+    }
     const pending=tokenPromise;
     try{
       const token=await pending;
@@ -147974,7 +147989,7 @@ function lockState(username){const all=read(LOCK),v=all[username]||{failures:0,u
 function clearLock(username){const all=read(LOCK);delete all[username];write(LOCK,all);}
 function failLocal(username){const all=read(LOCK),v=lockState(username);v.failures=(v.failures||0)+1;if(v.failures>=5)v.until=Date.now()+900000;all[username]=v;write(LOCK,all);return v;}
 function lockMessage(seconds){return 'Compte temporairement verrouillé. Réessayez dans '+Math.max(1,Math.ceil(seconds/60))+' min ou contactez le DG.';}
-async function post(path,body,token){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),path==='leader-pharma-login-v37'?10000:60000);try{const r=await fetch(base+'/functions/v1/'+path,{method:'POST',headers:{apikey:SUPABASE.key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body),cache:'no-store',signal:controller.signal});return {status:r.status,data:await r.json()};}finally{clearTimeout(timer);}}
+async function post(path,body,token){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),path==='leader-pharma-login-v37'?30000:60000);try{const r=await fetch(base+'/functions/v1/'+path,{method:'POST',headers:{apikey:SUPABASE.key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(body),cache:'no-store',signal:controller.signal});return {status:r.status,data:await r.json()};}finally{clearTimeout(timer);}}
 function session(data){window.lpAccessToken=data.access_token;window.lpDGAccessToken=data.access_token;window.lpRefreshToken=data.refresh_token||'';window.lpDGRefreshToken=data.refresh_token||'';sessionStorage.setItem('lp_f296017_jwt_session_v1',JSON.stringify({access_token:data.access_token,refresh_token:data.refresh_token||'',expires_at:data.expires_at||0}));}
 const hex=b=>Array.from(new Uint8Array(b),v=>v.toString(16).padStart(2,'0')).join('');
 async function digest(password,salt){const bytes=Uint8Array.from(salt.match(/../g),v=>parseInt(v,16));const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);return hex(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:bytes,iterations:120000},material,256));}
@@ -147982,6 +147997,7 @@ async function cache(profile,password){const salt=hex(crypto.getRandomValues(new
 function cleanOldLocks(username){for(const fn of ['lpSec2Clear','lpSec1Reset']){try{if(typeof window[fn]==='function')window[fn](username);}catch{}}}
 function enter(profile,password,data){
  if(!profile||!profile.username||!profile.role||!profile.authUserId)throw new Error('PROFILE_REQUIRED');
+ if(typeof window.lpWebResetAuthFlightV75==='function')window.lpWebResetAuthFlightV75();
  const wanted=n(profile.username);if(!Array.isArray(db.users))db.users=[];
  let user=db.users.find(u=>key(u)===wanted);
  if(!user){user={id:'auth:'+profile.authUserId};db.users.push(user);}
@@ -148006,6 +148022,10 @@ async function offlineLogin(username,password){
  if(await digest(password,saved.salt)!==saved.hash){const failed=failLocal(username);message(failed.until?lockMessage(900):'Identifiants incorrects. '+(5-failed.failures)+' tentative(s) restante(s).');return false;}
  const local=db.users.find(u=>key(u)===username);if(local?.active===false){message('Compte désactivé.');return false;}
  enter(saved.profile,password,null);window.lpOfflineV41=true;
+ // One recovery attempt after local login, using the existing authenticated queue.
+ if(navigator.onLine!==false)setTimeout(function(){
+  if(currentUser&&n(currentUser.username)===username&&window.lpOfflineV41&&typeof window.lpV41RetryPending==='function')window.lpV41RetryPending();
+ },1500);
  if(typeof window.lp1794UpdateNetwork==='function')window.lp1794UpdateNetwork();
  return true;
 }
@@ -148033,7 +148053,9 @@ async function loginOnce(){
   }
   if(n(data.profile?.username)!==username||!data.access_token)throw new Error('PROFILE_MISMATCH');
   try{await cache(data.profile,password);}catch{message('Connexion validée ; cache hors ligne indisponible sur cet appareil.');}
-  window.lpOfflineV41=false;enter(data.profile,password,data);return true;
+  window.lpOfflineV41=false;enter(data.profile,password,data);
+  if(typeof window.lp1794UpdateNetwork==='function')window.lp1794UpdateNetwork();
+  return true;
  }catch(error){
   // Transport failure only: an explicit server refusal never uses the offline cache.
   if(error?.name==='TypeError'||error?.name==='AbortError'){
@@ -148264,7 +148286,10 @@ const st=document.createElement('style');st.textContent='.lpV37DGBadge{display:b
   if(running||document.hidden||!currentUser||navigator.onLine===false)return;
   running=true;
   try{
-   await window.lpGetSessionTokenV16();window.lpOfflineV41=false;
+   const userAtStart=currentUser;
+   await window.lpGetSessionTokenV16();
+   if(!currentUser||currentUser!==userAtStart)return;
+   window.lpOfflineV41=false;
    if(typeof lp1794UpdateNetwork==='function')lp1794UpdateNetwork();
    // Existing queues and idempotent RPCs remain authoritative. Never replay stock debits here.
    if(typeof window.lpF296017FlushSalesCentral==='function')await window.lpF296017FlushSalesCentral();
@@ -148742,3 +148767,5 @@ window.lpPhotoRemovalV72=Object.freeze({hash,clean,sync});
   window.addEventListener('online',queue);
   window.lpPhotoContinuityV74={retain,remember,flush};
 })();
+
+/* LEADER PHARMA WEB V75 RECONNEXION FIX1 */
