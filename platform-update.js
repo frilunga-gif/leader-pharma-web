@@ -9,7 +9,7 @@
      localStorage.setItem(backupKey,JSON.stringify({date:new Date().toISOString(),raw}));
    }
  }
- window.LP_PLATFORM_BUILD='75 / reconnexion Web FIX1';
+ window.LP_PLATFORM_BUILD='75 / reconnexion Web FIX2';
  if(location.protocol==='https:'&&'serviceWorker' in navigator){
    navigator.serviceWorker.register('./service-worker.js',{updateViaCache:'none'}).then(reg=>{
      function offer(){

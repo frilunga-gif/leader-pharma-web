@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "build": 2026300977,
+  "version": "29.6.0.75",
+  "base": "Moteur commun Android Web Windows",
+  "files": {
+    "index.html": "2e1005916fabfb37312f2e66e22b89513ce2133104acd420e16ce761a58d923a",
+    "app.js": "62a0f531846bcfaf4ae38c4706410ca4794045a33d3a5f00c85cec9d784e99a0",
+    "dg-security.js": "0e83b7043fd35d6445a4b874741a8b3b17b14e27f2ed67fec78ebf893faf30e7",
+    "platform-update.js": "7e5cc08eeba20dcb91f592b5bc111aa2f046e2443658d7ef87c4f3d12cb5b5bb",
+    "styles.css": "a83f82707f68b4a2850ce49d9898428ee4246c4dc0047a4136268f7a91ebed53",
+    "assets/leader-pharma-logo.png": "13704aa0bf0400d80e2f058a6ddcbca9723db38991cfd5447e61b8e5eb74a466"
+  },
+  "web_fix": "V75 RECONNEXION FIX2 TARGET"
+}

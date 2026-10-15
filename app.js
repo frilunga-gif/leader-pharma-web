@@ -7817,10 +7817,10 @@ function lp169ApplySensitive(){
       el=>{
 
             if(
-      target.id === 'lpV11SavePrescription' ||
-      target.id === 'lpV13SaveNote' ||
-      target.id === 'sellerPasswordSave' ||
-      target.id === 'lp16MyPasswordSave'
+      el.id === 'lpV11SavePrescription' ||
+      el.id === 'lpV13SaveNote' ||
+      el.id === 'sellerPasswordSave' ||
+      el.id === 'lp16MyPasswordSave'
     ){
       return;
     }
@@ -148769,3 +148769,5 @@ window.lpPhotoRemovalV72=Object.freeze({hash,clean,sync});
 })();
 
 /* LEADER PHARMA WEB V75 RECONNEXION FIX1 */
+
+/* LEADER PHARMA WEB V75 FIX2 TARGET SENSIBLE */
