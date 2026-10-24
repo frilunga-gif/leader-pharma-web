@@ -132345,7 +132345,10 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
       const username = s(user.username || currentUser?.username || user.id || currentUser?.id || user.name || currentUser?.name);
       const displayName = s(user.name || currentUser?.name || username);
       const role = s(user.role || currentUser?.role || '');
-      const a = agency();
+      let attribution;
+      try{ attribution = window.lpV77Notes.capture(user); }
+      catch(e){ try{toast(e.message);}catch(ignore){} return; }
+      const a = attribution.agency;
       const d = todayValue();
 
       let row = db.dailyUserNotes.find(function(x){
@@ -132353,7 +132356,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
         const xWho = norm(x.username || x.user || x.name || '');
         return (
           s(x.date).slice(0,10) === d &&
-          (!a || !x.agency || norm(x.agency) === norm(a)) &&
+          window.lpV77Notes.resolve(x)?.agency === a &&
           xWho &&
           [username,displayName,user.id,currentUser?.id]
             .map(norm)
@@ -132386,6 +132389,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
         db.dailyUserNotes.push(row);
       }
 
+      Object.assign(row,attribution);
       try{
         if(typeof audit === 'function'){
           audit('Note fin de journée',username);
@@ -132737,18 +132741,14 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
 
     const a = norm(activeAgency());
 
-    return all
+    return window.lpV77Notes.notes(all)
       .filter(function(x){
         if(!x) return false;
 
         const note = s(x.note);
         if(!note) return false;
 
-        if(
-          a &&
-          x.agency &&
-          norm(x.agency) !== a
-        ){
+        if(window.lpV77Notes.agency(x.agency) !== window.lpV77Notes.agency(activeAgency())){
           return false;
         }
 
@@ -132824,8 +132824,9 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
             esc(agencyLabel(activeAgency())) +
             ' • ' +
             String(rows.length) +
-            ' note(s)' +
+            ' note(s) • séparation V77' +
           '</div>' +
+          '<p class="muted">Anciennes notes : agence du compte auteur. En cas de mutation entre agences, faire vérifier l’historique par le DG. Les notes sans auteur unique restent conservées et sont exclues de cette vue.</p>' +
         '</div>' +
       '</div>' +
 
@@ -132858,8 +132859,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
                       '<td>' +
                         esc(
                           agencyLabel(
-                            x.agency ||
-                            activeAgency()
+                            x.agency
                           )
                         ) +
                       '</td>' +
@@ -137350,7 +137350,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.75 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.77 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137365,9 +137365,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.75 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.77 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.75 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.77 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138475,7 +138475,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.75 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.77 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138644,14 +138644,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.75 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.77 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.75 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.77 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138815,7 +138815,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.75 MASTER PRO
+   - affiche partout F29.6.0.77 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -138824,7 +138824,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.75 MASTER PRO';
+    'F29.6.0.77 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139161,9 +139161,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.75';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.77';
 
-  const MASTER_DISPLAY = 'F29.6.0.75 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.77 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139434,9 +139434,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.75';
+  const CURRENT_NUMERIC = '29.6.0.77';
 
-  const DISPLAY = 'F29.6.0.75 MASTER PRO';
+  const DISPLAY = 'F29.6.0.77 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140655,7 +140655,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.75 MASTER PRO'
+          : 'F29.6.0.77 MASTER PRO'
       );
 
       try{
@@ -141233,7 +141233,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.75 MASTER PRO'
+          : 'F29.6.0.77 MASTER PRO'
       );
 
       feedback(
@@ -142412,10 +142412,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.75';
+    '29.6.0.77';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.75 MASTER PRO';
+    'F29.6.0.77 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142570,7 +142570,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.75 MASTER PRO' && tech){
+    if(display === 'F29.6.0.77 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -142910,7 +142910,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.75 MASTER PRO';
+    'F29.6.0.77 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -147073,12 +147073,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.75';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.75 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.77';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.77 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.75 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.77 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.75 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.77 V11 ACTIF');
 })();
 
 
@@ -147087,7 +147087,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.75 MASTER PRO';
+  const DISPLAY='F29.6.0.77 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147111,7 +147111,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.75';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.77';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -148398,7 +148398,7 @@ async function download(p,rows){
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.75.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.77.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
@@ -148771,3 +148771,60 @@ window.lpPhotoRemovalV72=Object.freeze({hash,clean,sync});
 /* LEADER PHARMA WEB V75 RECONNEXION FIX1 */
 
 /* LEADER PHARMA WEB V75 FIX2 TARGET SENSIBLE */
+
+/* LP_V77_NOTES_AGENCY_START */
+(function(){
+'use strict';
+const s=v=>String(v==null?'':v).trim();
+const n=v=>s(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ');
+const list=k=>Array.isArray(db[k])?db[k]:[];
+function agency(v){
+ const key=n(v);if(!key)return '';
+ const matches=list('agencies').filter(a=>[a.id,a.name,a.label].some(x=>n(x)===key));
+ return matches.length===1?s(matches[0].id):'';
+}
+function author(row){
+ const users=list('users');
+ const ids=[row.authorUserId,row.userId].map(n).filter(Boolean);
+ let matches=ids.length?users.filter(u=>ids.includes(n(u.id))):[];
+ if(!ids.length){
+  const handles=[row.username,row.user,row.login].map(n).filter(Boolean);
+  matches=users.filter(u=>[u.id,u.username,u.login].map(n).filter(Boolean).some(x=>handles.includes(x)));
+  if(!matches.length){
+   const names=[row.name,row.userName,row.user].map(n).filter(Boolean);
+   matches=users.filter(u=>names.includes(n(u.name)));
+  }
+ }
+ // Duplicate records for the same identity and same agency are harmless.
+ const byIdentity=new Map();
+ for(const u of matches){const a=agency(u.agency||u.agence||u.agencyId);const id=n(u.id||u.username);if(!a||!id)return null;byIdentity.set(id+'|'+a,u);}
+ return byIdentity.size===1?[...byIdentity.values()][0]:null;
+}
+function resolve(row){
+ if(!row)return null;
+ // New reports carry the agency captured when submitted; later staff transfers cannot move them.
+ if(row.agencySchema===77){const a=agency(row.reportAgency);return a?{...row,agency:a}:null;}
+ const u=author(row);
+ if(!u)return null;
+ const a=agency(u.agency||u.agence||u.agencyId);
+ return a?{...row,agency:a,lpAgencyFromAccount:true}:null;
+}
+function notes(input){
+ const unique=new Map();
+ for(const raw of input||[]){
+  const r=resolve(raw);if(!r)continue;
+  const u=author(r),who=n(r.authorUserId||u&&u.id||r.username||r.user||r.name);
+  const key=JSON.stringify([r.agency,s(r.date).slice(0,10),who,s(r.note).replace(/\r\n/g,'\n')]);
+  const prior=unique.get(key),time=x=>Number(x.updatedAt)||Date.parse(x.updatedAt)||Number(x.createdAt)||0;
+  if(!prior||time(r)>time(prior))unique.set(key,r);
+ }
+ return [...unique.values()];
+}
+function capture(user){
+ const resolved=author({authorUserId:user&&user.id,username:user&&user.username,user:user&&user.name});
+ const a=resolved&&agency(resolved.agency||resolved.agence||resolved.agencyId);
+ if(!a)throw Error('Agence du compte non déterminée. Contactez le DG.');
+ return {agency:a,reportAgency:a,agencySchema:77,authorUserId:s(resolved.id),username:s(resolved.username),name:s(resolved.name)};
+}
+window.lpV77Notes={agency,author,resolve,notes,capture};
+})();
