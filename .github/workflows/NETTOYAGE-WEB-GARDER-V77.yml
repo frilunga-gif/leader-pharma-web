@@ -1,0 +1,78 @@
+name: Leader Pharma NETTOYAGE anciens fichiers - garder V77
+'on':
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Nettoyer les anciens fichiers ou afficher seulement la liste
+        type: choice
+        options:
+        - nettoyer
+        - apercu
+        default: nettoyer
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: leader-pharma-web-publication
+  cancel-in-progress: false
+jobs:
+  nettoyer:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+        fetch-depth: 1
+    - name: Verifier V77 et nettoyer uniquement les anciens fichiers
+      shell: python
+      env:
+        MODE: ${{ inputs.mode }}
+      run: "from pathlib import Path,PurePosixPath\nimport subprocess,json,hashlib,re,os\n\nFOLLOW='.github/workflows/WEB-WINDOWS-SUIVI-ANDROID.yml'\n\
+        SELF='.github/workflows/NETTOYAGE-WEB-GARDER-V77.yml'\nBASEFILES={'index.html','app.js','dg-security.js','platform-update.js','styles.css','assets/leader-pharma-logo.png'}\n\
+        \ndef plan(files,manifest,archive_versions):\n    assert manifest['version']=='29.6.0.77','Nettoyage reserve\
+        \ a V77 ; aucune suppression sur une autre version'\n    assert set(manifest['files'])==BASEFILES,'Liste\
+        \ des fichiers du moteur inattendue'\n    current=str(manifest['build']);result=[]\n    for f in files:\n\
+        \        p=PurePosixPath(f)\n        if f in BASEFILES or f in {'platform-manifest.json','service-worker.js','.nojekyll','CNAME',FOLLOW,SELF}:continue\n\
+        \        if f.startswith('assets/'):continue\n        if f.startswith('.github/workflows/') and p.suffix\
+        \ in {'.yml','.yaml'}:\n            result.append(f);continue\n        if len(p.parts)>1 and p.parts[0]=='platform':\n\
+        \            build=p.parts[1]\n            if build==current:continue\n            v=archive_versions.get(build)\n\
+        \            if v and re.fullmatch(r'29\\.6\\.0\\.\\d+',v) and int(v.split('.')[-1])<77:result.append(f)\n\
+        \            continue\n        if len(p.parts)==1 and (\n            re.fullmatch(r'index-\\d+\\.html',f)\
+        \ or f=='app .js' or\n            re.fullmatch(r'(?:F296017.*|Leader-Pharma-WEB-.*)\\.(?:yml|yaml)',f) or\n\
+        \            f=='WEB-ACHATS-ETAT.txt' or re.fullmatch(r'redeploy.*\\.txt',f) or f=='web test'\n        ):result.append(f)\n\
+        \    return sorted(result)\n\ndef run():\n    assert os.environ['GITHUB_REPOSITORY']=='frilunga-gif/leader-pharma-web','Mauvais\
+        \ depot'\n    assert os.environ['GITHUB_REF']=='refs/heads/main','Branche main requise'\n    m=json.loads(Path('platform-manifest.json').read_text())\n\
+        \    assert m['version']=='29.6.0.77','V77 attendue'\n    assert Path(FOLLOW).exists(),'Le suivi automatique\
+        \ Android doit etre installe'\n    follower=Path(FOLLOW).read_text()\n    assert 'disabled_manually' in\
+        \ follower and '29,6,0,77' in follower,'Suiveur FIX1 attendu'\n    files=subprocess.check_output(['git','ls-files','-z']).decode().split('\\\
+        0');files=[f for f in files if f]\n    archives={}\n    for f in files:\n        parts=PurePosixPath(f).parts\n\
+        \        if len(parts)==3 and parts[0]=='platform' and parts[2]=='platform-manifest.json':\n           \
+        \ try:archives[parts[1]]=json.loads(Path(f).read_text()).get('version')\n            except (ValueError,OSError):pass\n\
+        \    protected={f:hashlib.sha256(Path(f).read_bytes()).hexdigest() for f in files if f in BASEFILES|{'platform-manifest.json','service-worker.js','.nojekyll','CNAME',FOLLOW}\
+        \ or f.startswith('assets/') or f.startswith('platform/'+str(m['build'])+'/')}\n    for f,digest in m['files'].items():assert\
+        \ hashlib.sha256(Path(f).read_bytes()).hexdigest()==digest,'Empreinte incorrecte : '+f\n    archive=Path('platform')/str(m['build'])\n\
+        \    assert json.loads((archive/'platform-manifest.json').read_text())==m,'Archive V77 incoherente'\n  \
+        \  for f,digest in m['files'].items():assert hashlib.sha256((archive/f).read_bytes()).hexdigest()==digest,'Archive\
+        \ incomplete : '+f\n    remove=plan(files,m,archives)\n    assert not set(remove)&set(protected)\n    preview=os.environ.get('MODE','apercu')!='nettoyer'\n\
+        \    with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as summary:\n        summary.write('## Nettoyage anciens\
+        \ fichiers Web — V77 conservee\\n\\n')\n        summary.write(('Apercu seulement. ' if preview else 'Suppression\
+        \ dans le commit Git. ')+str(len(remove))+' fichier(s).\\n\\n')\n        for f in remove:summary.write('-\
+        \ `'+f.replace('`','')+'`\\n')\n    if preview:\n        print('Apercu termine : aucun fichier supprime');return\n\
+        \    if remove:subprocess.run(['git','rm','--']+remove,check=True)\n    for f,digest in protected.items():assert\
+        \ hashlib.sha256(Path(f).read_bytes()).hexdigest()==digest,'Fichier actif modifie : '+f\n    print('Anciens\
+        \ fichiers retires ; V77, assets et suivi automatique identiques')\n\nif __name__=='__main__':run()\n"
+    - name: Enregistrer un commit recuperable sans modifier les applications
+      if: inputs.mode == 'nettoyer'
+      run: 'set -euo pipefail
+
+        if git diff --cached --quiet; then echo ''Rien a nettoyer''; exit 0; fi
+
+        git config user.name ''github-actions[bot]''
+
+        git config user.email ''41898282+github-actions[bot]@users.noreply.github.com''
+
+        git commit -m ''Nettoyage anciens fichiers ; V77 et suivi Android conserves''
+
+        git push origin HEAD:main
+
+        '
