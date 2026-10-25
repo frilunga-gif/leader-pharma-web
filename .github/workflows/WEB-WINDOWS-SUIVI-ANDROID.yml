@@ -1,4 +1,4 @@
-name: Leader Pharma SUIVI AUTOMATIQUE ANDROID - Web Windows FIX1
+name: Leader Pharma SUIVI AUTOMATIQUE ANDROID - Web Windows FIX2 nettoyage compatible
 'on':
   workflow_dispatch: {}
   push:
@@ -28,10 +28,13 @@ jobs:
     - name: Verifier le depot et reserver un seul suiveur
       env:
         GH_TOKEN: ${{ github.token }}
-      run: "set -euo pipefail\ntest \"$GITHUB_REPOSITORY\" = frilunga-gif/leader-pharma-web\nfor file in Leader-Pharma-WEB-WINDOWS-AUTOMATIQUE.yml\
-        \ Leader-Pharma-WEB-WINDOWS-FIX1-PUBLICATION.yml; do\n  state=\"$(gh api \"repos/$GITHUB_REPOSITORY/actions/workflows/$file\"\
-        \ --jq .state)\"\n  case \"$state\" in\n    active)\n      gh workflow disable \"$file\" --repo \"$GITHUB_REPOSITORY\"\
-        \n      ;;\n    disabled_manually|disabled_inactivity|disabled_fork)\n      echo \"Ancien suiveur deja desactive\
+      run: "set -euo pipefail\ntest \"$GITHUB_REPOSITORY\" = frilunga-gif/leader-pharma-web\ngh api --paginate \"\
+        repos/$GITHUB_REPOSITORY/actions/workflows?per_page=100\" --jq '.workflows[] | [.path,.state] | @tsv' >\
+        \ /tmp/lp-workflows.tsv\nfor file in Leader-Pharma-WEB-WINDOWS-AUTOMATIQUE.yml Leader-Pharma-WEB-WINDOWS-FIX1-PUBLICATION.yml;\
+        \ do\n  state=\"$(awk -F '\\t' -v path=\".github/workflows/$file\" '$1==path {print $2}' /tmp/lp-workflows.tsv)\"\
+        \n  if [ -z \"$state\" ]; then\n    echo \"Ancien workflow absent : $file\"\n    continue\n  fi\n  case\
+        \ \"$state\" in\n    active)\n      gh workflow disable \"$file\" --repo \"$GITHUB_REPOSITORY\"\n      ;;\n\
+        \    disabled_manually|disabled_inactivity|disabled_fork|deleted)\n      echo \"Ancien suiveur deja desactive\
         \ : $file\"\n      ;;\n    *)\n      echo \"Etat inattendu du workflow $file : $state\" >&2\n      exit\
         \ 1\n      ;;\n  esac\ndone\n"
     - name: Suivre uniquement une future version Android et garder V77 intacte
