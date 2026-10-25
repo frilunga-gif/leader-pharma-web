@@ -1,4 +1,4 @@
-name: Leader Pharma SUIVI AUTOMATIQUE ANDROID - Web Windows FIX2 nettoyage compatible
+name: Leader Pharma SUIVI AUTOMATIQUE ANDROID - Web Windows FIX3 publication Pages
 'on':
   workflow_dispatch: {}
   push:
@@ -97,20 +97,27 @@ jobs:
         git push origin HEAD:main; fi
 
         '
-    - name: Publier Pages depuis main sans artifact Actions
-      if: steps.prepare.outputs.changed == 'true'
+    - name: Confirmer ou relancer Pages sans changer ses reglages
       env:
         GH_TOKEN: ${{ github.token }}
-      run: "set -euo pipefail\ngh api --method PUT \"repos/$GITHUB_REPOSITORY/pages\" -f build_type=legacy -f 'source[branch]=main'\
-        \ -f 'source[path]=/' > /tmp/pages-settings.json\ngh api --method POST \"repos/$GITHUB_REPOSITORY/pages/builds\"\
-        \ > /tmp/pages-build.json\npython3 - <<'PY'\nimport urllib.request,json,time,os,hashlib\nfrom pathlib import\
-        \ Path\nexpected=json.loads(Path('platform-manifest.json').read_text())\nbase='https://frilunga-gif.github.io/leader-pharma-web/'\n\
-        for attempt in range(36):\n    try:\n        suffix='?verify='+os.environ['GITHUB_RUN_ID']+'-'+str(attempt)\n\
-        \        req=urllib.request.Request(base+'platform-manifest.json'+suffix,headers={'Cache-Control':'no-cache'})\n\
-        \        live=json.loads(urllib.request.urlopen(req,timeout=20).read())\n        if live.get('version')==expected['version']\
-        \ and live.get('files')==expected['files']:\n            app=urllib.request.urlopen(base+'app.js'+suffix,timeout=60).read()\n\
-        \            assert hashlib.sha256(app).hexdigest()==expected['files']['app.js']\n            print('WEB\
-        \ ET WINDOWS : moteur '+expected['version']+' reellement publie et verifie')\n            break\n    except\
-        \ Exception as error:\n        print('Publication en cours : '+type(error).__name__)\n    time.sleep(5)\n\
-        else:\n    raise SystemExit('Publication Pages non confirmee : consulter Pages/builds avant de relancer')\n\
-        PY\n"
+      run: "set -euo pipefail\n# Read existing settings only. Changing Pages settings requires administration permissions.\n\
+        gh api \"repos/$GITHUB_REPOSITORY/pages\" > /tmp/pages-settings.json\npython3 - <<'SETTINGS'\nimport json\n\
+        m=json.load(open('/tmp/pages-settings.json'))\nassert m.get('build_type')=='legacy' and m.get('source',{}).get('branch')=='main'\
+        \ and m.get('source',{}).get('path')=='/', 'Pages doit deja publier depuis main / ; verifier Settings >\
+        \ Pages sans modifier le moteur.'\nSETTINGS\npython3 - <<'PENDING'\nimport json,urllib.request,os\nfrom\
+        \ pathlib import Path\nm=json.loads(Path('platform-manifest.json').read_text())\nbase='https://frilunga-gif.github.io/leader-pharma-web/'\n\
+        ready=False\ntry:\n req=urllib.request.Request(base+'platform-manifest.json?verify='+os.environ['GITHUB_RUN_ID'],headers={'Cache-Control':'no-cache'})\n\
+        \ with urllib.request.urlopen(req,timeout=20) as r:live=json.load(r)\n ready=live.get('version')==m['version']\
+        \ and live.get('build')==m['build'] and live.get('files')==m['files']\nexcept Exception:pass\nPath('/tmp/lp-pages-ready').write_text('yes'\
+        \ if ready else 'no')\nPENDING\nif [ \"$(cat /tmp/lp-pages-ready)\" != yes ]; then\n  gh api --method POST\
+        \ \"repos/$GITHUB_REPOSITORY/pages/builds\" > /tmp/pages-build.json\nfi\npython3 - <<'VERIFY'\nimport urllib.request,json,time,os,hashlib\n\
+        from pathlib import Path\nexpected=json.loads(Path('platform-manifest.json').read_text())\nbase='https://frilunga-gif.github.io/leader-pharma-web/'\n\
+        for attempt in range(48):\n try:\n  suffix='?verify='+os.environ['GITHUB_RUN_ID']+'-'+str(attempt)\n  req=urllib.request.Request(base+'platform-manifest.json'+suffix,headers={'Cache-Control':'no-cache'})\n\
+        \  with urllib.request.urlopen(req,timeout=20) as r:live=json.load(r)\n  if live.get('version')==expected['version']\
+        \ and live.get('build')==expected['build'] and live.get('files')==expected['files']:\n   for name,digest\
+        \ in expected['files'].items():\n    with urllib.request.urlopen(base+name+suffix,timeout=30) as r:raw=r.read()\n\
+        \    assert hashlib.sha256(raw).hexdigest()==digest,'Fichier public incoherent : '+name\n   print('WEB ET\
+        \ WINDOWS : moteur '+expected['version']+' reellement publie et toutes empreintes verifiees')\n   break\n\
+        \ except Exception as error:print('Verification publication : '+type(error).__name__)\n time.sleep(5)\n\
+        else:raise SystemExit('Publication Pages non confirmee. Le moteur du depot est conserve ; relancer ce suivi\
+        \ pour reprendre la publication.')\nVERIFY\n"
