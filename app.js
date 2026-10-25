@@ -14845,6 +14845,11 @@ function lp1798Data(){
   }
   catch(e){}
 
+  users = users.filter(window.lpV76AgencyVisible);
+  products = products.filter(window.lpV76AgencyVisible);
+  sales = sales.filter(window.lpV76AgencyVisible);
+  logs = logs.filter(window.lpV76AgencyVisible);
+
   const activeUsers =
     users.filter(
       u =>
@@ -119508,13 +119513,7 @@ console.log('LEADER PHARMA V12 MENU STATISTIQUES STABLE FINAL');
           ) === user
           &&
           (
-            !agency
-            ||
-            !x.agency
-            ||
-            lpV13Norm(
-              x.agency
-            ) === agency
+            window.lpV76AgencyVisible(x)
           )
         );
       }
@@ -125091,7 +125090,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
         Array.isArray(db.users)
       ){
         return db.users.filter(function(u){
-          return lp26Role(u) !== 'dg';
+          return lp26Role(u) !== 'dg' && window.lpV76AgencyVisible(u);
         });
       }
     }catch(e){}
@@ -125188,6 +125187,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
     const name = lp26Norm(lp26UserName());
 
     return lp26Tasks()
+      .filter(window.lpV76AgencyVisible)
       .filter(function(t){
         return (
           lp26S(t.userId) === id ||
@@ -125203,6 +125203,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
     const name = lp26Norm(lp26UserName());
 
     return lp26Reports()
+      .filter(window.lpV76AgencyVisible)
       .filter(function(r){
         return (
           lp26S(r.userId) === id ||
@@ -125756,6 +125757,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
         }
 
         lp26Tasks().push({
+          agency: currentAgency,
           id:
             'TASK-' +
             Date.now() +
@@ -125917,11 +125919,13 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
 
     const tasks =
       lp26Tasks()
+      .filter(window.lpV76AgencyVisible)
       .slice()
       .reverse();
 
     const reports =
       lp26Reports()
+      .filter(window.lpV76AgencyVisible)
       .slice()
       .reverse();
 
@@ -126983,7 +126987,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
         Array.isArray(db.users)
       ){
         return db.users.filter(function(u){
-          return lp28Role(u) !== 'dg';
+          return lp28Role(u) !== 'dg' && window.lpV76AgencyVisible(u);
         });
       }
     }catch(e){}
@@ -127237,6 +127241,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
         }
 
         lp28Tasks().push({
+          agency: currentAgency,
           id:
             'TASK-' +
             Date.now() +
@@ -127403,11 +127408,13 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
 
     const tasks =
       lp28Tasks()
+      .filter(window.lpV76AgencyVisible)
       .slice()
       .reverse();
 
     const reports =
       lp28Reports()
+      .filter(window.lpV76AgencyVisible)
       .slice()
       .reverse();
 
@@ -131803,7 +131810,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
     row = row || {};
 
     if(s(row.id)){
-      return 'note-id:' + s(row.id);
+      return 'note-id:' + norm(row.agency || row.agence) + '|' + s(row.id);
     }
 
     const who = norm(
@@ -132748,7 +132755,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
         const note = s(x.note);
         if(!note) return false;
 
-        if(window.lpV77Notes.agency(x.agency) !== window.lpV77Notes.agency(activeAgency())){
+        if(!window.lpV76AgencyVisible(x)){
           return false;
         }
 
@@ -132859,7 +132866,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
                       '<td>' +
                         esc(
                           agencyLabel(
-                            x.agency
+                            x.agency || x.agence
                           )
                         ) +
                       '</td>' +
@@ -137350,7 +137357,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.77 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.78 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137365,9 +137372,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.77 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.78 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.77 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.78 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138475,7 +138482,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.77 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.78 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138644,14 +138651,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.77 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.78 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.77 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.78 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138815,7 +138822,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.77 MASTER PRO
+   - affiche partout F29.6.0.78 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -138824,7 +138831,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.77 MASTER PRO';
+    'F29.6.0.78 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139161,9 +139168,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.77';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.78';
 
-  const MASTER_DISPLAY = 'F29.6.0.77 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.78 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139434,9 +139441,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.77';
+  const CURRENT_NUMERIC = '29.6.0.78';
 
-  const DISPLAY = 'F29.6.0.77 MASTER PRO';
+  const DISPLAY = 'F29.6.0.78 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140655,7 +140662,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.77 MASTER PRO'
+          : 'F29.6.0.78 MASTER PRO'
       );
 
       try{
@@ -141233,7 +141240,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.77 MASTER PRO'
+          : 'F29.6.0.78 MASTER PRO'
       );
 
       feedback(
@@ -142412,10 +142419,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.77';
+    '29.6.0.78';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.77 MASTER PRO';
+    'F29.6.0.78 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142570,7 +142577,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.77 MASTER PRO' && tech){
+    if(display === 'F29.6.0.78 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -142910,7 +142917,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.77 MASTER PRO';
+    'F29.6.0.78 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -147073,12 +147080,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.77';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.77 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.78';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.78 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.77 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.78 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.77 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.78 V11 ACTIF');
 })();
 
 
@@ -147087,7 +147094,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.77 MASTER PRO';
+  const DISPLAY='F29.6.0.78 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147111,7 +147118,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.77';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.78';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -148352,7 +148359,7 @@ function period(kind,value){
  return {kind,start:kind==='annee'?value+'-01-01':kind==='mois'?value+'-01':value,end:kind==='annee'?value+'-12-31':kind==='mois'?value+'-'+String(last).padStart(2,'0'):value};
 }
 const agencyOf=r=>norm(r.agency||r.agence);
-function owner(r,sale){return text((sale? [r.sellerUsername,r.sellerUserId,r.sellerName,r.seller]:[r.username,r.lpUser,r.user,r.userId,r.agent,r.createdBy,r.userName]).find(x=>text(x)));}
+function owner(r,sale){return text((sale? [r.sellerUsername,r.sellerUserId,r.sellerName,r.seller]:[r.username,r.rhUser,r.lpUser,r.user,r.userId,r.agent,r.createdBy,r.userName]).find(x=>text(x)));}
 function agentKey(key){const u=(db.users||[]).find(u=>[u.username,u.id,u.authUserId,u.name].some(v=>norm(v)&&norm(v)===norm(key)));return norm(u&&(u.username||u.id)||key);}
 function agentLabel(key){const users=Array.isArray(db.users)?db.users:[];const found=users.find(u=>[u.username,u.id,u.authUserId,u.name].some(v=>norm(v)&&norm(v)===norm(key)));return found?text(found.name||found.username):key;}
 function currency(r){const c=norm(r.currency||r.devise||'CDF');return ['fc','cdf','franc congolais'].includes(c)?'CDF':['usd','$','dollar'].includes(c)?'USD':text(r.currency||r.devise).toUpperCase();}
@@ -148387,18 +148394,18 @@ function build(p,selected){
  let last='';let subtotal;
  function pushSub(){if(subtotal)result.push({...subtotal,type:'Sous-total agence',agent:''});}
  for(const r of rows){const key=JSON.stringify([r.agency,r.currency]);if(key!==last){pushSub();last=key;subtotal={agency:label(r.agency),currency:r.currency,...Object.fromEntries(fields.map(f=>[f,0]))};}result.push({...r,agency:label(r.agency),type:'Agent'});for(const f of fields)subtotal[f]+=r[f];if(!totals.has(r.currency))totals.set(r.currency,{agency:'Toutes les agences sélectionnées',agent:'',currency:r.currency,type:'Total général',...Object.fromEntries(fields.map(f=>[f,0]))});for(const f of fields)totals.get(r.currency)[f]+=r[f];}
- pushSub();if(ids.length>1)result.push(...totals.values());return result;
+ pushSub();if(ids.length>1)result.push(...totals.values());return result.map(r=>({...r,cash:r.paid-r.expenses}));
 }
-const headers=['Période','Début','Fin','Type de ligne','Agence','Agent','Devise','Factures','Articles vendus','Ventes','Encaissé à la vente','Crédit à la vente','Dépenses'];
+const headers=['Période','Début','Fin','Type de ligne','Agence','Agent','Devise','Factures','Articles vendus','Ventes','Encaissé à la vente','Crédit à la vente','Dépenses','Caisse après dépenses (estimée)'];
 function cell(v){let s=String(v??'');if(/^[\s]*[=+@-]/.test(s)&&typeof v!=='number')s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
-function csv(p,rows){return '\uFEFF'+[headers,...rows.map(r=>[p.kind,p.start,p.end,r.type,r.agency,r.agent,r.currency,r.invoices,r.qty,...['sales','paid','credit','expenses'].map(k=>Math.round(r[k]*100)/100)])].map(r=>r.map(cell).join(';')).join('\r\n');}
+function csv(p,rows){return '\uFEFF'+[headers,...rows.map(r=>[p.kind,p.start,p.end,r.type,r.agency,r.agent,r.currency,r.invoices,r.qty,...['sales','paid','credit','expenses','cash'].map(k=>Math.round(r[k]*100)/100)])].map(r=>r.map(cell).join(';')).join('\r\n');}
 async function download(p,rows){
  const filename='Leader-Pharma-Rapport-'+p.kind+'-'+p.start+'-'+p.end+'.csv',blob=new Blob([csv(p,rows)],{type:'text/csv;charset=utf-8'});
 
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.77.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.78.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
@@ -148412,10 +148419,10 @@ function mount(target){
  const host=target||(dg()?document.getElementById('lpR1RapportsDG'):null)||document.getElementById('content');if(!host)return;const existing=document.getElementById('lpAgencyCsv');if(existing){if(existing.parentElement!==host)host.prepend(existing);return;}
  const card=document.createElement('section');card.className='card';card.id='lpAgencyCsv';card.style.marginTop='16px';
  const agencies=dg()?(db.agencies||[]):(db.agencies||[]).filter(a=>norm(a.id)===norm(currentAgency));
- card.innerHTML='<h3>Rapport des agents par agence — CSV</h3><p class="muted">Export des données présentes sur cet appareil. Synchronisez avant l’export pour inclure les opérations des agents distants. Les encaissements et crédits sont ceux enregistrés à la vente ; les remboursements et règlements ultérieurs ne sont pas inclus.</p><div class="grid two-col"><div class="field"><label>Période</label><select id="lpCsvKind"><option value="jour">Journalier</option><option value="mois">Mensuel</option><option value="annee">Annuel</option></select></div><div class="field"><label>Date / mois / année</label><input id="lpCsvDate" type="date"></div><div class="field"><label>Agence</label><select id="lpCsvAgency">'+(dg()?'<option value="*">Toutes les agences — sous-totaux séparés</option>':'')+agencies.map(a=>'<option value="'+html(a.id)+'">'+html(a.name)+'</option>').join('')+'</select></div></div><div class="actions"><button type="button" class="secondary" id="lpCsvPreview">Voir le rapport</button><button type="button" class="btn" id="lpCsvDownload">Exporter CSV</button></div><p id="lpCsvMessage" role="status" class="muted"></p><div id="lpCsvTable" style="overflow:auto"></div>';
+ card.innerHTML='<h3>Rapport des agents par agence — CSV</h3><p class="muted">Export des données présentes sur cet appareil. Synchronisez avant l’export pour inclure les opérations des agents distants. Les encaissements et crédits sont ceux enregistrés à la vente ; les remboursements et règlements ultérieurs ne sont pas inclus. Caisse estimée liée aux ventes = encaissé à la vente − dépenses enregistrées, hors caisse d’ouverture et autres mouvements. Chaque agence et chaque devise restent séparées.</p><div class="grid two-col"><div class="field"><label>Période</label><select id="lpCsvKind"><option value="jour">Journalier</option><option value="mois">Mensuel</option><option value="annee">Annuel</option></select></div><div class="field"><label>Date / mois / année</label><input id="lpCsvDate" type="date"></div><div class="field"><label>Agence</label><select id="lpCsvAgency">'+(dg()?'<option value="*">Toutes les agences — sous-totaux séparés</option>':'')+agencies.map(a=>'<option value="'+html(a.id)+'">'+html(a.name)+'</option>').join('')+'</select></div></div><div class="actions"><button type="button" class="secondary" id="lpCsvPreview">Voir le rapport</button><button type="button" class="btn" id="lpCsvDownload">Exporter CSV</button></div><p id="lpCsvMessage" role="status" class="muted"></p><div id="lpCsvTable" style="overflow:auto"></div>';
  host.prepend(card);const el=id=>card.querySelector('#'+id),kind=el('lpCsvKind'),date=el('lpCsvDate');
  function change(){const day=typeof today==='function'?today():new Date().toISOString().slice(0,10);date.type=kind.value==='jour'?'date':kind.value==='mois'?'month':'number';date.value=kind.value==='jour'?day:kind.value==='mois'?day.slice(0,7):day.slice(0,4);el('lpCsvTable').innerHTML='';}kind.onchange=change;change();
- function prepare(){const p=period(kind.value,date.value),rows=build(p,el('lpCsvAgency').value);el('lpCsvMessage').textContent=rows.length?'Période : '+p.start+' au '+p.end:'Aucune opération disponible pour cette période.';el('lpCsvTable').innerHTML=rows.length?'<table><thead><tr>'+headers.slice(3).map(h=>'<th>'+html(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr'+(r.type!=='Agent'?' style="font-weight:bold"':'')+'>'+[r.type,r.agency,r.agent,r.currency,r.invoices,r.qty,...['sales','paid','credit','expenses'].map(k=>num(r[k]).toLocaleString('fr-FR',{maximumFractionDigits:2}))].map(v=>'<td>'+html(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>':'';return {p,rows};}
+ function prepare(){const p=period(kind.value,date.value),rows=build(p,el('lpCsvAgency').value);el('lpCsvMessage').textContent=rows.length?'Période : '+p.start+' au '+p.end:'Aucune opération disponible pour cette période.';el('lpCsvTable').innerHTML=rows.length?'<table><thead><tr>'+headers.slice(3).map(h=>'<th>'+html(h)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr'+(r.type!=='Agent'?' style="font-weight:bold"':'')+'>'+[r.type,r.agency,r.agent,r.currency,r.invoices,r.qty,...['sales','paid','credit','expenses','cash'].map(k=>num(r[k]).toLocaleString('fr-FR',{maximumFractionDigits:2}))].map(v=>'<td>'+html(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>':'';return {p,rows};}
  el('lpCsvPreview').onclick=()=>{try{prepare();}catch(e){el('lpCsvMessage').textContent=e.message;}};
  el('lpCsvDownload').onclick=async function(){this.disabled=true;try{const {p,rows}=prepare();if(!rows.length)return;el('lpCsvMessage').textContent='Enregistrement du CSV…';const confirmation=await download(p,rows);el('lpCsvMessage').textContent=confirmation;}catch(e){el('lpCsvMessage').textContent=e.name==='AbortError'?'Export annulé.':e.message;}finally{this.disabled=false;}};
 }
@@ -148768,9 +148775,95 @@ window.lpPhotoRemovalV72=Object.freeze({hash,clean,sync});
   window.lpPhotoContinuityV74={retain,remember,flush};
 })();
 
-/* LEADER PHARMA WEB V75 RECONNEXION FIX1 */
-
-/* LEADER PHARMA WEB V75 FIX2 TARGET SENSIBLE */
+/* LP_V76_AGENCY_PROFIT_START */
+(function(){
+'use strict';
+const text=v=>String(v==null?'':v).trim();
+const norm=v=>text(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const rows=k=>Array.isArray(db[k])?db[k]:[];
+const dg=()=>!!currentUser&&norm(currentUser.role)==='dg';
+function agency(v){
+ const key=norm(v);if(!key)return '';
+ const found=rows('agencies').filter(a=>[a.id,a.name,a.label].some(x=>norm(x)===key));
+ return found.length===1?norm(found[0].id):key;
+}
+function ownAgency(){return agency(currentAgency);}
+function belongs(r,a){return !!r&&!!a&&agency(r.agency||r.agence)===a;}
+function visible(r){return !!currentUser&&belongs(r,ownAgency());}
+window.lpV76AgencyVisible=visible;
+const html=v=>text(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function dateString(d){return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+function period(kind,value){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(text(value)))throw Error('Date invalide');
+ const [y,m,d]=value.split('-').map(Number),start=new Date(y,m-1,d,12);
+ if(dateString(start)!==value)throw Error('Date invalide');
+ const end=new Date(start);
+ if(kind==='week'){start.setDate(start.getDate()-(start.getDay()+6)%7);end.setTime(start.getTime());end.setDate(start.getDate()+6);}
+ else if(kind==='month'){start.setDate(1);end.setMonth(end.getMonth()+1,0);}
+ else if(kind==='year'){start.setMonth(0,1);end.setMonth(11,31);}
+ else if(kind!=='day')throw Error('Période invalide');
+ return {start:dateString(start),end:dateString(end)};
+}
+function value(obj,names){for(const k of names){if(obj&&obj[k]!=null&&text(obj[k])!==''){const n=Number(obj[k]);if(Number.isFinite(n))return n;}}return null;}
+const amount=r=>value(r,['total','amount','grandTotal','totalAmount']);
+function profit(s){
+ const known=value(s,['profit','benefit','margin']);if(known!==null)return known;
+ if(!Array.isArray(s.items)||!s.items.length)return null;
+ let cost=0,gross=0;
+ for(const i of s.items){const q=value(i,['qty','quantity']),c=value(i,['cost','purchasePrice']),p=value(i,['price','unitPrice']);if(q===null||c===null||p===null)return null;cost+=q*c;gross+=q*p;}
+ const net=amount(s);return (net===null?gross:net)-cost;
+}
+function currency(r){const c=norm(r.currency||r.devise||'CDF');return ['cdf','fc','franc congolais'].includes(c)?'CDF':['usd','$','dollar'].includes(c)?'USD':c.toUpperCase();}
+const cancelled=r=>r&&(r.cancelled===true||r.canceled===true||['annulee','annule','cancelled','canceled','deleted','supprimee','void'].includes(norm(r.status))||r.deletedAt);
+function label(a){const found=rows('agencies').find(x=>agency(x.id)===a);return found?text(found.name||found.label||found.id):a;}
+function build(kind,date,selection){
+ if(!dg())return [];
+ const p=period(kind,date),selected=selection==='all'?rows('agencies').map(a=>agency(a.id)).filter(Boolean):[agency(selection)];
+ const groups=new Map(),seen=new Set();
+ const inScope=r=>r&&!cancelled(r)&&selected.includes(agency(r.agency||r.agence))&&/^\d{4}-\d{2}-\d{2}/.test(text(r.date))&&text(r.date).slice(0,10)>=p.start&&text(r.date).slice(0,10)<=p.end;
+ function group(r){const a=agency(r.agency||r.agence),cur=currency(r),k=JSON.stringify([a,cur]);if(!groups.has(k))groups.set(k,{agency:a,currency:cur,sales:0,profit:0,expenses:0,count:0,unknown:0});return groups.get(k);}
+ for(const s of rows('sales')){
+  if(!inScope(s))continue;
+  const id=text(s.id)||text(s.invoice),key=JSON.stringify(['sale',agency(s.agency||s.agence),id]);if(id&&seen.has(key))continue;if(id)seen.add(key);
+  const g=group(s),total=amount(s),margin=profit(s);g.count++;g.sales+=total||0;
+  if(margin===null||total===null)g.unknown++;else g.profit+=margin;
+ }
+ for(const e of rows('expenses')){
+  if(!inScope(e))continue;
+  const id=text(e.id),key=JSON.stringify(['expense',agency(e.agency||e.agence),id]);if(id&&seen.has(key))continue;if(id)seen.add(key);
+  const g=group(e),n=value(e,['amount','total']);if(n===null)g.unknown++;else g.expenses+=n;
+ }
+ return [...groups.values()].sort((a,b)=>a.agency.localeCompare(b.agency)||a.currency.localeCompare(b.currency)).map(g=>({...g,result:g.profit-g.expenses}));
+}
+window.lpV76Profit={period,build,profit,agency,visible};
+function mount(){
+ if(!dg()||typeof page==='undefined'||page!=='reports')return;
+ const root=document.getElementById('content');if(!root)return;
+ let card=document.getElementById('lpV76Profit');const active=ownAgency();
+ if(card&&card.dataset.agency===active)return;
+ if(card)card.remove();card=document.createElement('section');card.id='lpV76Profit';card.className='card';card.dataset.agency=active;
+ card.innerHTML='<h3>Bénéfice par période et par agence</h3><div style="display:flex;gap:12px;flex-wrap:wrap"><label>Période <select data-period><option value="day">Jour</option><option value="week">Semaine — lundi à dimanche</option><option value="month">Mois</option><option value="year">Année</option></select></label><label>Date de référence <input type="date" data-date value="'+dateString(new Date())+'"></label><label>Agence <select data-agency>'+rows('agencies').map(a=>'<option value="'+html(agency(a.id))+'">'+html(a.name||a.label||a.id)+'</option>').join('')+'<option value="all">Toutes les agences — lignes séparées</option></select></label><button type="button" data-refresh>Calculer</button></div><p data-range></p><div data-result style="overflow-x:auto"></div><p class="muted">Calcul sur les données présentes sur cet appareil. Les ventes annulées sont exclues selon leur statut actuel. Le résultat estimé correspond à la marge des ventes moins les dépenses enregistrées ; ce n’est pas le solde de caisse. Les devises restent séparées.</p>';
+ root.prepend(card);const selector=card.querySelector('[data-agency]');selector.value=active;
+ const display=()=>{
+  if(!dg())return;
+  try{
+   const kind=card.querySelector('[data-period]').value,date=card.querySelector('[data-date]').value,p=period(kind,date),data=build(kind,date,selector.value);
+   card.querySelector('[data-range]').textContent='Du '+p.start+' au '+p.end;
+   const number=n=>Number(n).toLocaleString('fr-FR',{maximumFractionDigits:2});
+   card.querySelector('[data-result]').innerHTML=data.length?'<table><thead><tr><th>Agence</th><th>Devise</th><th>Ventes</th><th>Bénéfice brut</th><th>Dépenses</th><th>Résultat estimé</th></tr></thead><tbody>'+data.map(g=>'<tr><td>'+html(label(g.agency))+'</td><td>'+html(g.currency)+'</td><td>'+number(g.sales)+'</td><td>'+(g.unknown?'À compléter':number(g.profit))+'</td><td>'+number(g.expenses)+'</td><td>'+(g.unknown?'À compléter':number(g.result))+'</td></tr>').join('')+'</tbody></table>'+(data.some(g=>g.unknown)?'<p>Des montants ou coûts historiques manquent. Le bénéfice reste à compléter pour les lignes concernées.</p>':''):'Aucune opération pour cette période et cette agence.';
+  }catch(e){card.querySelector('[data-range]').textContent=e.message;card.querySelector('[data-result]').textContent='';}
+ };
+ card.querySelectorAll('select,input').forEach(e=>e.addEventListener('change',display));card.querySelector('[data-refresh]').onclick=display;display();
+}
+const baseRows=window.lpV42Rows;
+if(typeof baseRows==='function')window.lpV42Rows=function(list,key){
+ const result=baseRows.apply(this,arguments);
+ return ['dailyUserNotes','userTasks','userReports'].includes(key)&&Array.isArray(result)?result.filter(visible):result;
+};
+const base=reports;reports=function(){const out=base.apply(this,arguments);mount();return out;};window.reports=reports;
+const renderBase=render;render=function(){const out=renderBase.apply(this,arguments);mount();return out;};window.render=render;
+})();
+/* LP_V76_AGENCY_PROFIT_END */
 
 /* LP_V77_NOTES_AGENCY_START */
 (function(){
@@ -148802,12 +148895,8 @@ function author(row){
 }
 function resolve(row){
  if(!row)return null;
- // New reports carry the agency captured when submitted; later staff transfers cannot move them.
- if(row.agencySchema===77){const a=agency(row.reportAgency);return a?{...row,agency:a}:null;}
- const u=author(row);
- if(!u)return null;
- const a=agency(u.agency||u.agence||u.agencyId);
- return a?{...row,agency:a,lpAgencyFromAccount:true}:null;
+ const a=agency(row.reportAgency||row.agency||row.agence);
+ return a?{...row,agency:a}:null;
 }
 function notes(input){
  const unique=new Map();
@@ -148822,9 +148911,16 @@ function notes(input){
 }
 function capture(user){
  const resolved=author({authorUserId:user&&user.id,username:user&&user.username,user:user&&user.name});
- const a=resolved&&agency(resolved.agency||resolved.agence||resolved.agencyId);
- if(!a)throw Error('Agence du compte non déterminée. Contactez le DG.');
- return {agency:a,reportAgency:a,agencySchema:77,authorUserId:s(resolved.id),username:s(resolved.username),name:s(resolved.name)};
+ const a=agency(currentAgency);
+ const memberships=resolved&&(Array.isArray(resolved.agencies)?resolved.agencies:[resolved.agency||resolved.agence]);
+ if(!a||!resolved||!memberships.some(x=>agency(x)===a))throw Error('Sélectionnez une agence autorisée avant l’enregistrement.');
+ return {agency:a,reportAgency:a,agencySchema:78,authorUserId:s(resolved.id),username:s(resolved.username),name:s(resolved.name)};
 }
 window.lpV77Notes={agency,author,resolve,notes,capture};
 })();
+
+/* LEADER PHARMA WEB V75 RECONNEXION FIX1 */
+
+/* LEADER PHARMA WEB V75 FIX2 TARGET SENSIBLE */
+
+/* LP_V78_ROTATION_EXPENSES */
