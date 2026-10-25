@@ -120175,6 +120175,8 @@ console.log('LEADER PHARMA V12 MENU STATISTIQUES STABLE FINAL');
         name: v14Name(),
         role: v14s(currentUser && currentUser.role),
         agency: v14Agency(),
+        reportAgency: v14Agency(),
+        agencySchema: 78,
         type: type,
         startDate: startDate,
         endDate: endDate,
@@ -137357,7 +137359,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.78 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.79 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137372,9 +137374,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.78 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.79 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.78 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.79 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138482,7 +138484,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.78 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.79 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138651,14 +138653,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.78 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.79 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.78 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.79 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138822,7 +138824,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.78 MASTER PRO
+   - affiche partout F29.6.0.79 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -138831,7 +138833,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.78 MASTER PRO';
+    'F29.6.0.79 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139168,9 +139170,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.78';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.79';
 
-  const MASTER_DISPLAY = 'F29.6.0.78 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.79 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139441,9 +139443,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.78';
+  const CURRENT_NUMERIC = '29.6.0.79';
 
-  const DISPLAY = 'F29.6.0.78 MASTER PRO';
+  const DISPLAY = 'F29.6.0.79 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140662,7 +140664,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.78 MASTER PRO'
+          : 'F29.6.0.79 MASTER PRO'
       );
 
       try{
@@ -141240,7 +141242,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.78 MASTER PRO'
+          : 'F29.6.0.79 MASTER PRO'
       );
 
       feedback(
@@ -142419,10 +142421,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.78';
+    '29.6.0.79';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.78 MASTER PRO';
+    'F29.6.0.79 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142577,7 +142579,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.78 MASTER PRO' && tech){
+    if(display === 'F29.6.0.79 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -142917,7 +142919,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.78 MASTER PRO';
+    'F29.6.0.79 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -147080,12 +147082,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.78';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.78 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.79';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.79 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.78 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.79 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.78 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.79 V11 ACTIF');
 })();
 
 
@@ -147094,7 +147096,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.78 MASTER PRO';
+  const DISPLAY='F29.6.0.79 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147118,7 +147120,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.78';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.79';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -148405,7 +148407,7 @@ async function download(p,rows){
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.78.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.79.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
@@ -148472,7 +148474,7 @@ function merge(remote){
  const before=signature();
  for(const k of keys){
   const rows=Array.isArray(remote[k])?remote[k]:[];const result=new Map((db[k]||[]).map(r=>[str(r.id),r]));
-  for(const r of rows){const old=result.get(str(r.id));if(!old||stamp(r)>=stamp(old))result.set(str(r.id),Object.assign({},old||{},r));}
+  for(const r of rows){const old=result.get(str(r.id));if(!old||stamp(r)>=stamp(old)||k==='rhRequests'&&r.agencyCorrectionVersion===79)result.set(str(r.id),Object.assign({},old||{},r));}
   db[k]=Array.from(result.values());
  }
  if(signature()!==before){localStorage.setItem('lpmp_v13',JSON.stringify(db));}
@@ -148924,3 +148926,98 @@ window.lpV77Notes={agency,author,resolve,notes,capture};
 /* LEADER PHARMA WEB V75 FIX2 TARGET SENSIBLE */
 
 /* LP_V78_ROTATION_EXPENSES */
+
+/* LP_V79_TREASURY_READONLY_AGENCY_RH */
+(function(){
+'use strict';
+const str=v=>String(v??'').trim(),norm=v=>str(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''),num=v=>Number.isFinite(Number(v))?Number(v):0;
+const esc=v=>str(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const day=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lubumbashi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const currency=r=>['fc','cdf',''].includes(norm(r.currency||r.devise))?'CDF':['usd','$'].includes(norm(r.currency||r.devise))?'USD':str(r.currency||r.devise).toUpperCase();
+const cancelled=r=>['annulee','annule','cancelled','canceled'].includes(norm(r.status));
+const owner=r=>str(r.sellerUsername||r.username||r.rhUser||r.user||r.sellerUserId||r.userId||r.sellerName||r.seller||r.createdBy||r.name||'Agence');
+function paid(r){const total=Math.max(0,num(r.total??r.amount??r.grandTotal??r.totalAmount));return r.paidAmount!=null?Math.min(total,Math.max(0,num(r.paidAmount))):norm(r.payment).includes('credit')?0:total;}
+function legacySaleKey(r){return str(r.invoice)&&str(r.date)&&str(r.time)&&owner(r)!=='Agence'?'legacy-sale:'+JSON.stringify([norm(r.agency||r.agence),str(r.date),str(r.time),str(r.invoice),norm(owner(r)),currency(r),num(r.total??r.amount),paid(r)]):'';}
+function rowKey(kind,r){return str(r.id)?'id:'+str(r.id):kind==='sales'?legacySaleKey(r):'legacy:'+JSON.stringify(r);}
+function project(state,agency,options={}){
+ const rows=[],seen=new Set(),notes=[],known=new Map(),a=norm(agency);let unresolved=0;
+ const allowed=r=>norm(r.agency||r.agence)===a&&(!options.visible||options.visible(r));
+ const date=r=>str(r.date||r.startDate).slice(0,10);
+ const inPeriod=r=>(!options.start||date(r)>=options.start)&&(!options.end||date(r)<=options.end);
+ function add(kind,r,amount,type,ref){
+  if(!allowed(r)||!Number.isFinite(amount)||amount<=0)return;
+  const id=str(r.id)||(kind==='Vente'?legacySaleKey(r):'');if(!id){if(inPeriod(r))unresolved++;return;}
+  const k=kind+'|'+a+'|'+id;if(seen.has(k))return;seen.add(k);
+  const row={id:k,date:date(r),agency:a,currency:currency(r),type,category:kind,desc:str(ref||r.desc||r.reason||r.ref),amount,agent:owner(r)};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(row.date)){unresolved++;return;}
+  known.set(k,row);if(inPeriod(r))rows.push(row);
+ }
+ const sales=(state.sales||[]).filter(allowed),saleById=new Map(sales.map(r=>[str(r.id),r]));
+ const canonical=new Set(sales.filter(r=>str(r.id)).map(legacySaleKey).filter(Boolean));
+ for(const r of sales)if(!cancelled(r)&&!( !str(r.id)&&canonical.has(legacySaleKey(r)) ))add('Vente',r,paid(r),'Entrée',r.invoice);
+ for(const r of state.expenses||[])if(!cancelled(r))add('Dépense',r,Math.max(0,num(r.amount)),'Sortie');
+ const batches=(state.purchaseBatches||[]).filter(allowed),batchIds=new Set(batches.map(r=>str(r.id)));
+ for(const r of batches)if(!cancelled(r)){
+  if(r.paidAmount!=null)add('Achat',r,Math.max(0,num(r.paidAmount)),'Sortie',r.ref);
+  else if(inPeriod(r))unresolved++;
+ }
+ for(const r of state.purchases||[])if(!cancelled(r)&&!batchIds.has(str(r.sourceBatchId||r.batchId)))add('Achat',r,paid(r),'Sortie',r.ref);
+ const refunded=new Map();
+ for(const r of state.returns||[]){
+  if(!allowed(r))continue;const sale=saleById.get(str(r.saleId));
+  if(sale&&cancelled(sale))continue;
+  if(!sale||currency(sale)!==currency(r)){if(inPeriod(r))unresolved++;continue;}
+  const key=str(r.saleId),available=Math.max(0,paid(sale)-(refunded.get(key)||0)),amount=Math.min(available,Math.max(0,num(r.amount)));
+  const seenId='Retour|'+a+'|'+str(r.id);if(seen.has(seenId))continue;
+  add('Retour',r,amount,'Sortie',r.invoice);refunded.set(key,(refunded.get(key)||0)+amount);
+ }
+ // Keep legitimate independent manual cash movements. Linked automatic records never count twice.
+ const nativeSeen=new Set();
+ for(const r of state.treasury||[]){
+  if(!allowed(r)||!inPeriod(r))continue;const id=str(r.id);if(!id||nativeSeen.has(id))continue;nativeSeen.add(id);
+  const c=norm(r.category),kind=c.includes('vente')?(c.includes('retour')?'Retour':'Vente'):c.includes('achat')?'Achat':c.includes('depense')||c.includes('salaire')?'Dépense':null;
+  if(kind){
+   const source=str(r.sourceSaleId||r.saleId||r.sourceExpenseId||r.expenseId||r.sourceBatchId||r.sourcePurchaseId);
+   const matches=source&&known.has(kind+'|'+a+'|'+source)||[...known.values()].some(x=>x.category===kind&&x.date===date(r)&&x.currency===currency(r)&&Math.abs(x.amount-num(r.amount))<0.005&&x.desc===str(r.desc));
+   if(!matches)unresolved++;
+   continue;
+  }
+  if(!['entree','sortie'].includes(norm(r.type))){unresolved++;continue;}
+  add('Mouvement',r,Math.max(0,num(r.amount)),norm(r.type)==='entree'?'Entrée':'Sortie');
+ }
+ const totals={};for(const r of rows){const t=totals[r.currency]||(totals[r.currency]={in:0,out:0,balance:0});if(r.type==='Entrée')t.in+=r.amount;else t.out+=r.amount;t.balance=t.in-t.out;}
+ return {rows:rows.sort((x,y)=>y.date.localeCompare(x.date)||x.id.localeCompare(y.id)),totals,unresolved};
+}
+let selectedDay=day(),all=false,lastRead='',flight=null;
+function render79(){
+ if(page!=='treasury'||!currentUser||!allowed('treasury'))return;
+ const dg=norm(currentUser.role)==='dg';
+ const result=project(db,currentAgency,{start:all?null:selectedDay,end:all?null:selectedDay,visible:dg?null:r=>window.lpV42Visible(r,r.sellerUsername||r.seller?'sales':'expenses')});
+ const content=document.getElementById('content');if(!content)return;
+ setHeader('Trésorerie & caisse','Calcul depuis les opérations enregistrées — '+(all?'historique disponible':selectedDay));
+ const money=(n,c)=>new Intl.NumberFormat('fr-CD',{maximumFractionDigits:2}).format(n)+' '+(c==='CDF'?'FC':c);
+ const currencies=Object.keys(result.totals);if(!currencies.length)currencies.push('CDF');
+ content.innerHTML='<section class="card" id="lpTreasury79"><h2>Trésorerie par agence</h2><p>Ventes encaissées, dépenses et mouvements identifiés. Les comptes des agents restent utilisables selon leur rotation.</p><div class="actions"><label>Date <input id="lpT79Date" type="date" value="'+esc(selectedDay)+'" '+(all?'disabled':'')+'></label><label><input id="lpT79All" type="checkbox" '+(all?'checked':'')+'> Tout l’historique disponible</label><button class="secondary" id="lpT79Refresh">Actualiser les données distantes</button></div><p id="lpT79State">'+esc(lastRead||'Lecture des données présentes sur cet appareil. Actualisez pour vérifier les opérations distantes.')+'</p>'+currencies.map(c=>{const t=result.totals[c]||{in:0,out:0,balance:0};return '<h3>'+esc(c)+'</h3><div class="grid kpis"><div class="card kpi"><div class="label">Entrées</div><div class="value">'+money(t.in,c)+'</div></div><div class="card kpi"><div class="label">Sorties</div><div class="value">'+money(t.out,c)+'</div></div><div class="card kpi"><div class="label">Solde calculé</div><div class="value">'+money(t.balance,c)+'</div></div></div>';}).join('')+'<p>Solde calculé sur les opérations disponibles pour la période. Il ne remplace pas un comptage physique ; une caisse d’ouverture non enregistrée et les règlements non détaillés ne sont pas reconstitués.</p>'+(result.unresolved?'<p><strong>'+result.unresolved+' mouvement(s) à rapprocher</strong> : montant non ajouté pour éviter un double comptage ou un encaissement supposé.</p>':'')+'<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Agent</th><th>Type</th><th>Origine</th><th>Référence / motif</th><th>Montant</th></tr></thead><tbody>'+result.rows.map(r=>'<tr><td>'+esc(r.date)+'</td><td>'+esc((db.users||[]).find(u=>[u.username,u.id,u.name].some(v=>norm(v)===norm(r.agent)))?.name||r.agent)+'</td><td>'+esc(r.type)+'</td><td>'+esc(r.category)+'</td><td>'+esc(r.desc)+'</td><td>'+money(r.amount,r.currency)+'</td></tr>').join('')+(result.rows.length?'':'<tr><td colspan="6">Aucun mouvement disponible pour cette période et cette agence.</td></tr>')+'</tbody></table></div></section>';
+ document.getElementById('lpT79Date').onchange=e=>{selectedDay=e.target.value;render79();};
+ document.getElementById('lpT79All').onchange=e=>{all=e.target.checked;render79();};
+ document.getElementById('lpT79Refresh').onclick=refresh79;
+}
+async function refresh79(){
+ if(flight)return flight;if(navigator.onLine===false){lastRead='Hors ligne : opérations locales conservées.';render79();return false;}
+ const user=currentUser,agency=currentAgency;
+ flight=(async()=>{try{
+  document.getElementById('lpT79State').textContent='Réception des données du serveur…';
+  const token=await window.lpGetSessionTokenV16();
+  const res=await fetch(SUPABASE.url.replace(/\/$/,'')+'/rest/v1/rpc/lp_read_state_v32',{method:'POST',headers:{apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}'});
+  if(!res.ok)throw Error('SERVER_'+res.status);const data=await res.json(),remote=data?.[0]?.contenu;if(!remote)throw Error('STATE_MISSING');
+  if(currentUser!==user||currentAgency!==agency)return false;
+  for(const k of ['sales','expenses','treasury','purchases','purchaseBatches','returns']){
+   const m=new Map((db[k]||[]).map((r,i)=>[rowKey(k,r)||'local-unresolved:'+i,r]));for(const [i,r] of (remote[k]||[]).entries()){const key=rowKey(k,r)||'remote-unresolved:'+i;m.set(key,{...m.get(key),...r});}db[k]=[...m.values()];
+  }
+  lastRead='Données distantes reçues à '+new Date().toLocaleTimeString('fr-FR')+' ; opérations locales conservées.';render79();return true;
+ }catch(e){lastRead='Réception non confirmée. Données locales conservées ; réessayez avec Internet.';render79();return false;}})();
+ try{return await flight;}finally{flight=null;}
+}
+window.lpTreasury79={project,paid,refresh:refresh79};treasury=render79;window.treasury=render79;
+})();
+
