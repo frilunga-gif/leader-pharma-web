@@ -1,3 +1,20 @@
+/* LP_V80_EARLY_TRANSPORT */
+(function(){
+ const base=window.fetch.bind(window);window.__lpV80RawFetch=base;
+ window.fetch=async function(input,init){
+  const url=typeof input==='string'?input:input?.url||'';
+  if(url.includes('/rpc/lp_merge_sale_v1')&&typeof init?.body==='string'){
+   try{const body=JSON.parse(init.body);if(body.p_sale&&!body.p_sale.operationAt&&typeof db!=='undefined'){const local=(db.sales||[]).find(r=>String(r.id)===String(body.p_sale.id)&&String(r.agency)===String(body.p_sale.agency));if(local?.operationAt){body.p_sale.operationAt=local.operationAt;body.p_sale.operationTimeZone='Africa/Lubumbashi';init={...init,body:JSON.stringify(body)};}}}catch(e){}
+  }
+  const result=await base.call(this,input,init);
+  if(result.ok&&url.includes('/rpc/lp_merge_sale_v1')&&typeof init?.body==='string'){
+   try{const body=JSON.parse(init.body),data=await result.clone().json();if(data.ok&&!data.guard_noop&&body.p_sale&&typeof window.lpV80SaleAck==='function')window.lpV80SaleAck(body.p_sale);}catch(e){}
+  }return result;
+ };
+ window.addEventListener('click',e=>{if(typeof window.lpV80Click==='function')window.lpV80Click(e);},true);
+})();
+
+
 (function(){
  function control(e){return e.target&&e.target.closest&&e.target.closest('#lpCsvDownload,#lpCsvPreview');}
  ['pointerdown','pointerup','touchstart','touchend','mousedown','mouseup'].forEach(function(type){window.addEventListener(type,function(e){if(control(e)){e.stopImmediatePropagation();}},{capture:true,passive:true});});
@@ -137359,7 +137376,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.79 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.80 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137374,9 +137391,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.79 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.80 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.79 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.80 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138484,7 +138501,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.79 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.80 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138653,14 +138670,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.79 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.80 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.79 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.80 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138824,7 +138841,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.79 MASTER PRO
+   - affiche partout F29.6.0.80 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -138833,7 +138850,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.79 MASTER PRO';
+    'F29.6.0.80 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139170,9 +139187,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.79';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.80';
 
-  const MASTER_DISPLAY = 'F29.6.0.79 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.80 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139443,9 +139460,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.79';
+  const CURRENT_NUMERIC = '29.6.0.80';
 
-  const DISPLAY = 'F29.6.0.79 MASTER PRO';
+  const DISPLAY = 'F29.6.0.80 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140664,7 +140681,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.79 MASTER PRO'
+          : 'F29.6.0.80 MASTER PRO'
       );
 
       try{
@@ -141242,7 +141259,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.79 MASTER PRO'
+          : 'F29.6.0.80 MASTER PRO'
       );
 
       feedback(
@@ -142421,10 +142438,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.79';
+    '29.6.0.80';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.79 MASTER PRO';
+    'F29.6.0.80 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142579,7 +142596,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.79 MASTER PRO' && tech){
+    if(display === 'F29.6.0.80 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -142919,7 +142936,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.79 MASTER PRO';
+    'F29.6.0.80 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -147082,12 +147099,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.79';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.79 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.80';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.80 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.79 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.80 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.79 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.80 V11 ACTIF');
 })();
 
 
@@ -147096,7 +147113,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.79 MASTER PRO';
+  const DISPLAY='F29.6.0.80 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147120,7 +147137,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.79';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.80';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -148400,14 +148417,14 @@ function build(p,selected){
 }
 const headers=['Période','Début','Fin','Type de ligne','Agence','Agent','Devise','Factures','Articles vendus','Ventes','Encaissé à la vente','Crédit à la vente','Dépenses','Caisse après dépenses (estimée)'];
 function cell(v){let s=String(v??'');if(/^[\s]*[=+@-]/.test(s)&&typeof v!=='number')s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
-function csv(p,rows){return '\uFEFF'+[headers,...rows.map(r=>[p.kind,p.start,p.end,r.type,r.agency,r.agent,r.currency,r.invoices,r.qty,...['sales','paid','credit','expenses','cash'].map(k=>Math.round(r[k]*100)/100)])].map(r=>r.map(cell).join(';')).join('\r\n');}
+function csv(p,rows){return '\uFEFF'+[[...headers,'Généré le (Lubumbashi)'],...rows.map(r=>[p.kind,p.start,p.end,r.type,r.agency,r.agent,r.currency,r.invoices,r.qty,...['sales','paid','credit','expenses','cash'].map(k=>Math.round(r[k]*100)/100),new Date().toLocaleString('fr-FR',{timeZone:'Africa/Lubumbashi'})])].map(r=>r.map(cell).join(';')).join('\r\n');}
 async function download(p,rows){
  const filename='Leader-Pharma-Rapport-'+p.kind+'-'+p.start+'-'+p.end+'.csv',blob=new Blob([csv(p,rows)],{type:'text/csv;charset=utf-8'});
 
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.79.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.80.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
@@ -149019,5 +149036,284 @@ async function refresh79(){
  try{return await flight;}finally{flight=null;}
 }
 window.lpTreasury79={project,paid,refresh:refresh79};treasury=render79;window.treasury=render79;
+})();
+
+
+/* LP_WEB_WINDOWS_STOCK_CONFIRMED_V79_1
+ * Platform adapter: isolated product RPCs; never restamp or send old business snapshots.
+ */
+(function(){
+ 'use strict';
+ if(window.lpStockConfirmedV79)return;
+ const rawFetch=window.__lpV80RawFetch||window.fetch.bind(window),s=v=>String(v??'').trim(),n=v=>s(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+ const fields=['name','barcode','ean','lot','price','retailPrice','wholesalePrice','cost','min','expiry'];
+ let draft=null,busy=false,reading=null,lastRead=0,lastAgency='',lastActor='';
+ const actor=()=>typeof currentUser!=='undefined'?currentUser:null;
+ const agency=()=>typeof currentAgency!=='undefined'?s(currentAgency):'';
+ const dg=()=>n(actor()?.role)==='dg';
+ const key=r=>n(r.agency)+'|'+s(r.id);
+ const get=id=>document.getElementById(id);
+ const tell=t=>{if(typeof toast==='function')toast(t);};
+ function status(t){const el=get('lpStockConfirmedStatus');if(el)el.textContent=t;}
+ function persist(){localStorage.setItem('lpmp_v13',JSON.stringify(db));}
+ async function rpc(name,body,who){
+  if(navigator.onLine===false)throw Error('Hors ligne. Saisie conservée.');
+  const token=await window.lpGetSessionTokenV16();
+  if(actor()!==who)throw Error('Le compte a changé. Rouvrez la fiche.');
+  const base=SUPABASE.url.replace(/\/$/,'');
+  async function call(path,payload,epoch){
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
+   try{
+    const headers={apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'};
+    if(epoch!=null)headers['x-lp-data-generation']=String(epoch);
+    const r=await rawFetch(base+'/rest/v1/rpc/'+path,{method:'POST',headers,body:JSON.stringify(payload),signal:controller.signal});
+    const data=await r.json();if(!r.ok)throw Error(data.message||'Réception serveur non confirmée.');return data;
+   }finally{clearTimeout(timer);}
+  }
+  // Read the generation for this isolated operation, not for a bulk snapshot.
+  const epoch=await call('lp_data_generation_v39',{});
+  if(!Number.isSafeInteger(Number(epoch))||Number(epoch)<1)throw Error('Vérification serveur impossible.');
+  if(actor()!==who)throw Error('Le compte a changé.');
+  return call(name,body,epoch);
+ }
+ function installRows(rows,a){
+  const incoming=new Map(rows.filter(r=>n(r.agency)===n(a)).map(r=>[key(r),r]));
+  // Keep local-only records intact. No automatic deletion or stock addition.
+  db.products=(db.products||[]).map(r=>incoming.get(key(r))||r);
+  const existing=new Set(db.products.map(key));
+  for(const r of incoming.values())if(!existing.has(key(r))){db.products.push(r);existing.add(key(r));}
+  persist();
+ }
+ async function read(force=false){
+  if(reading)return reading;
+  const who=actor(),a=agency();if(!who||!a)return false;
+  if(!force&&lastActor===s(who.id||who.username)&&lastAgency===a&&Date.now()-lastRead<60000)return true;
+  reading=(async()=>{
+   status('Réception du stock…');
+   try{
+    const data=await rpc('lp_read_state_v32',{},who);
+    if(actor()!==who||agency()!==a)return false;
+    const state=Array.isArray(data)?data[0]?.contenu:null;
+    if(!state||!Array.isArray(state.products))throw Error('Catalogue non confirmé.');
+    installRows(state.products,a);lastRead=Date.now();lastAgency=a;lastActor=s(who.id||who.username);
+    if(typeof page!=='undefined'&&page==='stock'&&!get('pname')&&typeof drawStock==='function')drawStock(get('stockSearch')?.value||'');
+    status('Stock reçu du serveur.');return true;
+   }catch(e){status('Stock local conservé. Réception non confirmée.');return false;}
+  })();try{return await reading;}finally{reading=null;}
+ }
+ function open(id){
+  if(!dg()){tell('Modification réservée au DG.');return;}
+  const p=(db.products||[]).find(r=>s(r.id)===s(id)&&n(r.agency)===n(agency()));
+  draft={id:p?.id??uid(),agency:agency(),prior:p?structuredClone(p):null,attempted:false};
+ }
+ function product(){
+  const value=id=>s(get(id)?.value),num=id=>Number(value(id));
+  if(!draft||draft.agency!==agency())throw Error('Rouvrez la fiche du produit.');
+  const r={id:draft.id,agency:draft.agency,name:value('pname'),lot:value('plot'),barcode:value('pbarcode'),ean:value('pbarcode'),price:num('pprice'),retailPrice:num('pprice'),wholesalePrice:num('pwholesale'),cost:num('pcost'),stock:num('pstock'),min:num('pmin'),expiry:value('pexp')||draft.prior?.expiry||''};
+  if(!r.name||!Number.isSafeInteger(r.stock)||r.stock<0||['price','wholesalePrice','cost','min'].some(k=>!Number.isFinite(r[k])||r[k]<0))throw Error('Vérifiez le nom, les quantités et les prix.');
+  return r;
+ }
+ function duplicate(r,rows){return rows.find(x=>n(x.agency)===n(r.agency)&&s(x.id)!==s(r.id)&&((r.barcode&&s(x.barcode||x.ean)===r.barcode)||(n(x.name)===n(r.name)&&n(x.lot)===n(r.lot)&&s(x.expiry)===s(r.expiry))));}
+ async function saveProduct(button){
+  if(busy)return false;if(!dg()){tell('Modification réservée au DG.');return false;}
+  let p;try{p=product();}catch(e){tell(e.message);return false;}
+  const formDraft=draft,who=actor();busy=true;button.disabled=true;const label=button.textContent;button.textContent='Confirmation serveur…';
+  try{
+   // Preflight uses the server catalogue, not a potentially stale local list.
+   const data=await rpc('lp_read_state_v32',{},who),rows=data?.[0]?.contenu?.products;
+   if(!Array.isArray(rows))throw Error('Catalogue non confirmé. Saisie conservée.');
+   if(actor()!==who||draft!==formDraft||agency()!==p.agency)throw Error('La fiche ou le compte a changé.');
+   const previous=rows.find(x=>key(x)===key(p));
+   if(!formDraft.prior&&duplicate(p,rows))throw Error('Ce produit et ce lot existent déjà. Utilisez Modifier ou Réception de stock.');
+   let result;
+   // A new-product retry keeps its original ID after a lost HTTP response.
+   if(!formDraft.prior&&previous){
+    if(!formDraft.attempted||fields.some(k=>s(previous[k])!==s(p[k])))throw Error('Produit déjà présent. Actualisez avant de modifier.');
+    result=previous;
+   }else{
+    const expected=formDraft.prior?.stock??null;
+    formDraft.attempted=true;
+    result=await rpc('lp_save_product_dg_v41',{p_product:p,p_expected_stock:expected,p_change_stock:!formDraft.prior||p.stock!==Number(expected)},who);
+   }
+   if(key(result)!==key(p)||!Number.isSafeInteger(Number(result.stock)))throw Error('Produit non confirmé. Saisie conservée.');
+   if(actor()!==who||draft!==formDraft||agency()!==p.agency)throw Error('Produit reçu au serveur. Rouvrez le stock du compte concerné.');
+   installRows([result],p.agency);draft=null;lastRead=0;
+   const form=get('stockForm');if(form)form.replaceChildren();
+   if(typeof drawStock==='function')drawStock(get('stockSearch')?.value||'');
+   status('Produit confirmé au serveur.');tell('Produit confirmé au serveur.');return true;
+  }catch(e){
+   const message=s(e.message).includes('STOCK_CHANGED_REFRESH')?'Une vente a modifié ce stock. Saisie conservée : actualisez et rouvrez la fiche.':'Enregistrement non confirmé. '+(e.name==='AbortError'?'Délai dépassé. Réessayez : le même identifiant sera conservé.':e.message);
+   status(message);tell(message);return false;
+  }finally{busy=false;button.disabled=false;button.textContent=label;}
+ }
+ function click(e){
+  if(typeof page==='undefined'||page!=='stock')return false;
+  const b=e.target?.closest?.('#saveProduct,[data-edit],#newProduct,#lpStockConfirmedRefresh');if(!b)return false;
+  if(b.id==='lpStockConfirmedRefresh'){e.preventDefault();e.stopImmediatePropagation();if(!get('pname'))read(true);else tell('Terminez la fiche avant d’actualiser.');return true;}
+  if(b.id==='saveProduct'){
+   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();saveProduct(b);return true;
+  }
+  return false;
+ }
+ // Registered before app.js and all legacy click observers.
+ window.addEventListener('click',click,true);
+ function mount(){
+  if(typeof page==='undefined'||page!=='stock'||!actor())return;
+  const table=get('stockTable');if(!table||get('lpStockConfirmedRefresh'))return;
+  const box=document.createElement('div');box.innerHTML='<button type="button" class="secondary" id="lpStockConfirmedRefresh">↻ Actualiser le stock</button><p class="muted" id="lpStockConfirmedStatus" role="status">Stock local disponible.</p>';table.before(box);
+ }
+ function boot(){
+  if(typeof productForm!=='function'||typeof stock!=='function')return;
+  const baseForm=productForm;productForm=function(id){open(id);const result=baseForm.apply(this,arguments);const button=get('saveProduct');if(button)button.onclick=()=>saveProduct(button);return result;};window.productForm=productForm;
+  const baseStock=stock;stock=function(){const r=baseStock.apply(this,arguments);mount();if(!get('pname'))read(false);return r;};window.stock=stock;
+  window.lpV41StockClick=click;window.lpV41SaveProduct=saveProduct;
+  mount();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+ window.lpStockConfirmedV79={read,saveProduct,duplicate,installRows,boot,open};
+})();
+
+
+/* LP_V80_OPERATIONS_CLOSURES_HISTORY_CSV */
+(function(){
+'use strict';
+const S=v=>String(v??'').trim(),N=v=>S(v).toLowerCase(),num=v=>Number(v)||0,esc=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const zone='Africa/Lubumbashi',day=()=>new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const user=()=>typeof currentUser!=='undefined'?currentUser:null,dg=()=>N(user()?.role)==='dg',agency=()=>S(currentAgency),el=id=>document.getElementById(id),say=t=>{if(typeof toast==='function')toast(t);};
+const uid80=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.floor(Math.random()*16);return(c==='x'?r:(r&3|8)).toString(16);});
+const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'{}');}catch{return {};}};
+const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v)),persist=()=>localStorage.setItem('lpmp_v13',JSON.stringify(db));
+function stamp(v){if(v==null||v==='')return null;const d=new Date(typeof v==='number'?v:S(v).replace(/^(\d{4}-\d\d-\d\d) /,'$1T').replace(/([+-]\d\d)$/,'$1:00'));return Number.isFinite(d.getTime())?d:null;}
+function dateTime(v){const d=stamp(v);return d?new Intl.DateTimeFormat('fr-FR',{timeZone:zone,dateStyle:'short',timeStyle:'medium'}).format(d):'Non renseignée';}
+function opTime(r){if(r.operationAt||r.createdAt)return dateTime(r.operationAt||r.createdAt);if(/^\d\d?:\d\d/.test(S(r.time)))return S(r.date)+' '+S(r.time)+' (heure enregistrée)';return 'Non renseignée';}
+function currency(r){const c=N(r.currency||r.devise||'CDF');return ['fc','cdf'].includes(c)?'CDF':['usd','$'].includes(c)?'USD':c.toUpperCase();}
+const key=r=>N(r.agency)+'|'+S(r.id),owner=r=>S(r.username||r.rhUser||r.sellerUsername||r.user||r.sellerUserId||r.sellerName||r.seller||r.name);
+function mine(r){return [user()?.username,user()?.id,user()?.name].map(N).includes(N(owner(r)));}
+function visible(r){return N(r.agency)===N(agency())&&(dg()||mine(r));}
+function author(r){const value=owner(r),u=(db.users||[]).find(u=>[u.id,u.username,u.name].map(N).includes(N(value)));return S(u?.name||r.userName||r.sellerName||value)||'Non renseigné';}
+function signature(type,r){return JSON.stringify(type==='Vente'?[r.total,r.paidAmount??null,r.payment,r.status||'',currency(r)]:[r.amount,r.desc,r.date,currency(r)]);}
+let receipts=read('lp_v80_receipts'),queue=read('lp_v80_expense_queue'),busy=false,lastPresence=0,historyRows=[];
+function ack(type,r){receipts[type+'|'+key(r)]={signature:signature(type,r),at:new Date().toISOString()};write('lp_v80_receipts',receipts);mount();}
+window.lpV80SaleAck=r=>ack('Vente',r);
+function state(type,r){return receipts[type+'|'+key(r)]?.signature===signature(type,r)?'Réception serveur confirmée':'À vérifier / en attente';}
+async function rpc(name,body){
+ const who=user();if(!who||navigator.onLine===false)throw Error('Internet requis. Données locales conservées.');
+ const token=await window.lpGetSessionTokenV16();if(user()!==who)throw Error('Le compte a changé.');
+ const base=SUPABASE.url.replace(/\/$/,''),fetch80=window.__lpV80RawFetch||window.fetch.bind(window);
+ async function call(name,body,epoch){const c=new AbortController(),t=setTimeout(()=>c.abort(),45000);try{const h={apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'};if(epoch!=null)h['x-lp-data-generation']=String(epoch);const r=await fetch80(base+'/rest/v1/rpc/'+name,{method:'POST',headers:h,body:JSON.stringify(body),signal:c.signal});const data=await r.json();if(!r.ok)throw Error(data.message||'Réception non confirmée');return data;}finally{clearTimeout(t);}}
+ const epoch=Number(await call('lp_data_generation_v39',{}));if(!Number.isSafeInteger(epoch)||epoch<1||user()!==who)throw Error('Session non confirmée.');return call(name,body,epoch);
+}
+async function flush(){
+ if(busy||!user()||navigator.onLine===false)return;busy=true;const who=user();
+ try{for(const [k,r] of Object.entries(queue)){
+  if(user()!==who)break;if(!mine(r))continue;
+  try{const data=await rpc('lp_expense_confirm_v80',{p_expense:r});if(!data.ok||!data.confirmed||key(data.row)!==key(r))throw Error('Dépense non confirmée');
+   const i=db.expenses.findIndex(x=>key(x)===key(r));if(i>=0)db.expenses[i]={...db.expenses[i],...data.row};persist();ack('Dépense',data.row);delete queue[k];write('lp_v80_expense_queue',queue);
+  }catch(e){say('Dépense conservée, en attente de confirmation serveur.');break;}
+ }}finally{busy=false;mount();}
+}
+function addExpense(button){
+ const rh=button.id==='lpV10ExpenseSave',amount=Number(el(rh?'lpV10ExpenseAmount':'eamount')?.value),desc=S(el(rh?'lpV10ExpenseReason':'edesc')?.value);
+ if(!user()||!Number.isFinite(amount)||amount<=0||!desc){say('Montant et motif requis.');return;}
+ const now=new Date().toISOString(),r={id:uid(),agency:agency(),reportAgency:agency(),agencySchema:78,date:day(),amount,desc,currency:'CDF',category:rh?'Dépense RH':S(el('ecat')?.value||'Fonctionnement'),username:S(user().username),user:S(user().username),userId:S(user().id),name:S(user().name),userName:S(user().name),createdAt:now,operationAt:now};
+ queue[key(r)]=r;write('lp_v80_expense_queue',queue);db.expenses=db.expenses||[];db.expenses.push(r);persist();
+ el(rh?'lpV10ExpenseAmount':'eamount').value='';el(rh?'lpV10ExpenseReason':'edesc').value='';
+ say('Dépense enregistrée localement. Confirmation en cours.');mount();flush();
+}
+async function presence(){
+ const who=user(),data=await rpc('lp_read_state_v32',{});if(who!==user())return;
+ const remote=data?.[0]?.contenu;if(!remote)throw Error('Lecture non confirmée');
+ for(const [field,type] of [['sales','Vente'],['expenses','Dépense']]){
+  const local=new Map((db[field]||[]).map(r=>[key(r),r]));
+  for(const r of remote[field]||[]){if(!visible(r))continue;const l=local.get(key(r));if(l&&signature(type,l)===signature(type,r))ack(type,l);if(!l&&r.id){db[field].push(r);ack(type,r);}}
+ }
+ persist();lastPresence=Date.now();mount();say('Ventes et dépenses vérifiées au serveur.');
+}
+function csvCell(v){let s=String(v??'');if(typeof v!=='number'&&/^[\s]*[=+@-]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+function csv(headers,rows){return '\uFEFF'+[headers,...rows].map(r=>r.map(csvCell).join(';')).join('\r\n');}
+async function exportCsv(name,headers,rows){
+ const text=csv(headers,rows),plugin=window.Capacitor?.Plugins?.LeaderFile;
+ if(plugin&&typeof plugin.saveCsv==='function'){
+  const bytes=new TextEncoder().encode(text);let raw='';for(const b of bytes)raw+=String.fromCharCode(b);await plugin.saveCsv({filename:name,base64:btoa(raw)});say('CSV enregistré dans Téléchargements/LeaderPharma.');
+ }else{const blob=new Blob([text],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+}
+async function exportStock(){
+ if(window.lpStockConfirmedV79)await window.lpStockConfirmedV79.read(true);
+ const generated=dateTime(new Date().toISOString()),rows=(db.products||[]).filter(r=>N(r.agency)===N(agency())).map(r=>[agency(),r.name,r.lot,r.barcode||r.ean||'',r.expiry||'',num(r.stock),num(r.min),num(r.price),...(dg()?[num(r.cost)]:[]),dateTime(r._lpProductUpdatedAt),generated]);
+ return exportCsv('Leader-Pharma-Stock-'+agency()+'-'+day()+'.csv',['Agence','Produit','Lot','Code-barres','Péremption','Stock','Minimum','Prix de vente',...(dg()?['Coût achat']:[]),'Dernier enregistrement connu','Exporté le (Lubumbashi)'],rows);
+}
+function operations(){
+ let start=S(el('lpCsvDate')?.value||day()),end=start,kind=el('lpCsvKind')?.value;if(kind==='mois'){end=start+'-31';start+='-01';}if(kind==='annee'){end=start+'-12-31';start+='-01-01';}
+ const out=[];for(const [field,type] of [['sales','Vente'],['expenses','Dépense']]){const seen=new Set();for(const r of db[field]||[]){if(!r.id||seen.has(key(r))||!visible(r)||S(r.date)<start||S(r.date)>end)continue;seen.add(key(r));out.push({row:r,type});}}
+ return out.sort((a,b)=>S(b.row.date).localeCompare(S(a.row.date))||S(b.row.operationAt||b.row.time).localeCompare(S(a.row.operationAt||a.row.time)));
+}
+function detailRows(){return operations().map(({row:r,type})=>[r.date,opTime(r),agency(),author(r),type,r.invoice||r.desc||'',currency(r),num(type==='Vente'?r.total:r.amount),r.status||'—',state(type,r)]);}
+const detailHeaders=['Date','Date et heure connues','Agence','Agent','Opération','Référence / motif','Devise','Montant','Statut opération','Réception serveur'];
+function table(headers,rows){return '<div style="overflow:auto"><table><thead><tr>'+headers.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(x=>'<td>'+esc(x)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
+function section(id,html,host){let node=el(id);if(!node){node=document.createElement('section');node.id=id;node.className='card';(host||el('content')).append(node);node.innerHTML=html;}return node;}
+let renderedStatus='',renderedDetails='',renderedExpenses='',mountContext='';
+function mount(){
+ if(!user()||typeof page==='undefined'||!el('content'))return;
+ const context=[agency(),S(user().id||user().username),page].join('|');if(context!==mountContext){for(const id of ['lp80Confirmation','lp80ExpenseList','lp80StockTools','lp80ReportDetails','lp80Closure'])el(id)?.remove();renderedStatus=renderedDetails=renderedExpenses='';historyRows=[];mountContext=context;}
+ for(const id of ['lpV10ExpenseSave','saveExpense']){const b=el(id);if(b)b.onclick=()=>addExpense(b);}
+ if(['sales','payroll','expenses','updates','reports'].includes(page)){
+  const card=section('lp80Confirmation','<h3>Confirmation des opérations</h3><button type="button" class="secondary" data-lp80="verify">Actualiser et vérifier au serveur</button><div id="lp80ConfirmationRows"></div>');
+  const rows=operations().map(({row:r,type})=>[r.date,opTime(r),author(r),type,currency(r),num(type==='Vente'?r.total:r.amount),state(type,r)]),html=table(['Date','Heure','Agent','Opération','Devise','Montant','État'],rows.slice(0,100));
+  if(renderedStatus!==html||!el('lp80ConfirmationRows')?.innerHTML){el('lp80ConfirmationRows').innerHTML=html;renderedStatus=html;}
+ }
+ if(page==='expenses'){
+  const card=section('lp80ExpenseList','<h3>Dépenses de l’agence</h3><button type="button" class="secondary" data-lp80="verify">Actualiser les dépenses</button><div id="lp80ExpenseRows"></div>');
+  const rows=(db.expenses||[]).filter(visible).slice().sort((a,b)=>S(b.date).localeCompare(S(a.date))).map(r=>[r.date,opTime(r),author(r),r.desc,r.category,currency(r),num(r.amount),state('Dépense',r)]),html=table(['Date','Heure','Agent','Motif','Catégorie','Devise','Montant','État'],rows);
+  if(renderedExpenses!==html||!el('lp80ExpenseRows')?.innerHTML){el('lp80ExpenseRows').innerHTML=html;renderedExpenses=html;}
+  for(const t of el('content').querySelectorAll('.grid .card table'))t.hidden=true;
+ }
+ if(page==='stock'){
+  const stockTable=el('stockTable');if(stockTable){
+   const head=stockTable.querySelector('thead tr');if(head&&!head.querySelector('[data-lp80-time]')){const th=document.createElement('th');th.dataset.lp80Time='1';th.textContent='Dernier enregistrement connu (Lubumbashi)';head.append(th);}
+   for(const row of stockTable.querySelectorAll('tbody tr')){const ref=row.querySelector('[data-edit]')?.dataset.edit;if(!ref)continue;const p=(db.products||[]).find(p=>S(p.id)===S(ref)&&N(p.agency)===N(agency()));let cell=row.querySelector('[data-lp80-time]');if(!cell){cell=document.createElement('td');cell.dataset.lp80Time='1';row.append(cell);}const text=dateTime(p?._lpProductUpdatedAt);if(cell.textContent!==text)cell.textContent=text;}
+  }
+  section('lp80StockTools','<h3>Stock et traçabilité</h3><button type="button" class="secondary" data-lp80="stockCsv">Exporter le stock CSV</button><p>Agence : '+esc(agency())+'. Date et heure des modifications : heure de Lubumbashi.</p>'+(dg()?'<button type="button" class="secondary" data-lp80="history">Voir les 100 derniers mouvements</button> <button type="button" class="secondary" data-lp80="historyCsv">Exporter ces mouvements CSV</button><div id="lp80HistoryRows">Historique disponible à partir de l’activation de cette fonction.</div>':''));
+ }
+ if(page==='reports'){
+  const card=section('lp80ReportDetails','<h3>Détail horodaté du rapport — agence sélectionnée</h3><p id="lp80Generated"></p><button type="button" class="secondary" data-lp80="detailCsv">Exporter le détail CSV</button><div id="lp80DetailRows"></div>');
+  const rows=detailRows(),html=table(detailHeaders,rows.slice(0,250));if(renderedDetails!==html||!el('lp80DetailRows')?.innerHTML){el('lp80DetailRows').innerHTML=html;el('lp80Generated').textContent='Rapport généré le '+dateTime(new Date().toISOString())+' — heure de Lubumbashi. Les heures historiques manquantes ne sont pas reconstituées.';renderedDetails=html;}
+ }
+ if(dg()&&['treasury','reports'].includes(page)){
+  section('lp80Closure','<h3>Clôture journalière par agence</h3><p>Caisse attendue = ouverture + ventes encaissées en espèces − dépenses enregistrées. Hors autres mouvements (achats, dépôts, retraits et retours). Les dépenses sans mode enregistré sont reprises comme sorties de caisse.</p><div class="form-grid"><label>Jour<input id="lp80CloseDate" type="date" value="'+day()+'"></label><label>Devise<select id="lp80CloseCurrency"><option>CDF</option><option>USD</option></select></label><label>Caisse d’ouverture<input id="lp80Opening" type="number" min="0" step="0.01" value="0"></label><label>Caisse comptée<input id="lp80Counted" type="number" min="0" step="0.01"></label><label>Observation / motif de révision<input id="lp80CloseNote" maxlength="2000"></label></div><button type="button" class="secondary" data-lp80="previewClose">Calculer et vérifier au serveur</button> <button type="button" class="btn" data-lp80="saveClose">Enregistrer la clôture</button><div id="lp80ClosureResult"></div>');
+ }
+}
+async function history(){
+ const a=agency(),data=await rpc('lp_stock_history_v80',{p_agency:a,p_before:null});if(agency()!==a)return;historyRows=data;
+ const rows=data.map(r=>[dateTime(r.recorded_at),r.actor_name||'Non renseigné',r.product_name,r.action,r.stock_before??'—',r.quantity_change??'—',r.stock_after??'—',Object.keys(r.changes||{}).map(k=>k+': '+S(r.changes[k].avant)+' → '+S(r.changes[k].apres)).join('; ')]);
+ if(el('lp80HistoryRows'))el('lp80HistoryRows').innerHTML=rows.length?table(['Date et heure serveur','Agent','Produit','Opération','Avant','Variation','Après','Détail'],rows):'Aucun mouvement enregistré depuis l’activation. Les anciens mouvements ne sont pas inventés.';
+}
+async function closeDay(save){
+ const opening=Number(el('lp80Opening').value),raw=el('lp80Counted').value,counted=save?Number(raw):null;
+ if(!Number.isFinite(opening)||opening<0||save&&(raw===''||!Number.isFinite(counted)||counted<0))throw Error('Vérifiez les montants de caisse.');
+ const p={p_agency:agency(),p_date:el('lp80CloseDate').value,p_currency:el('lp80CloseCurrency').value,p_opening:opening,p_counted:counted,p_note:el('lp80CloseNote').value,p_id:null};
+ if(save){const k=JSON.stringify(p),draft=read('lp80_close_pending');p.p_id=draft.key===k?draft.id:uid80();write('lp80_close_pending',{key:k,id:p.p_id});}
+ const result=await rpc('lp_cash_close_v80',p),node=el('lp80ClosureResult');if(!node)return;
+ if(result.saved){write('lp80_close_pending',{});const r=result.closure;node.innerHTML='<p><b>Clôture confirmée au serveur — révision '+esc(r.revision)+'</b></p>'+table(['Agence','Jour','Devise','Attendu','Compté','Écart','Date et heure','DG'],[[r.agency,r.work_date,r.currency,r.expected,r.counted,r.difference,dateTime(r.recorded_at),r.actor_name]]);}
+ else{node.innerHTML=table(['Encaissements espèces','Autres encaissements','Dépenses','Caisse attendue'],[[result.snapshot.cash_sales,result.snapshot.other_receipts,result.snapshot.expenses,result.expected]])+(result.changed_since_close?'<p>Des opérations ont changé depuis la dernière clôture. Une nouvelle révision conservera la précédente.</p>':'')+(result.last_closure?'<p>Dernière clôture : révision '+esc(result.last_closure.revision)+', '+esc(dateTime(result.last_closure.recorded_at))+'.</p>':'');}
+}
+const actions={verify:async()=>{await flush();await presence();},stockCsv:exportStock,history,historyCsv:async()=>{await history();if(!historyRows.length)return say('Aucun mouvement à exporter.');await exportCsv('Leader-Pharma-Historique-stock-'+agency()+'-'+day()+'.csv',['Date et heure serveur','Agence','Agent','Produit','Opération','Avant','Variation','Après','Modifications'],historyRows.map(r=>[dateTime(r.recorded_at),r.agency,r.actor_name||'Non renseigné',r.product_name,r.action,r.stock_before??'',r.quantity_change??'',r.stock_after??'',JSON.stringify(r.changes||{})]));},detailCsv:()=>exportCsv('Leader-Pharma-Operations-'+agency()+'-'+day()+'.csv',detailHeaders,detailRows()),previewClose:()=>closeDay(false),saveClose:()=>closeDay(true)};
+window.lpV80Click=function(e){
+ const b=e.target?.closest?.('[data-lp80],#lpV10ExpenseSave,#saveExpense');if(!b||!user())return false;
+ e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();if(b.disabled)return true;
+ if(['lpV10ExpenseSave','saveExpense'].includes(b.id)){addExpense(b);return true;}
+ const action=actions[b.dataset.lp80];if(action){b.disabled=true;Promise.resolve().then(action).catch(error=>say(error.message||'Opération non confirmée. Données conservées.')).finally(()=>{b.disabled=false;mount();});}return true;
+};
+let scheduled=false;function schedule(){if(scheduled)return;scheduled=true;setTimeout(()=>{scheduled=false;mount();},80);}
+if(typeof MutationObserver!=='undefined')new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
+window.addEventListener('online',flush);document.addEventListener('visibilitychange',()=>{if(!document.hidden)flush();});setInterval(()=>{if(!document.hidden&&Object.keys(queue).length)flush();},45000);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{mount();flush();},{once:true});else{mount();flush();}
+if(typeof checkout==='function'){
+ const baseCheckout=checkout;checkout=function(){
+  const before=new Set((db.sales||[]).map(key)),now=new Date().toISOString(),a=agency();
+  function mark(){let changed=false;for(const r of db.sales||[]){if(!before.has(key(r))&&N(r.agency)===N(a)&&!r.operationAt){r.operationAt=now;r.operationTimeZone=zone;changed=true;}}if(changed)persist();}
+  const result=baseCheckout.apply(this,arguments);if(result&&typeof result.then==='function')return result.then(value=>{mark();return value;});mark();return result;
+ };window.checkout=checkout;
+}
+window.lpV80={stamp,dateTime,opTime,csv,csvCell,currency,signature,detailRows,mount,flush,rpc,exportStock};
 })();
 
