@@ -137376,7 +137376,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.84 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.85 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137391,9 +137391,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.84 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.85 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.84 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.85 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138501,7 +138501,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.84 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.85 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138670,14 +138670,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.84 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.85 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.84 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.85 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138841,7 +138841,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.84 MASTER PRO
+   - affiche partout F29.6.0.85 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -138850,7 +138850,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.84 MASTER PRO';
+    'F29.6.0.85 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139187,9 +139187,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.84';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.85';
 
-  const MASTER_DISPLAY = 'F29.6.0.84 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.85 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139460,9 +139460,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.84';
+  const CURRENT_NUMERIC = '29.6.0.85';
 
-  const DISPLAY = 'F29.6.0.84 MASTER PRO';
+  const DISPLAY = 'F29.6.0.85 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140681,7 +140681,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.84 MASTER PRO'
+          : 'F29.6.0.85 MASTER PRO'
       );
 
       try{
@@ -141259,7 +141259,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.84 MASTER PRO'
+          : 'F29.6.0.85 MASTER PRO'
       );
 
       feedback(
@@ -142438,10 +142438,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.84';
+    '29.6.0.85';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.84 MASTER PRO';
+    'F29.6.0.85 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142596,7 +142596,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.84 MASTER PRO' && tech){
+    if(display === 'F29.6.0.85 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -142936,7 +142936,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.84 MASTER PRO';
+    'F29.6.0.85 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -147099,12 +147099,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.84';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.84 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.85';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.85 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.84 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.85 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.84 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.85 V11 ACTIF');
 })();
 
 
@@ -147113,7 +147113,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.84 MASTER PRO';
+  const DISPLAY='F29.6.0.85 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147137,7 +147137,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.84';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.85';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -148424,7 +148424,7 @@ async function download(p,rows){
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.84.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.85.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
@@ -149344,33 +149344,57 @@ if(typeof checkout==='function'){
 window.lpV80={stamp,dateTime,opTime,csv,csvCell,currency,signature,detailRows,mount,flush,rpc,exportStock};
 })();
 
-/* LP_V84_STOCK_STABLE_SEARCH */
+/* LP_V85_STOCK_KEYED_SEARCH: update rows without rebuilding the table or search input. */
 (function(){
 'use strict';
 function install(){
- if(typeof drawStock!=='function'||window.lpStockRenderV83)return;
- const style=document.createElement('style');style.id='lp84-stock-search-style';
- style.textContent='#stockTable{height:420px!important;max-height:none!important;overflow-y:auto!important;overflow-anchor:none!important;scroll-behavior:auto!important}#stockTable table{height:auto!important}#stockTable th,#stockTable td{vertical-align:top}@media(max-width:600px){#stockTable{height:320px!important}}';
+ if(typeof drawStock!=='function'||window.lpStockRenderV85)return;
+ const style=document.createElement('style');style.id='lp85-stock-search-style';
+ style.textContent=`#stockTable{height:420px!important;max-height:none!important;overflow-y:scroll!important;scrollbar-gutter:stable;overflow-anchor:none!important;scroll-behavior:auto!important}#stockTable table{width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;table-layout:fixed!important}#stockTable th,#stockTable td{vertical-align:top;overflow-wrap:anywhere}#stockTable tr[hidden]{display:none!important}#stockTable,#stockTable table,#stockTable thead,#stockTable tbody,#stockTable tr,#stockTable th,#stockTable td{content-visibility:visible!important;contain:none!important;contain-intrinsic-size:none!important}#lpStockConfirmedStatus{min-height:3em!important;margin:8px 0!important}@media(max-width:600px){#stockTable{height:320px!important}}`;
  (document.head||document.documentElement).appendChild(style);
- const base=drawStock;let lastHost=null,lastTable=null,lastSignature='';
- function signature(q){
-  const a=String(typeof currentAgency==='undefined'?'':currentAgency);
-  const rows=(typeof productsHere==='function'?productsHere():[]).filter(p=>String(p.name||'').toLowerCase().includes(String(q||'').toLowerCase()));
-  return JSON.stringify([a,String(q||''),typeof currentUser==='undefined'?null:[currentUser?.id,currentUser?.username,currentUser?.role],rows.map(p=>[p.id,p.name,p.lot,p.price,p.stock,p.min,p.expiry,p._lpProductUpdatedAt])]);
+ let activeHost=null,activeAgency='',body=null,table=null,empty=null,lastQuery='',entries=new Map();
+ const text=v=>String(v??'');
+ function setText(node,value){const next=text(value);if(node.textContent!==next)node.textContent=next;}
+ function create(host,a){
+  activeHost=host;activeAgency=a;entries=new Map();lastQuery='';
+  table=document.createElement('table');const cols=document.createElement('colgroup');
+  for(const width of [26,17,15,10,7,16,9]){const col=document.createElement('col');col.style.width=width+'%';cols.append(col);}table.append(cols);
+  const head=document.createElement('thead'),row=document.createElement('tr');
+  for(const label of ['Produit','Lot','Prix','Stock','Min','Péremption','']){const th=document.createElement('th');th.textContent=label;row.append(th);}head.append(row);table.append(head);
+  body=document.createElement('tbody');table.append(body);empty=document.createElement('tr');const cell=document.createElement('td');cell.colSpan=7;cell.textContent='Aucun produit trouvé';empty.append(cell);empty.hidden=true;body.append(empty);
+  host.replaceChildren(table);
  }
- drawStock=function(q=''){
+ function render(q=''){
   const host=document.getElementById('stockTable');if(!host)return;
-  const sig=signature(q),table=host.querySelector('table');
-  if(host===lastHost&&table&&table===lastTable&&sig===lastSignature)return;
-  const previous=lastSignature;
-  const result=base.apply(this,arguments);
-  const body=host.querySelector('tbody');
-  if(body&&!body.querySelector('tr')){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=7;cell.textContent='Aucun produit trouvé';row.append(cell);body.append(row);}
-  if(previous!==sig)host.scrollTop=0;
-  lastHost=host;lastTable=host.querySelector('table');lastSignature=sig;
-  return result;
- };
- window.drawStock=drawStock;window.lpStockRenderV83={signature};
+  const a=text(typeof currentAgency==='undefined'?'':currentAgency),input=document.getElementById('stockSearch');
+  // Background refreshes must use the text currently being typed, not an old query.
+  const query=text(input?input.value:q).toLowerCase();
+  if(activeHost!==host||activeAgency!==a||host.querySelector('table')!==table)create(host,a);
+  const rows=typeof productsHere==='function'?productsHere():[],seen=new Set();let visible=0;
+  for(const p of rows){
+   const key=text(p.id);seen.add(key);let e=entries.get(key);
+   if(!e){
+    const row=document.createElement('tr'),cells=Array.from({length:7},()=>document.createElement('td'));for(const c of cells)row.append(c);
+    const name=document.createElement('span');cells[0].append(name);
+    const badge=document.createElement('span');cells[3].append(badge);
+    const button=document.createElement('button');button.type='button';button.className='secondary';button.dataset.edit=key;button.textContent='Modifier';cells[6].append(button);
+    e={row,cells,name,badge,button,product:p};button.onclick=()=>productForm(e.product.id);entries.set(key,e);body.insertBefore(row,empty);
+   }
+   e.product=p;
+   setText(e.name,p.name);setText(e.cells[1],p.lot||'—');setText(e.cells[2],money(p.price));setText(e.badge,p.stock);setText(e.cells[4],p.min);setText(e.cells[5],p.expiry||'—');
+   const cls='badge'+(p.stock<=p.min?' danger':'');if(e.badge.className!==cls)e.badge.className=cls;
+   const hidden=!text(p.name).toLowerCase().includes(query);if(e.row.hidden!==hidden)e.row.hidden=hidden;if(!hidden)visible++;
+  }
+  for(const [id,e] of entries)if(!seen.has(id)){e.row.remove();entries.delete(id);}
+  if(empty.hidden!==(visible>0))empty.hidden=visible>0;
+  if(query!==lastQuery)host.scrollTop=0;lastQuery=query;
+ }
+ drawStock=render;window.drawStock=render;
+ // Run immediately at the target; keep keyboard focus, selection and normal IME input.
+ function input(e){if(e.target?.id!=='stockSearch')return;e.stopImmediatePropagation();render(e.target.value);}
+ window.addEventListener('input',input,true);
+ window.lpStockRenderV85={render};
+ if(document.getElementById('stockTable'))render();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
