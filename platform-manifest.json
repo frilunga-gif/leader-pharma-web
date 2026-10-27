@@ -1,12 +1,12 @@
 {
   "schema": 1,
-  "build": 2026400083,
-  "version": "29.6.0.83",
+  "build": 2026400084,
+  "version": "29.6.0.84",
   "base": "Android MASTER - app.js identique",
-  "source_apk_sha256": "df67061e531560a251e58118137bf07d1f8cce43336eb9934469f97c8713c3b7",
+  "source_apk_sha256": "387633f8b91f7fa3136cc4665e670cb139b832c9397c14124ea78a68bc600419",
   "files": {
     "index.html": "2e1005916fabfb37312f2e66e22b89513ce2133104acd420e16ce761a58d923a",
-    "app.js": "39faae93fda2baf5645099360adc4481fef34e0eabccb3f8ed2ce530d8f992c0",
+    "app.js": "2b465f4d3501d7ae9e29da000bd182ede024fff505e31c16729ee542e52112c7",
     "dg-security.js": "0e83b7043fd35d6445a4b874741a8b3b17b14e27f2ed67fec78ebf893faf30e7",
     "platform-update.js": "6e2e0e580266c22d5ce2b757ffdcb1bc5b38dbd3129f2c092de38890c42ccc4f",
     "styles.css": "a83f82707f68b4a2850ce49d9898428ee4246c4dc0047a4136268f7a91ebed53",
