@@ -1,4 +1,4 @@
-const CACHE_NAME='leader-pharma-web-2026400088';
+const CACHE_NAME='leader-pharma-web-2026400090';
 const FILES=['./index.html','./app.js','./dg-security.js','./platform-update.js','./styles.css','./assets/leader-pharma-logo.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(FILES))));
 self.addEventListener('message',e=>{if(e.data?.type==='ACTIVATE')self.skipWaiting();});

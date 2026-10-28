@@ -1,3 +1,52 @@
+/* LP_V90_ACCOUNT_FORM_ROLES */
+(function(){
+'use strict';
+const roles=Object.freeze(['Vendeur','Pharmacien','Caissier','Magasinier','Comptable','Gérant']);
+window.lp90CreateRoles=roles;
+window.lp90RoleOptionsHTML=()=>'<option value="" disabled selected>Choisir un rôle…</option>'+roles.map(r=>'<option value="'+r+'">'+r+'</option>').join('');
+window.lp90ShowCreatedAccount=function(user){
+ const body=document.querySelector('#lp90AccountsTable tbody');if(!body)return;
+ const key=String(user.username||'').trim().toLowerCase();
+ if(Array.from(body.rows).some(r=>r.dataset.lp90User===key))return;
+ const row=document.createElement('tr');row.dataset.lp90User=key;
+ for(const value of [user.name||'—',user.username,user.role,'Actif']){const cell=document.createElement('td');cell.textContent=value;row.append(cell);}body.append(row);
+};
+})();
+
+
+/* LP_V89_SIGNED_REPORT_MONEY */
+(function(){
+'use strict';
+const s=v=>String(v??'').trim(),n=v=>s(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const currency=r=>{const c=n(r.currency||r.devise||'CDF');return ['fc','cdf'].includes(c)?'CDF':['$','usd'].includes(c)?'USD':c.toUpperCase();};
+function cents(v){const x=Number(v);if(!Number.isFinite(x)||x<0)throw Error('Montant invalide dans les opérations du rapport.');return Math.round(x*100);}
+const cancelled=r=>['annule','annulee','cancelled','canceled','supprime','supprimee'].includes(n(r.status));
+const cash=mode=>['','especes','cash'].includes(n(mode));
+function owner(r,kind){const fields=kind==='sale'?['sellerUsername','sellerUserId','username','userId','sellerName','seller']:['username','userId','rhUser','user','userName','name'];return fields.map(k=>r[k]).find(v=>s(v))||'';}
+function selected(rows,scope,kind){const seen=new Set(),aliases=[scope.agentUser,scope.agentId,scope.agentName].map(n).filter(Boolean);return (rows||[]).filter(r=>{
+ if(n(r.agency)!==n(scope.agency)||s(r.date).slice(0,10)!==scope.date||!aliases.includes(n(owner(r,kind)))||cancelled(r))return false;
+ if(s(r.id)){const k=n(r.agency)+'|'+s(r.id);if(seen.has(k))return false;seen.add(k);}return true;
+});}
+function total(r){const v=r.total??r.amount??r.grandTotal??r.totalAmount;if(v!=null)return cents(v);return (r.items||[]).reduce((a,i)=>a+cents(Number(i.qty??i.quantity??0)*Number(i.price??i.unitPrice??0)),0);}
+function build(sales,expenses,scope){
+ const groups=new Map(),g=c=>{if(!groups.has(c))groups.set(c,{currency:c,sold:0,received:0,cashReceived:0,otherReceived:0,credit:0,expenses:0,cashExpenses:0,cashEstimate:0});return groups.get(c);};
+ const saleRows=selected(sales,scope,'sale'),expenseRows=selected(expenses,scope,'expense');
+ const copies=saleRows.map(r=>{const sold=total(r),paid=r.paidAmount!=null?Math.min(sold,cents(r.paidAmount)):(n(r.payment)==='credit'?0:sold),a=g(currency(r));a.sold+=sold;a.received+=paid;a.credit+=sold-paid;if(cash(r.payment))a.cashReceived+=paid;else a.otherReceived+=paid;return {id:r.id??null,invoice:r.invoice||'',date:r.date,time:r.time||'',operationAt:r.operationAt||r.createdAt||null,payment:r.payment||'Espèces',seller:r.seller||'',sellerUsername:r.sellerUsername||'',currency:a.currency,total:sold/100,paidAmount:paid/100,items:structuredClone(r.items||[])};});
+ const expenseCopies=expenseRows.map(r=>{const amount=cents(r.amount),a=g(currency(r)),mode=r.payment??r.paymentMethod??r.modePaiement??'';a.expenses+=amount;if(cash(mode))a.cashExpenses+=amount;return {id:r.id??null,date:r.date,operationAt:r.operationAt||r.createdAt||null,username:s(owner(r,'expense')),desc:r.desc||r.description||'',currency:a.currency,amount:amount/100,payment:mode||'Espèces (mode non renseigné)'};});
+ const totals=[...groups.values()].sort((a,b)=>a.currency.localeCompare(b.currency)).map(a=>{a.cashEstimate=a.cashReceived-a.cashExpenses;for(const k of Object.keys(a))if(k!=='currency')a[k]/=100;return a;});
+ copies.sort((a,b)=>s(a.id||a.invoice).localeCompare(s(b.id||b.invoice)));expenseCopies.sort((a,b)=>s(a.id||a.desc).localeCompare(s(b.id||b.desc)));
+ return {schema:89,scope:{agency:scope.agency,date:scope.date,agentUser:scope.agentUser,agentName:scope.agentName},invoiceCount:copies.length,productQty:saleRows.reduce((a,r)=>a+(r.items||[]).reduce((b,i)=>b+Number(i.qty??i.quantity??0),0),0),totals,sales:copies,expenses:expenseCopies};
+}
+const esc=v=>s(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const amount=(v,c)=>Number(v||0).toLocaleString('fr-FR',{maximumFractionDigits:2})+' '+(c==='CDF'?'FC':c);
+function html(finance){if(!finance||finance.schema!==89||!Array.isArray(finance.totals))return '';
+ return finance.totals.map(a=>'<div class="lp89-money" style="margin:10px 0"><b>'+esc(a.currency)+'</b><div>Montant vendu : <b>'+esc(amount(a.sold,a.currency))+'</b></div><div>Encaissé en espèces : <b>'+esc(amount(a.cashReceived,a.currency))+'</b></div>'+(a.otherReceived?'<div>Autres encaissements : <b>'+esc(amount(a.otherReceived,a.currency))+'</b></div>':'')+(a.credit?'<div>Crédit restant à la vente : <b>'+esc(amount(a.credit,a.currency))+'</b></div>':'')+'<div>Dépenses : <b>'+esc(amount(a.expenses,a.currency))+'</b></div>'+(a.cashExpenses!==a.expenses?'<div>Dont dépenses en espèces : <b>'+esc(amount(a.cashExpenses,a.currency))+'</b></div>':'')+'<div>Caisse estimée (espèces) : <b>'+esc(amount(a.cashEstimate,a.currency))+'</b></div></div>').join('')+(finance.totals.length?'':'<p>Aucune opération pour cet agent, cette agence et cette journée.</p>')+'<p class="muted">Caisse estimée = ventes encaissées en espèces − dépenses en espèces. Hors fonds de caisse, achats, retours et règlements ultérieurs. Dépenses sans mode renseigné considérées en espèces.</p>';
+}
+function signedHtml(snap){if(snap.finance?.schema===89)return html(snap.finance);return '<div class="lp89-money" style="margin:10px 0">Montant vendu enregistré : <b>'+esc(amount(snap.total??0,snap.currency||'CDF'))+'</b><div class="muted">Dépenses et caisse non incluses dans cet ancien rapport signé.</div></div>';}
+window.lpSignedMoneyV89={build,html,signedHtml};
+})();
+
+
 /* LP_V80_EARLY_TRANSPORT */
 (function(){
  const base=window.fetch.bind(window);window.__lpV80RawFetch=base;
@@ -1155,7 +1204,7 @@ function payroll(){setHeader('RH & paiement agents','Personnel, fonctions et sal
 function reports(){setHeader('Rapports','Performance et pilotage');const s=db.sales.filter(x=>x.agency===currentAgency),e=db.expenses.filter(x=>x.agency===currentAgency),rev=s.reduce((a,x)=>a+x.total,0),profit=s.reduce((a,x)=>a+x.profit,0),exp=e.reduce((a,x)=>a+x.amount,0);$('#content').innerHTML=`<div class="grid kpis"><div class="card kpi"><div class="label">Chiffre d'affaires</div><div class="value">${money(rev)}</div></div><div class="card kpi"><div class="label">Bénéfice brut</div><div class="value">${money(profit)}</div></div><div class="card kpi"><div class="label">Dépenses</div><div class="value">${money(exp)}</div></div><div class="card kpi"><div class="label">Résultat estimé</div><div class="value">${money(profit-exp)}</div></div></div><div class="card" style="margin-top:16px"><h3>Historique des ventes</h3>${salesTable(s.slice().reverse())}</div>`}
 function alerts(){setHeader('Alertes','Ruptures, stock faible et péremptions');const now=new Date(),soon=new Date(Date.now()+90*86400000),arr=productsHere().map(p=>{let type='',msg='';if(p.stock<=0){type='danger';msg='Rupture'}else if(p.stock<=p.min){type='warn';msg='Stock faible'}if(p.expiry){const d=new Date(p.expiry);if(d<now){type='danger';msg+=(msg?' • ':'')+'Périmé'}else if(d<soon){type='warn';msg+=(msg?' • ':'')+'Expire bientôt'}}return{p,type,msg}}).filter(x=>x.msg);$('#content').innerHTML=`<div class="card"><div class="list">${arr.map(x=>`<div class="list-item"><span><b>${esc(x.p.name)}</b><br><small class="muted">Lot ${esc(x.p.lot||'—')} • Stock ${x.p.stock} • ${x.p.expiry||'sans date'}</small></span><span class="badge ${x.type}">${x.msg}</span></div>`).join('')||'<p class="muted">Aucune alerte</p>'}</div></div>`}
 function agencies(){setHeader('Multi-agences','Pilotage local de plusieurs agences');const stats=db.agencies.map(a=>{const s=db.sales.filter(x=>x.agency===a.id);return{a,rev:s.reduce((n,x)=>n+x.total,0),count:s.length}});$('#content').innerHTML=`<div class="grid two-col"><div class="card"><h3>Agences</h3><div class="list">${stats.map(x=>`<div class="list-item"><span><b>${esc(x.a.name)}</b><br><small>${x.count} ventes</small></span><b>${money(x.rev)}</b></div>`).join('')}</div></div><div class="card"><h3>Ajouter une agence</h3><div class="field"><label>Nom</label><input id="aname"></div><button class="btn" id="addAgency" style="margin-top:12px">Ajouter</button><p class="muted">Cette V1.3 gère plusieurs agences sur l'appareil. La synchronisation Internet en temps réel nécessitera un serveur sécurisé.</p></div></div>`;$('#addAgency').onclick=()=>{const name=$('#aname').value.trim();if(!name)return;db.agencies.push({id:'ag-'+uid(),name});audit('Agence','Ajout '+name);fillAgencies();agencies()}}
-function users(){setHeader('Utilisateurs, rôles & permissions','Contrôle d’accès');$('#content').innerHTML=`<div class="grid two-col"><div class="card"><h3>Comptes</h3><table><thead><tr><th>Nom</th><th>Utilisateur</th><th>Rôle</th><th>État</th></tr></thead><tbody>${db.users.map(u=>`<tr><td>${esc(u.name||'—')}</td><td>${esc(u.username)}</td><td>${esc(u.role)}</td><td>${u.active===false?'Désactivé':'Actif'}</td></tr>`).join('')}</tbody></table></div><div class="card"><h3>Nouveau compte</h3><div class="field"><label>Nom</label><input id="uname"></div><div class="field"><label>Identifiant</label><input id="ulogin"></div><div class="field"><label>Mot de passe</label><input id="upass" type="password"></div><div class="field"><label>Rôle</label><select id="urole">${Object.keys(db.roles).map(r=>`<option>${esc(r)}</option>`).join('')}</select></div><button class="btn" id="saveUser" style="margin-top:12px">Créer</button></div></div>`;$('#saveUser').onclick=()=>{const username=$('#ulogin').value.trim(),password=$('#upass').value;if(!username||password.length<6)return toast('Identifiant et mot de passe de 6 caractères minimum');if(db.users.some(u=>u.username===username))return toast('Identifiant déjà utilisé');db.users.push({id:uid(),username,password,name:$('#uname').value,role:$('#urole').value,active:true});audit('Utilisateur','Création '+username);users()}}
+function users(){setHeader('Utilisateurs, rôles & permissions','Contrôle d’accès');$('#content').innerHTML=`<div class="grid two-col"><div class="card"><h3>Comptes</h3><table id="lp90AccountsTable"><thead><tr><th>Nom</th><th>Utilisateur</th><th>Rôle</th><th>État</th></tr></thead><tbody>${db.users.map(u=>`<tr data-lp90-user="${esc(String(u.username||'').trim().toLowerCase())}"><td>${esc(u.name||'—')}</td><td>${esc(u.username)}</td><td>${esc(u.role)}</td><td>${u.active===false?'Désactivé':'Actif'}</td></tr>`).join('')}</tbody></table></div><div class="card"><h3>Nouveau compte</h3><div class="field"><label>Nom</label><input id="uname" maxlength="80" autocomplete="name"></div><div class="field"><label>Identifiant</label><input id="ulogin" maxlength="40" autocomplete="username" autocapitalize="none" spellcheck="false"></div><div class="field"><label>Mot de passe</label><input id="upass" type="password" autocomplete="new-password" minlength="12"><small>12 caractères minimum.</small></div><div class="field"><label>Rôle</label><select id="urole" required>${window.lp90RoleOptionsHTML()}</select></div><div class="field"><label>Votre mot de passe DG — confirmation de création</label><input id="lp90CreateDGPassword" type="password" autocomplete="current-password"></div><p class="muted">Internet et votre confirmation DG sont nécessaires pour créer le compte.</p><button type="button" class="btn" id="saveUser" style="margin-top:12px;min-width:140px">Créer le compte</button><p id="lp90CreateStatus" role="status" aria-live="polite" style="min-height:3em"></p></div></div>`;$('#saveUser').onclick=e=>{if(e&&typeof window.lpV37EarlyClick==='function')window.lpV37EarlyClick(e);};}
 function auditPage(){setHeader('Surveillance & journal d’audit','Traçabilité des opérations');$('#content').innerHTML=`<div class="card"><table><thead><tr><th>Date</th><th>Heure</th><th>Utilisateur</th><th>Agence</th><th>Action</th><th>Détail</th></tr></thead><tbody>${db.audit.slice().reverse().map(x=>`<tr><td>${x.date}</td><td>${x.time}</td><td>${esc(x.user)}</td><td>${esc(agencyName(x.agency))}</td><td>${esc(x.action)}</td><td>${esc(x.detail)}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">Aucune activité</td></tr>'}</tbody></table></div>`}
 function updates(){setHeader('Mises à jour','Préparation du cycle de mise à jour professionnel');$('#content').innerHTML=`<div class="grid two-col"><div class="card"><h3>Version installée</h3><div class="kpi"><div class="value">V${db.version}</div></div><p>Le projet inclut le workflow GitHub Actions pour reconstruire automatiquement l'APK à chaque mise à jour du dépôt.</p></div><div class="card"><h3>Mise à jour sur appareils</h3><p class="muted">La mise à jour automatique directement depuis le Play Store ou depuis un serveur privé n'est pas encore activée dans cette version locale. Elle demandera la signature de l'application, un canal de distribution et un service de mise à jour sécurisé.</p></div></div>`}
 function settings(){setHeader('Paramètres','Sécurité et données');$('#content').innerHTML=`<div class="grid two-col"><div class="card"><h3>Compte administrateur</h3><div class="field"><label>Nouveau mot de passe</label><input id="newpass" type="password"></div><button id="changePass" class="btn" style="margin-top:12px">Modifier</button><p class="muted">Remplacez impérativement admin123 avant utilisation réelle.</p></div><div class="card"><h3>Données locales</h3><p>Les données sont enregistrées sur cet appareil. Utilisez régulièrement Sauvegarder.</p><button id="resetData" class="btn danger">Réinitialiser les données</button></div></div>`;$('#changePass').onclick=()=>{const p=$('#newpass').value;if(p.length<6)return toast('6 caractères minimum');currentUser.password=p;audit('Sécurité','Mot de passe modifié');toast('Mot de passe modifié')};$('#resetData').onclick=()=>{if(!window.lpV49ConsumeResetPermit())return;if(confirm('Effacer toutes les données locales ?')){db=structuredClone(seed);save();fillAgencies();render();toast('Données réinitialisées')}}}
@@ -129064,6 +129113,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
   }
 
   function lpF292MountDG(){
+    if(typeof page==='undefined'||String(page)!=='users')return;
 
     if(!lpF292IsDG()){
       return;
@@ -129075,6 +129125,10 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
       return;
     }
 
+    var usersList90=lpF292Users();
+    var current90=document.getElementById('lpF292DGTargets');
+    var paint90=JSON.stringify([currentAgency,currentUser&&currentUser.username,usersList90.map(u=>[u.id,u.username,u.name,u.role,lpF292Target(u)])]);
+    if(current90&&(current90.contains(document.activeElement)||(current90.__lp90Paint===paint90&&!document.getElementById('lpV10DGTargets')&&!document.getElementById('lpF27DGTargets'))))return;
     [
       'lpV10DGTargets',
       'lpF27DGTargets',
@@ -129086,10 +129140,11 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
       }
     });
 
-    var usersList = lpF292Users();
+    var usersList = usersList90;
 
     var panel = document.createElement('div');
     panel.id = 'lpF292DGTargets';
+    panel.__lp90Paint=paint90;
     panel.className = 'card';
     panel.style.marginTop = '16px';
 
@@ -129310,10 +129365,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
           btn.disabled = false;
           btn.textContent = oldText;
 
-          setTimeout(
-            lpF292MountDG,
-            50
-          );
+          lpF292MountDG();
         }
       };
     });
@@ -129330,7 +129382,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
     if(lpF292IsDG()){
 
       if(currentPage === 'users'){
-        setTimeout(lpF292MountDG,50);
+        lpF292MountDG();
       }
 
       return;
@@ -129476,7 +129528,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
         );
 
         if(currentPage === 'users'){
-          setTimeout(lpF292MountDG,50);
+          lpF292MountDG();
         }
       }
 
@@ -129496,7 +129548,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
           arguments
         );
 
-      setTimeout(lpF292MountDG,50);
+      lpF292MountDG();
 
       return result;
     };
@@ -129515,7 +129567,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
           arguments
         );
 
-      setTimeout(lpF292MountDG,50);
+      lpF292MountDG();
 
       return result;
     };
@@ -137157,30 +137209,31 @@ async function mountInv(){
   };
 }
 
-/* Rapport ventes signé utilisateur */
-function mySales(){
-  try{if(typeof window.lpV10MySalesToday==='function')return window.lpV10MySalesToday()||[]}catch(e){}
-  return (Array.isArray(db.sales)?db.sales:[]).filter(s=>S(s.date).slice(0,10)===today()&&N(s.agency)===N(agency()));
-}
-const totalSale=s=>{const d=Number(s.total||s.amount||s.grandTotal||s.totalAmount||0)||0;if(d)return d;return(s.items||[]).reduce((n,i)=>n+(Number(i.qty||i.quantity||0)||0)*(Number(i.price||i.unitPrice||0)||0),0)};
+/* Rapport ventes signé utilisateur — montants figés avant signature V89 */
+function reportScope89(){return {agency:agency(),date:today(),agentUser:userKey(),agentName:userName(),agentId:S(currentUser&&currentUser.id)};}
 function mountReport(){
   if(isDG())return;
   const p=N(typeof page!=='undefined'?page:'');if(!['reports','statistics','stats'].includes(p))return;
   const host=document.getElementById('content');if(!host||document.getElementById('lp2959Report'))return;
-  const sales=mySales(),tot=sales.reduce((n,s)=>n+totalSale(s),0),qty=sales.reduce((n,s)=>n+(s.items||[]).reduce((a,i)=>a+(Number(i.qty||i.quantity||0)||0),0),0);
+  const scope=reportScope89();let finance;try{finance=window.lpSignedMoneyV89.build(db.sales,db.expenses,scope);}catch(e){const warning=document.createElement('div');warning.id='lp2959Report';warning.className='card';warning.textContent='Rapport non préparé : '+e.message;host.appendChild(warning);return;}
   const card=document.createElement('div');card.id='lp2959Report';card.className='card';card.style.marginTop='16px';
-  card.innerHTML='<h2>✍️ Rapport journalier à signer</h2><div class="muted">Votre signature confirme le rapport de la journée. Le document signé ne pourra plus être modifié.</div><div class="grid kpis" style="margin-top:12px"><div class="card kpi"><div class="label">Factures</div><div class="value">'+sales.length+'</div></div><div class="card kpi"><div class="label">Produits vendus</div><div class="value">'+qty+'</div></div><div class="card kpi"><div class="label">Chiffre d’affaires</div><div class="value">'+(typeof lpU3Money==='function'?lpU3Money(tot):tot.toLocaleString('fr-FR')+' FC')+'</div></div></div><div id="lp2959RepSig" style="margin-top:14px"></div><label style="display:block;margin-top:12px"><input type="checkbox" id="lp2959RepCert"> Je certifie l’exactitude de ce rapport journalier.</label><button type="button" class="btn primary" id="lp2959RepSign" style="margin-top:12px">✍️ Signer et transmettre au DG</button><div id="lp2959RepStat" class="muted" style="margin-top:8px"></div>';
+  card.innerHTML='<h2>✍️ Rapport journalier à signer</h2><div class="muted">Données présentes sur cet appareil. Vérifiez les opérations avant de signer. Le document signé ne pourra plus être modifié.</div><p>Agence : <b>'+E(label(scope.agency))+'</b> • Agent : <b>'+E(scope.agentName)+'</b> • Jour : '+E(scope.date)+'</p><div>Factures : <b>'+finance.invoiceCount+'</b> • Produits vendus : <b>'+finance.productQty+'</b></div>'+window.lpSignedMoneyV89.html(finance)+'<button type="button" class="secondary" id="lp89RefreshReport">Actualiser le récapitulatif avant signature</button><div id="lp2959RepSig" style="margin-top:14px"></div><label style="display:block;margin-top:12px"><input type="checkbox" id="lp2959RepCert"> Je certifie l’exactitude de ce rapport journalier et des montants ci-dessus.</label><button type="button" class="btn primary" id="lp2959RepSign" style="margin-top:12px">✍️ Signer et transmettre au DG</button><div id="lp2959RepStat" class="muted" style="margin-top:8px"></div>';
   host.appendChild(card);
-  const pd=pad('lp2959RepSig'),b=document.getElementById('lp2959RepSign'),st=document.getElementById('lp2959RepStat');
+  const pd=pad('lp2959RepSig'),b=document.getElementById('lp2959RepSign'),st=document.getElementById('lp2959RepStat'),refresh=document.getElementById('lp89RefreshReport');
+  refresh.onclick=()=>{card.remove();mountReport();};
   b.onclick=async()=>{
     if(!document.getElementById('lp2959RepCert').checked)return toast('Cochez la déclaration de conformité');
     if(!pd||!pd.hasInk())return toast('Signature obligatoire');
-    b.disabled=true;st.textContent='Transmission…';
+    b.disabled=true;refresh.disabled=true;st.textContent='Transmission…';
     try{
-      const sv=await sign('rapport_ventes','Rapport journalier des ventes du '+today(),{kind:'rapport_ventes',date:today(),agency:agency(),agencyLabel:label(agency()),agentUser:userKey(),agentName:userName(),agentRole:S(currentUser&&currentUser.role),invoiceCount:sales.length,productQty:qty,total:tot,sales:sales.map(s=>({id:s.id,invoice:s.invoice,date:s.date,time:s.time,payment:s.payment,seller:s.seller,total:totalSale(s),items:s.items||[]}))},pd.data());
+      if(JSON.stringify(scope)!==JSON.stringify(reportScope89())||JSON.stringify(finance)!==JSON.stringify(window.lpSignedMoneyV89.build(db.sales,db.expenses,scope)))throw Error('Les opérations, le compte ou la journée ont changé. Actualisez le récapitulatif puis signez à nouveau.');
+      const totalCDF=finance.totals.find(r=>r.currency==='CDF')?.sold||0;
+      const {sales:signedSales89,...signedFinance89}=finance;
+      const snapshot={kind:'rapport_ventes',date:scope.date,agency:scope.agency,agencyLabel:label(scope.agency),agentUser:scope.agentUser,agentName:scope.agentName,agentRole:S(currentUser&&currentUser.role),invoiceCount:finance.invoiceCount,productQty:finance.productQty,total:totalCDF,currency:'CDF',sales:signedSales89,finance:signedFinance89};
+      const sv=await sign('rapport_ventes','Rapport journalier des ventes du '+scope.date,snapshot,pd.data());
       st.innerHTML='🔒 <b>Rapport signé et transmis au DG.</b><br>Référence : '+E(sv&&sv.id||'')+'<br>Empreinte : '+E(S(sv&&sv.document_hash||'').slice(0,16))+'…';
-      b.style.display='none';toast('Document signé');
-    }catch(e){st.textContent='❌ '+e.message;b.disabled=false;toast('Signature non transmise')}
+      b.style.display='none';refresh.style.display='none';toast('Document signé');
+    }catch(e){st.textContent='❌ '+e.message;b.disabled=false;refresh.disabled=false;toast('Signature non transmise')}
   };
 }
 
@@ -137191,7 +137244,7 @@ async function loadDG(type,id){
     const rows=await J('lp_signed_documents?reference_locale=eq.lpmp_v13&document_type=eq.'+encodeURIComponent(type)+'&agency=eq.'+encodeURIComponent(agency())+'&order=signed_at.desc&limit=60',{headers:H()})||[];
     box.innerHTML=rows.map(x=>{
       const snap=x.snapshot||{},pending=!x.dg_decision;
-      return '<div class="card" data-doc="'+E(x.id)+'" style="margin-top:10px"><b>👤 '+E(x.agent_name)+' — '+E(label(x.agency))+'</b><div>'+E(x.title)+'</div>'+(type==='inventaire'?'<div>Produits comptés : <b>'+Number(snap.totalProducts||0)+'</b> • Écart cumulé : <b>'+Number(snap.totalDiff||0)+'</b></div>':'<div>Factures : <b>'+Number(snap.invoiceCount||0)+'</b> • Produits vendus : <b>'+Number(snap.productQty||0)+'</b></div>')+'<div class="muted">Signé : '+E(new Date(x.signed_at).toLocaleString('fr-CD'))+'</div><div class="muted">Empreinte : '+E(S(x.document_hash).slice(0,20))+'…</div><div style="margin-top:8px"><img src="'+E(x.signature_data)+'" style="max-width:260px;max-height:90px;border:1px solid #ddd;border-radius:6px;background:#fff"></div><div style="margin-top:8px"><b>'+E(x.status)+'</b></div>'+(x.dg_comment?'<div class="muted">Commentaire DG : '+E(x.dg_comment)+'</div>':'')+(pending?'<textarea class="cmt" rows="2" style="width:100%;margin-top:8px" placeholder="Commentaire DG"></textarea><div class="actions" style="margin-top:8px"><button type="button" class="btn primary ok">✅ Approuver</button> <button type="button" class="secondary no">❌ Rejeter</button></div>':'')+'</div>';
+      return '<div class="card" data-doc="'+E(x.id)+'" style="margin-top:10px"><b>👤 '+E(x.agent_name)+' — '+E(label(x.agency))+'</b><div>'+E(x.title)+'</div>'+(type==='inventaire'?'<div>Produits comptés : <b>'+Number(snap.totalProducts||0)+'</b> • Écart cumulé : <b>'+Number(snap.totalDiff||0)+'</b></div>':'<div>Factures : <b>'+Number(snap.invoiceCount||0)+'</b> • Produits vendus : <b>'+Number(snap.productQty||0)+'</b></div>')+(type==='rapport_ventes'?window.lpSignedMoneyV89.signedHtml(snap):'')+'<div class="muted">Signé : '+E(new Date(x.signed_at).toLocaleString('fr-CD'))+'</div><div class="muted">Empreinte : '+E(S(x.document_hash).slice(0,20))+'…</div><div style="margin-top:8px"><img src="'+E(x.signature_data)+'" style="max-width:260px;max-height:90px;border:1px solid #ddd;border-radius:6px;background:#fff"></div><div style="margin-top:8px"><b>'+E(x.status)+'</b></div>'+(x.dg_comment?'<div class="muted">Commentaire DG : '+E(x.dg_comment)+'</div>':'')+(pending?'<textarea class="cmt" rows="2" style="width:100%;margin-top:8px" placeholder="Commentaire DG"></textarea><div class="actions" style="margin-top:8px"><button type="button" class="btn primary ok">✅ Approuver</button> <button type="button" class="secondary no">❌ Rejeter</button></div>':'')+'</div>';
     }).join('')||'<div class="muted">Aucun document signé reçu pour cette agence.</div>';
     box.querySelectorAll('.ok').forEach(b=>b.onclick=()=>decide(b.closest('[data-doc]'),true,type,id));
     box.querySelectorAll('.no').forEach(b=>b.onclick=()=>decide(b.closest('[data-doc]'),false,type,id));
@@ -137391,7 +137444,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.88 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.90 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137406,9 +137459,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.88 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.90 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.88 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.90 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138516,7 +138569,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.88 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.90 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138685,14 +138738,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.88 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.90 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.88 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.90 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138856,7 +138909,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.88 MASTER PRO
+   - affiche partout F29.6.0.90 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -138865,7 +138918,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.88 MASTER PRO';
+    'F29.6.0.90 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139202,9 +139255,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.88';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.90';
 
-  const MASTER_DISPLAY = 'F29.6.0.88 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.90 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139475,9 +139528,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.88';
+  const CURRENT_NUMERIC = '29.6.0.90';
 
-  const DISPLAY = 'F29.6.0.88 MASTER PRO';
+  const DISPLAY = 'F29.6.0.90 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140696,7 +140749,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.88 MASTER PRO'
+          : 'F29.6.0.90 MASTER PRO'
       );
 
       try{
@@ -141274,7 +141327,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.88 MASTER PRO'
+          : 'F29.6.0.90 MASTER PRO'
       );
 
       feedback(
@@ -142453,10 +142506,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.88';
+    '29.6.0.90';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.88 MASTER PRO';
+    'F29.6.0.90 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142611,7 +142664,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.88 MASTER PRO' && tech){
+    if(display === 'F29.6.0.90 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -142951,7 +143004,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.88 MASTER PRO';
+    'F29.6.0.90 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -147114,12 +147167,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.88';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.88 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.90';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.90 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.88 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.90 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.88 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.90 V11 ACTIF');
 })();
 
 
@@ -147128,7 +147181,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.88 MASTER PRO';
+  const DISPLAY='F29.6.0.90 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147152,7 +147205,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.88';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.90';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -148122,7 +148175,7 @@ window.lpV37MarkDGMenu=function(){
  });
 };
 function adminMessage(s){const el=get('lpV37AdminMessage');if(el)el.textContent=s;}
-const errors={DG_ONLY:'Cette action est réservée au DG.',DG_PASSWORD_REQUIRED:'Saisissez votre mot de passe DG actuel.',DG_PASSWORD_INVALID:'Mot de passe DG incorrect.',DG_LOCKED:'Accès DG temporairement verrouillé après trop de tentatives.',PASSWORD_LENGTH:'Choisissez au moins 12 caractères, sans espaces aux extrémités (72 octets maximum).',LEAKED_PASSWORD:'Ce mot de passe a été divulgué. Choisissez-en un autre.',PASSWORD_CHECK_UNAVAILABLE:'La vérification du mot de passe est indisponible. Réessayez.',RESET_CONFIRMATION_PENDING:'Le changement Auth peut être effectué. Conservez le nouveau mot de passe et utilisez Finaliser.',TARGET_NOT_ALLOWED:'Le compte choisi ne peut pas être modifié.',INVALID_SESSION:'Reconnectez le DG avec Internet.',PASSWORD_RESET_REFUSED:'Supabase a refusé ce mot de passe.'};
+const errors={NAME_REQUIRED:'Saisissez le nom du nouvel utilisateur (80 caractères maximum).',INVALID_USERNAME:'Identifiant : 3 à 40 caractères, lettres non accentuées, chiffres, espaces, point, tiret ou soulignement.',ROLE_REQUIRED:'Choisissez un rôle pour ce compte.',INVALID_PROFILE:'Le rôle sélectionné ne peut pas être créé.',USERNAME_EXISTS:'Cet identifiant existe déjà. Chargez les comptes avant de réessayer.',PASSWORD_MIN_12:'Le mot de passe utilisateur doit comporter au moins 12 caractères.',AUTH_CREATE_FAILED:'Création refusée par le serveur. Vérifiez que cet identifiant est libre et choisissez un mot de passe sûr.',PROFILE_CREATE_FAILED:'Création non confirmée : aucun nouveau profil actif enregistré.',INVALID_EMAIL:'Choisissez un autre identifiant.',CREATE_CONTEXT_CHANGED:'Le compte DG ou l’agence a changé. Vérifiez le formulaire avant de créer.',CREATE_REPLY_INCOMPLETE:'Réponse de création incomplète. Chargez les comptes pour vérifier avant de réessayer.',DG_ONLY:'Cette action est réservée au DG.',DG_PASSWORD_REQUIRED:'Saisissez votre mot de passe DG actuel.',DG_PASSWORD_INVALID:'Mot de passe DG incorrect.',DG_LOCKED:'Accès DG temporairement verrouillé après trop de tentatives.',PASSWORD_LENGTH:'Choisissez au moins 12 caractères, sans espaces aux extrémités (72 octets maximum).',LEAKED_PASSWORD:'Ce mot de passe a été divulgué. Choisissez-en un autre.',PASSWORD_CHECK_UNAVAILABLE:'La vérification du mot de passe est indisponible. Réessayez.',RESET_CONFIRMATION_PENDING:'Le changement Auth peut être effectué. Conservez le nouveau mot de passe et utilisez Finaliser.',TARGET_NOT_ALLOWED:'Le compte choisi ne peut pas être modifié.',INVALID_SESSION:'Reconnectez le DG avec Internet.',PASSWORD_RESET_REFUSED:'Supabase a refusé ce mot de passe.'};
 async function token(){if(!dg())throw new Error('DG_ONLY');if(navigator.onLine===false)throw new Error('INTERNET_REQUIRED');if(typeof window.lpGetSessionTokenV16!=='function')throw new Error('INVALID_SESSION');return window.lpGetSessionTokenV16();}
 async function loadUsers(){
  const {data}=await post('leader-pharma-admin-security-v37',{action:'list'},await token());
@@ -148150,13 +148203,36 @@ async function adminAction(action){
  if(action!=='unlock'){get('lpV37NewPassword').value='';get('lpV37ConfirmPassword').value='';}
  adminMessage(action==='unlock'?'Compte débloqué sur le serveur. Reconnectez cet utilisateur avec Internet pour lever le verrou sur son appareil.':'Mot de passe confirmé. Connectez ce compte avec Internet sur chaque appareil. '+(data.temporary_password?'Copiez le mot de passe généré affiché ci-dessous.':''));
 }
+function createMessage90(text){const el=get('lp90CreateStatus');if(el)el.textContent=text;adminMessage(text);}
 async function createUser(){
- const dgPassword=get('lpV37DGPassword')?.value||'';if(!dgPassword)throw new Error('DG_PASSWORD_REQUIRED');
- const body={action:'create',dg_password:dgPassword,username:get('ulogin')?.value,name:get('uname')?.value,role:get('urole')?.value,new_password:get('upass')?.value,agency:currentAgency};
- const {data}=await post('leader-pharma-admin-security-v37',body,await token());if(!data.ok)throw new Error(data.error||'CREATE_FAILED');
- const u=data.user;if(!db.users.some(x=>n(x.username)===n(body.username)))db.users.push({id:'server:'+u.user_key,username:body.username,name:u.name,role:u.role,active:true,authEmail:u.email});
- localStorage.setItem('lpmp_v13',JSON.stringify(db));get('upass').value='';get('lpV37DGPassword').value='';adminMessage('Compte créé sur le serveur. Première connexion avec Internet sur chaque appareil.');await loadUsers();
+ if(!dg())throw new Error('DG_ONLY');
+ const who=currentUser,a=String(currentAgency||''),name=String(get('uname')?.value||'').trim(),username=String(get('ulogin')?.value||'').trim(),role=String(get('urole')?.value||''),pw=String(get('upass')?.value||'');
+ createMessage90('Vérification des champs…');
+ if(!name||name.length>80)throw new Error('NAME_REQUIRED');
+ if(!/^[a-z0-9._ -]{3,40}$/.test(n(username))||n(username)==='leader.fr')throw new Error('INVALID_USERNAME');
+ if(!role)throw new Error('ROLE_REQUIRED');
+ if(!window.lp90CreateRoles.includes(role))throw new Error('INVALID_PROFILE');
+ if((db.users||[]).some(u=>n(u.username)===n(username)))throw new Error('USERNAME_EXISTS');
+ if(pw.length<12||new TextEncoder().encode(pw).length>72||pw!==pw.trim())throw new Error('PASSWORD_LENGTH');
+ const dgPassword=get('lp90CreateDGPassword')?.value||get('lpV37DGPassword')?.value||'';if(!dgPassword)throw new Error('DG_PASSWORD_REQUIRED');
+ const auth=await token();if(currentUser!==who||String(currentAgency)!==a)throw new Error('CREATE_CONTEXT_CHANGED');
+ createMessage90('Création et confirmation au serveur…');
+ const body={action:'create',dg_password:dgPassword,username,name,role,new_password:pw,agency:a};
+ const {data}=await post('leader-pharma-admin-security-v37',body,auth);if(!data.ok)throw new Error(data.error||'CREATE_FAILED');
+ const u=data.user;if(!u||n(u.user_key)!==n(username)||u.role!==role)throw new Error('CREATE_REPLY_INCOMPLETE');
+ if(currentUser!==who||String(currentAgency)!==a){createMessage90('Compte créé au serveur. Revenez au compte DG pour charger la liste.');return;}
+ const user={id:'server:'+u.user_key,username,name:u.name||name,role:u.role,active:true,authEmail:u.email};
+ if(!Array.isArray(db.users))db.users=[];
+ if(!db.users.some(x=>n(x.username)===n(username)))db.users.push(user);
+ let localSaved=true;try{localStorage.setItem('lpmp_v13',JSON.stringify(db));}catch{localSaved=false;}
+ if(typeof window.lp90ShowCreatedAccount==='function')window.lp90ShowCreatedAccount(user);
+ for(const id of ['upass','lp90CreateDGPassword','lpV37DGPassword','uname','ulogin']){const input=get(id);if(input)input.value='';}
+ if(get('urole'))get('urole').value='';
+ let listed=true;try{await loadUsers();}catch{listed=false;}
+ createMessage90('Compte créé et confirmé au serveur. Première connexion avec Internet sur chaque appareil.'+(listed?'':' Liste non rechargée : utilisez « Charger les comptes ».')+(localSaved?'':' Copie locale non sauvegardée : gardez Internet et rechargez les comptes.'));
 }
+
+
 window.lpV37MountAdmin=function(){
  if(typeof window.lpV37GuardSettings==='function')window.lpV37GuardSettings();
  if(!dg()||!['users','settings'].includes(String(page)))return;
@@ -148232,9 +148308,9 @@ window.lpV37EarlyClick=function(e){
  stop(e);
  if(control.id==='loginBtn'){loginOnce();return true;}
  if(!currentUser||!dg()){adminMessage('Cette action est réservée au DG.');return true;}
- if(adminBusy)return true;adminBusy=true;control.disabled=true;
+ if(adminBusy)return true;const label90=control.textContent;adminBusy=true;control.disabled=true;if(control.id==='saveUser')control.textContent='Création…';
  const action=control.id==='lpV37LoadUsers'?loadUsers:control.id==='saveUser'?createUser:control.id==='resetData'?()=>guardedReset(control):()=>adminAction(control.id==='lpV37Unlock'?'unlock':control.id==='lpV37ConfirmReset'?'confirm_reset':'reset');
- Promise.resolve().then(action).catch(error=>{const text=errors[error.message]||(error.message==='CONFIRMATION_MISMATCH'?'Les nouveaux mots de passe ne correspondent pas.':error.message==='INTERNET_REQUIRED'?'Internet est nécessaire pour cette action.':'Action non confirmée. Réessayez avec Internet.');const el=get('lpV37AdminMessage');if(el)el.textContent+=(el.textContent.includes('Mot de passe généré à conserver')?' '+text:text);else if(typeof toast==='function')toast(text);}).finally(()=>{adminBusy=false;control.disabled=false;});return true;
+ Promise.resolve().then(action).catch(error=>{const text=errors[error.message]||(error.message==='CONFIRMATION_MISMATCH'?'Les nouveaux mots de passe ne correspondent pas.':error.message==='INTERNET_REQUIRED'?'Internet est nécessaire pour cette action.':'Action non confirmée. Réessayez avec Internet.');if(control.id==='saveUser'){createMessage90(text);return;}const el=get('lpV37AdminMessage');if(el)el.textContent+=(el.textContent.includes('Mot de passe généré à conserver')?' '+text:text);else if(typeof toast==='function')toast(text);}).finally(()=>{adminBusy=false;control.disabled=false;if(control.id==='saveUser')control.textContent=label90;});return true;
 };
 window.lpV37RefreshOfflineCredential=async function(actor,password){if(actor&&actor===currentUser&&actor.authUserId){try{await cache({username:actor.username,name:actor.name,role:actor.role,authUserId:actor.authUserId,authEmail:actor.authEmail},password);}catch{const all=read(CACHE);delete all[n(actor.username)];write(CACHE,all);}};};
 const st=document.createElement('style');st.textContent='.lpV37DGBadge{display:block;font-size:10px;opacity:.8;margin-top:3px}#lpV37AdminPanel input,#lpV37AdminPanel select{display:block;width:100%;min-height:44px;font-size:16px;margin:6px 0 12px}#lpV37AdminPanel button{min-height:44px;margin:6px 8px 6px 0;touch-action:manipulation}#lpV37TemporaryPassword{font-family:monospace;overflow-wrap:anywhere}';(document.head||document.documentElement).appendChild(st);
@@ -148442,7 +148518,7 @@ async function download(p,rows){
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.88.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.90.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
