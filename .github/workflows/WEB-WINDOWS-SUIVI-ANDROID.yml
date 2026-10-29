@@ -1,4 +1,4 @@
-name: Leader Pharma SUIVI AUTOMATIQUE ANDROID - Web Windows FIX3 publication Pages
+name: Leader Pharma SUIVI ANDROID - Web Windows FIX4 revisions V90
 'on':
   workflow_dispatch: {}
   push:
@@ -37,7 +37,7 @@ jobs:
         \    disabled_manually|disabled_inactivity|disabled_fork|deleted)\n      echo \"Ancien suiveur deja desactive\
         \ : $file\"\n      ;;\n    *)\n      echo \"Etat inattendu du workflow $file : $state\" >&2\n      exit\
         \ 1\n      ;;\n  esac\ndone\n"
-    - name: Suivre uniquement une future version Android et garder V77 intacte
+    - name: Suivre la version Android ou une nouvelle revision V90 sans modifier app.js
       id: prepare
       shell: python
       run: "\"\"\"Follow future Android releases without applying any application patch.\"\"\"\nfrom pathlib import\
@@ -46,36 +46,50 @@ jobs:
         \ TARGET SENSIBLE','lpPhotoContinuityV74','V50 FIX6 RH ACTUALISATION']\nFILES=['index.html','app.js','dg-security.js','platform-update.js','styles.css','assets/leader-pharma-logo.png']\n\
         def version(v):\n    assert re.fullmatch(r'29\\.6\\.0\\.\\d+',str(v)), 'Version inattendue'\n    return\
         \ tuple(map(int,v.split('.')))\n\ndef classify(meta,current):\n    assert meta.get('ok') is True,'Canal\
-        \ Android indisponible'\n    v=meta.get('technical_version');ver=version(v)\n    if ver<=(29,6,0,77) or\
-        \ ver<=version(current['version']):return False\n    assert re.fullmatch(r'[a-fA-F0-9]{64}',str(meta.get('sha256',''))),'Empreinte\
-        \ Android requise'\n    url=urllib.parse.urlsplit(meta['download_url'])\n    assert url.scheme=='https'\
-        \ and url.hostname=='dinainghufmsykambkyv.supabase.co' and url.path.startswith('/storage/v1/object/'),'Adresse\
-        \ APK non autorisee'\n    return True\n\ndef prepare(meta,current,apk):\n    assert classify(meta,current)\n\
-        \    assert hashlib.sha256(apk).hexdigest().lower()==meta['sha256'].lower(),'Empreinte APK incorrecte'\n\
-        \    with zipfile.ZipFile(io.BytesIO(apk)) as z:\n        assert z.testzip() is None\n        app=z.read('assets/public/app.js')\n\
-        \        text=app.decode('utf-8')\n        for marker in REQUIRED:assert marker in text,'Compatibilite commune\
-        \ manquante : '+marker\n        data={name:z.read('assets/public/'+name) for name in ['app.js','dg-security.js','styles.css','assets/leader-pharma-logo.png']}\n\
-        \    # Only the web host shell remains platform-specific. Application bytes are identical.\n    r=Path('_next');assert\
+        \ Android indisponible'\n    v=meta.get('technical_version');ver=version(v);old=version(current['version'])\n\
+        \    if ver<=(29,6,0,77) or ver<old:return False\n    assert re.fullmatch(r'[a-fA-F0-9]{64}',str(meta.get('sha256',''))),'Empreinte\
+        \ Android requise'\n    if ver==old and str(current.get('source_apk_sha256','')).lower()==meta['sha256'].lower():return\
+        \ False\n    current_code=current.get('source_version_code');new_code=meta.get('version_code')\n    if current_code\
+        \ is not None and new_code is not None:\n        assert int(new_code)>=int(current_code),'Retour de code\
+        \ Android refuse'\n        if int(new_code)==int(current_code) and current.get('source_apk_sha256'):\n \
+        \           assert current['source_apk_sha256'].lower()==meta['sha256'].lower(),'Code Android reutilise'\n\
+        \    url=urllib.parse.urlsplit(meta['download_url'])\n    assert url.scheme=='https' and url.hostname=='dinainghufmsykambkyv.supabase.co'\
+        \ and url.path.startswith('/storage/v1/object/'),'Adresse APK non autorisee'\n    return True\n\ndef prepare(meta,current,apk):\n\
+        \    assert classify(meta,current)\n    assert hashlib.sha256(apk).hexdigest().lower()==meta['sha256'].lower(),'Empreinte\
+        \ APK incorrecte'\n    with zipfile.ZipFile(io.BytesIO(apk)) as z:\n        assert z.testzip() is None\n\
+        \        app=z.read('assets/public/app.js')\n        text=app.decode('utf-8')\n        for marker in REQUIRED:assert\
+        \ marker in text,'Compatibilite commune manquante : '+marker\n        data={name:z.read('assets/public/'+name)\
+        \ for name in ['app.js','dg-security.js','styles.css','assets/leader-pharma-logo.png']}\n    # Only the\
+        \ web host shell remains platform-specific. Application bytes are identical.\n    r=Path('_next');assert\
         \ not r.exists();r.mkdir()\n    for name in FILES:\n        dest=r/name;dest.parent.mkdir(parents=True,exist_ok=True)\n\
         \        if name in data:dest.write_bytes(data[name])\n        else:shutil.copy2(name,dest)\n    shutil.copy2('service-worker.js',r/'service-worker.js')\n\
         \    build=max(int(current['build'])+1,2026400000+version(meta['technical_version'])[-1])\n    p=r/'service-worker.js';worker,n=re.subn(r\"\
         const CACHE_NAME='leader-pharma-web-[^']+';\",\"const CACHE_NAME='leader-pharma-web-\"+str(build)+\"';\"\
         ,p.read_text(),count=1);assert n==1;p.write_text(worker)\n    m={'schema':1,'build':build,'version':meta['technical_version'],'base':'Android\
         \ MASTER - app.js identique','source_apk_sha256':meta['sha256'].lower(),'files':{f:hashlib.sha256((r/f).read_bytes()).hexdigest()\
-        \ for f in FILES}}\n    (r/'platform-manifest.json').write_text(json.dumps(m,indent=2))\n    assert (r/'app.js').read_bytes()==app\n\
+        \ for f in FILES}}\n    if meta.get('version_code') is not None:m['source_version_code']=int(meta['version_code'])\n\
+        \    (r/'platform-manifest.json').write_text(json.dumps(m,indent=2))\n    assert (r/'app.js').read_bytes()==app\n\
         \    archive=Path('platform')/str(build);assert not archive.exists(),'Archive immuable deja presente'\n\
         \    archive.mkdir(parents=True)\n    for name in FILES+['service-worker.js','platform-manifest.json']:\n\
         \        dest=archive/name;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(r/name,dest)\n   \
         \     dest=Path(name);dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(r/name,dest)\n    shutil.rmtree(r);Path('.nojekyll').touch()\n\
         \    return m\n\ndef run():\n    current=json.loads(Path('platform-manifest.json').read_text())\n    for\
         \ name,digest in current['files'].items():assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==digest,'Moteur\
-        \ local incoherent : '+name\n    req=urllib.request.Request(BASE+'/functions/v1/leader-pharma-master-update',headers={'x-leader-update':'LP-MASTER-PRO-2026','x-leader-current-version':current['version']})\n\
+        \ local incoherent : '+name\n    req=urllib.request.Request(BASE+'/functions/v1/leader-pharma-master-update',headers={'x-leader-update':'LP-MASTER-PRO-2026','x-leader-current-version':'29.6.0.28'})\n\
         \    with urllib.request.urlopen(req,timeout=60) as r:meta=json.load(r)\n    changed=classify(meta,current)\n\
         \    if changed:\n        with urllib.request.urlopen(meta['download_url'],timeout=120) as r:\n        \
         \    apk=r.read(64*1024*1024+1)\n        assert len(apk)<=64*1024*1024,'APK trop volumineux'\n        m=prepare(meta,current,apk)\n\
         \        print('Moteur Android recopie sans modification : '+m['version'])\n    else:print('Aucune version\
         \ suivante : versions actuellement en service conservees')\n    with open(os.environ['GITHUB_OUTPUT'],'a')\
-        \ as f:f.write('changed='+str(changed).lower()+'\\n')\n\nif __name__=='__main__':run()\n"
+        \ as f:f.write('changed='+str(changed).lower()+'\\n')\n\ndef selftest():\n    current={'version':'29.6.0.90','build':2026400090,'source_apk_sha256':'a'*64,'source_version_code':2026300993}\n\
+        \    meta={'ok':True,'technical_version':'29.6.0.90','sha256':'b'*64,'version_code':2026300995,'download_url':BASE+'/storage/v1/object/sign/fixture.apk'}\n\
+        \    assert classify(meta,current),'Revision V90 nouvelle ignoree'\n    assert not classify({**meta,'sha256':'a'*64,'version_code':2026300993},current),'Revision\
+        \ identique repetee'\n    assert not classify({**meta,'technical_version':'29.6.0.89'},current),'Retour\
+        \ de version'\n    assert classify({**meta,'technical_version':'29.6.0.91'},current)\n    assert classify(meta,{**current,'source_apk_sha256':None,'source_version_code':None}),'Migration\
+        \ ancien manifeste'\n    for bad in [{**meta,'download_url':'https://example.com/x'},{**meta,'sha256':'bad'},{**meta,'version_code':1}]:\n\
+        \        try:classify(bad,current)\n        except (AssertionError,ValueError):pass\n        else:raise\
+        \ AssertionError('Metadonnees invalides acceptees')\n    print('Suivi revisions V90 : tests OK, aucun fichier\
+        \ utilisateur lu')\n\nif __name__=='__main__':\n    selftest()\n    run()\n"
     - name: Verifier le moteur commun et ses empreintes
       if: steps.prepare.outputs.changed == 'true'
       run: "set -euo pipefail\nnode --check app.js\nnode --check dg-security.js\nnode --check platform-update.js\n\
