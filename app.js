@@ -118248,6 +118248,8 @@ console.log('LEADER PHARMA V9 RAPPORT DU JOUR UTILISATEUR ACTIF');
 
 
   function lpV11RenderPersonalStatistics(){
+    // LP_V90_IDLE_ROUTE_OWNERSHIP_REV3: stale callbacks cannot paint another route.
+    if(!lpV11IsStatisticsPage())return;
 
     if(lpV11IsDG()){
       return;
@@ -118764,66 +118766,7 @@ console.log('LEADER PHARMA V9 RAPPORT DU JOUR UTILISATEUR ACTIF');
 
 
   function lpV11IsStatisticsPage(){
-
-    if(
-      typeof page !==
-        'undefined'
-    ){
-
-      var p =
-        lpV11Norm(page);
-
-
-      if(
-        p === 'statistics'
-        ||
-        p === 'stats'
-        ||
-        p === 'analytics'
-        ||
-        p === 'analysis'
-        ||
-        p === 'advanced'
-      ){
-        return true;
-      }
-    }
-
-
-    var host =
-      document.getElementById(
-        'content'
-      );
-
-
-    if(!host){
-      return false;
-    }
-
-
-    var title =
-      host.querySelector(
-        'h1,h2'
-      );
-
-
-    var text =
-      lpV11Norm(
-        title
-          ? title.textContent
-          : ''
-      );
-
-
-    return (
-      text.indexOf(
-        'statistique'
-      ) !== -1
-      ||
-      text.indexOf(
-        'analyse'
-      ) !== -1
-    );
+    return typeof page!=='undefined'&&['reports','statistics','stats','analytics','analysis','advanced'].includes(String(page).trim().toLowerCase());
   }
 
 
@@ -119206,6 +119149,7 @@ console.log('LEADER PHARMA V9 RAPPORT DU JOUR UTILISATEUR ACTIF');
   }
 
   function lpV12AddReport(){
+    if(typeof page==='undefined'||!['reports','statistics','stats','analytics','analysis','advanced'].includes(String(page).trim().toLowerCase()))return;
 
     if(
       lpV12Norm(currentUser && currentUser.role)
@@ -137334,6 +137278,10 @@ console.log(MARK);
     const list=document.getElementById(listId);
     const button=document.getElementById(buttonId);
     if(!list)return;
+    if(list.__lp90Flight)return list.__lp90Flight;
+    const scope90=JSON.stringify([userKey(),agency(),pageKey()]);
+    const valid90=()=>list.isConnected&&document.getElementById(listId)===list&&scope90===JSON.stringify([userKey(),agency(),pageKey()]);
+    const run90=async()=>{
     if(button)button.disabled=true;
     try{
       const q='lp_signed_documents'+
@@ -137345,12 +137293,19 @@ console.log(MARK);
         '&limit=20'+
         '&select=id,document_type,agency,agent_user,agent_name,status,dg_decision,dg_comment,signed_at,decided_at';
       const rows=await rest(q)||[];
-      list.innerHTML=rows.length?rows.map(item).join(''):'<div class="muted">Aucun document signé pour cette agence.</div>';
+      if(!valid90())return false;
+      const html90=rows.length?rows.map(item).join(''):'<div class="muted">Aucun document signé pour cette agence.</div>';
+      if(list.__lp90Html!==html90){list.innerHTML=html90;list.__lp90Html=html90;}
+      list.dataset.lp90Loaded='1';return true;
     }catch(e){
-      list.innerHTML='<div class="muted">Impossible de charger la réponse DG. Appuyez sur Actualiser.</div>';
+      if(valid90()&&list.dataset.lp90Loaded!=='1')list.innerHTML='<div class="muted">Impossible de charger la réponse DG. Appuyez sur Actualiser.</div>';
+      return false;
     }finally{
       if(button)button.disabled=false;
     }
+    };
+    list.__lp90Flight=run90();
+    try{return await list.__lp90Flight;}finally{list.__lp90Flight=null;}
   }
 
   function auto(cardId,type,listId,buttonId){
@@ -137358,7 +137313,8 @@ console.log(MARK);
     if(!card||card.dataset.lp29510Timer==='1')return;
     card.dataset.lp29510Timer='1';
     const timer=setInterval(()=>{
-      if(!document.getElementById(cardId)){clearInterval(timer);return}
+      if(document.getElementById(cardId)!==card){clearInterval(timer);return}
+      if(document.hidden||isDG()||!card.isConnected)return;
       load(type,listId,buttonId);
     },15000);
   }
@@ -137384,9 +137340,8 @@ console.log(MARK);
       const original=b.textContent;
       b.disabled=true;b.textContent='↻ Actualisation…';
       try{
-        await load(cfg.type,cfg.listId,cfg.buttonId);
-        const list=document.getElementById(cfg.listId);
-        const failed=!!(list&&String(list.textContent||'').includes('Impossible de charger'));
+        const ok90=await load(cfg.type,cfg.listId,cfg.buttonId);
+        const failed=ok90!==true;
         b.textContent=failed?'✗ Échec d’actualisation':'✓ Réponses DG actualisées';
         if(typeof toast==='function')toast(failed?'Échec d’actualisation':'Réponses DG actualisées');
       }finally{
@@ -137394,7 +137349,8 @@ console.log(MARK);
         setTimeout(function(){if(document.body.contains(b))b.textContent=original;},1400);
       }
     };
-    load(cfg.type,cfg.listId,cfg.buttonId);
+    const list90=document.getElementById(cfg.listId);
+    if(list90&&list90.dataset.lp90Loaded!=='1')load(cfg.type,cfg.listId,cfg.buttonId);
     auto(cfg.cardId,cfg.type,cfg.listId,cfg.buttonId);
   }
 
@@ -147677,7 +147633,7 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
   function modelFingerprint(){
     try{
       if(typeof db==='undefined')return route();
-      const fields={stock:['products'],purchases:['purchases','products','suppliers','debts'],inventory:['inventories','products','inventoryProposals'],payroll:['attendance','employees','payroll','attendancePhotos'],updates:[],settings:['settings','users'],users:['users']};
+      const fields={dashboard:['sales','expenses','products','receivables','transfers','settings'],sales:['products','sales','expenses','clients','settings'],reports:['sales','expenses','products','users','returns','purchases','purchaseBatches','receivables','debts','settings'],statistics:['sales','expenses','returns','settings'],stats:['sales','expenses','returns','settings'],expenses:['expenses','users','settings'],alerts:['products','settings'],stock:['products'],purchases:['purchases','products','suppliers','debts'],inventory:['inventories','products','inventoryProposals'],payroll:['attendance','employees','payroll','attendancePhotos'],updates:[],settings:['settings','users'],users:['users']};
       const keys=fields[route()]||Object.keys(db).filter(k=>!['audit','logs','auditLog','lastSync'].includes(k));
       return JSON.stringify([route(),typeof currentAgency==='undefined'?'':currentAgency,keys.map(k=>db[k])]);
     }catch(e){return null;}
@@ -147796,6 +147752,7 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
     const fromMenu=root.getAttribute('data-lp-ui-view')==='menu';
     if(fromMenu)menuY=window.scrollY||0;
     const changed=requested!==renderedRoute;
+    const keepDraft90=dirty||!!document.querySelector('#lp2959RepSig canvas,#lp2959InvSig canvas');
     try{
       if(editing())document.activeElement.blur();
       dirty=false;
@@ -147813,7 +147770,7 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
       }else{
         page=requested;
         const content=document.getElementById('content');
-        if(changed||!content||!content.firstElementChild){
+        if(changed||(fromMenu&&!keepDraft90)||!content||!content.firstElementChild){
           if(!directDG(requested))render();
         }
       }
@@ -147857,7 +147814,12 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
       if(user()&&!navigating&&!commandEvent&&renderedRoute===route()&&node&&node===paintNode&&model!==null&&model===paintModel)return;
       // LP_V88: background data updates must not replace an already open form/page.
       const sameContext88=paintContext88===JSON.stringify([user()?.id||user()?.username,user()?.role,typeof currentAgency==='undefined'?'':currentAgency]);
-      if(user()&&!navigating&&!commandEvent&&sameContext88&&renderedRoute===route()&&node&&node===paintNode&&typeof window.lp88RefreshCurrentView==='function'&&window.lp88RefreshCurrentView(route())){rememberPaint();return;}
+      if(user()&&!navigating&&!commandEvent&&sameContext88&&renderedRoute===route()&&paintNode&&document.getElementById('content')?.contains(paintNode)){
+        if(typeof window.lp88RefreshCurrentView==='function'&&['stock','sales'].includes(route()))window.lp88RefreshCurrentView(route());
+        // A passive synchronization must not clear a report, signature canvas,
+        // search input or open form. Re-entering a page from Menu is explicit.
+        rememberPaint();return;
+      }
       const out=directDG(route())?undefined:baseRender.apply(this,arguments);
       mountReadyPage();
       if(!window.__LP_DG360_ACTIVE__)renderedRoute=route();
@@ -149552,3 +149514,27 @@ window.lp88RefreshCurrentView=function(route){
 };
 })();
 
+
+/* LP_V90_MENU_VIEWPORT_STABLE_REV2 */
+(function(){
+'use strict';
+const style=document.createElement('style');style.id='lp90-menu-viewport';
+style.textContent=`
+html{scrollbar-gutter:stable;overflow-anchor:none!important}
+body,#appView,#appView>.sidebar,#nav{overflow-anchor:none!important}
+#appView>.sidebar #nav{align-content:start!important;grid-auto-rows:min-content!important}
+#appView>.sidebar #nav .nav-btn{transform:none!important;transition:none!important;animation:none!important}
+@media(min-width:981px){
+ #appView>.sidebar{position:sticky!important;top:0!important;height:100vh!important;height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+ #appView>.sidebar>.logo-wrap{flex:0 0 auto!important}
+ #appView>.sidebar #nav{flex:1 1 0!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-gutter:stable;overscroll-behavior-y:contain}
+ #appView>.sidebar .side-footer{display:grid!important;flex:0 0 auto!important;margin-top:12px!important;padding-bottom:0!important;position:static!important}
+ #appView>.sidebar #logoutBtn{display:block!important;min-height:44px!important}
+}
+@media(max-width:980px){
+ html[data-lp-ui-view="menu"] #appView>.sidebar{max-height:none!important;overflow:visible!important}
+ html[data-lp-ui-view="menu"] #appView>.sidebar .side-footer{display:grid!important;flex:none!important}
+}
+`;
+(document.head||document.documentElement).appendChild(style);
+})();
