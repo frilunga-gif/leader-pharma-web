@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="fr" data-lp-ui-view="menu">
+<head><style id="lpV29InitialView">@media(max-width:980px){html[data-lp-ui-view="menu"] #appView:not(.hidden)>.main{display:none!important}html[data-lp-ui-view="page"] #appView:not(.hidden)>.sidebar{display:none!important}}#loginView,#appView{animation:none!important;transition:none!important}</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b6b4f" />
+  <title>Leader Pharma Manager Pro V1.4</title>
+  <link rel="stylesheet" href="styles.css" />
+
+<!-- LEADER PHARMA F29.6.0.17 DG360 ANDROID Z91 RESPONSIVE ACTIF -->
+<style id="lp-dg360-android-z91-responsive">
+@media (max-width:980px){
+  #lp-dg360-root{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow-x:hidden!important;
+    box-sizing:border-box!important;
+  }
+
+  #lp-dg360-root .lp360-head{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:12px!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    padding:14px!important;
+    box-sizing:border-box!important;
+  }
+
+  #lp-dg360-root .lp360-head > div{
+    min-width:0!important;
+    max-width:100%!important;
+  }
+
+  #lp-dg360-root .lp360-head h3{
+    font-size:20px!important;
+    line-height:1.15!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    word-break:normal!important;
+    max-width:100%!important;
+  }
+
+  #lp-dg360-root .lp360-head p{
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    max-width:100%!important;
+  }
+
+  #lp-dg360-root .lp360-btn{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+
+  #lp-dg360-root .lp360-grid,
+  #lp-dg360-root .lp360-card .lp360-grid{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:10px!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+
+  #lp-dg360-root .lp360-two{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    gap:12px!important;
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+  }
+
+  #lp-dg360-root .lp360-card{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    box-sizing:border-box!important;
+  }
+
+  #lp-dg360-root .lp360-tablewrap{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+
+  #lp-dg360-root .lp360-table{
+    min-width:680px!important;
+    width:max-content!important;
+  }
+}
+
+@media (max-width:520px){
+  #lp-dg360-root .lp360-head{
+    padding:12px!important;
+    border-radius:12px!important;
+  }
+
+  #lp-dg360-root .lp360-head h3{
+    font-size:19px!important;
+  }
+
+  #lp-dg360-root .lp360-card{
+    padding:12px!important;
+  }
+
+  #lp-dg360-root .lp360-card b{
+    font-size:18px!important;
+  }
+
+  #lp-dg360-root .lp360-table{
+    font-size:11px!important;
+  }
+}
+</style>
+
+<script src="platform-update.js"></script>
+</head>
+<body>
+
+  <div id="loginView" class="center-screen">
+    <div class="login-card">
+      <div class="brand-mark">✚</div>
+      <h1>Leader Pharma</h1>
+      <img src="assets/leader-pharma-logo.png" alt="Logo Leader Pharma" class="brand-logo login-logo">
+      <p class="subtitle">Manager Pro V1.4 DG DEV</p>
+      <div class="legal-id">
+        N° Impôt : A2311751Z<br>
+        RCCM : CD/KNA/RCCM/25-A-593<br>
+        Adresse : Route Kanyama, Réf. HGR Kamina — Kamina
+      </div>
+      <label>Agence</label>
+      <select id="loginAgency"></select>
+      <label>Utilisateur</label>
+      <input id="username" value="leader.fr" autocomplete="username" />
+      <label>Mot de passe</label>
+      <input id="password" type="password" value="1234" autocomplete="current-password" />
+      <button id="loginBtn">Se connecter</button>
+      <p id="loginError" class="error"></p>
+      <small>Connexion sécurisée Leader Pharma</small>
+    </div>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <aside class="sidebar">
+      <div class="logo-wrap">
+        <div class="brand-mark small">✚</div>
+        <img src="assets/leader-pharma-logo.png" alt="Logo Leader Pharma" class="brand-logo sidebar-logo">
+        <div>
+          <strong>LEADER PHARMA</strong>
+          <span>Manager Pro</span>
+          <small class="sidebar-legal">
+            Impôt A2311751Z<br>
+            RCCM CD/KNA/RCCM/25-A-593
+          </small>
+        </div>
+      </div>
+      <nav id="nav"></nav>
+      <div class="side-footer">
+        <span id="currentAgencyLabel"></span>
+        <button id="logoutBtn" class="ghost">Déconnexion / Changer d’utilisateur</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h2 id="pageTitle">Tableau de bord</h2>
+          <p id="pageHint">Vue synthétique de votre pharmacie</p>
+        </div>
+        <div class="top-actions">
+          <select id="agencySwitcher"></select>
+          <button id="backupBtn" class="secondary">Sauvegarder</button>
+          <label class="restore-label">
+            Restaurer
+            <input id="restoreInput" type="file" accept="application/json" />
+          </label>
+        </div>
+      </header>
+      <section id="content"></section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+(function(){
+  "use strict";
+  if(window.__LP_FIX61_PRELOAD__) return;
+  window.__LP_FIX61_PRELOAD__ = true;
+
+  let busy = false;
+  let lastTouch = 0;
+
+  const text = v => String(v == null ? "" : v).trim();
+  const norm = v => {
+    try{return text(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");}
+    catch(e){return text(v).toLowerCase();}
+  };
+
+  function status(message,ok){
+    const el=document.getElementById("loginError");
+    if(!el)return;
+    el.textContent=text(message);
+    el.style.color=ok?"#0b6b4f":"#c73e3e";
+    el.style.fontWeight="700";
+  }
+
+  function localDG(){
+    try{
+      if(typeof db==="undefined"||!db||!Array.isArray(db.users))return null;
+      return db.users.find(u=>u&&(norm(u.username)==="leader.fr"||norm(u.role)==="dg"))||null;
+    }catch(e){return null;}
+  }
+
+  function localPassword(u){
+    return text(u&&(u.password||u.motDePasse||u.pass||u.pin||""));
+  }
+
+  function cachePassword(password){
+    try{localStorage.setItem("leader_pharma_dg_password_v15",text(password));}catch(e){}
+  }
+
+  function openLocal(password){
+    const u=localDG();
+    if(!u)return false;
+    u.username="leader.fr";
+    u.role="DG";
+    u.active=true;
+    if(!localPassword(u))u.password=text(password);
+    cachePassword(password);
+    try{if(typeof save==="function")save();}catch(e){}
+    try{
+      if(typeof login==="function"){
+        login();
+        return true;
+      }
+    }catch(e){
+      status("Ouverture locale impossible : "+text(e&&e.message||e),false);
+    }
+    return false;
+  }
+
+  function findButton(target){
+    const direct=target&&target.closest?target.closest("button,input,[role=button]"):null;
+    if(direct){
+      const t=norm(direct.innerText||direct.textContent||direct.value);
+      if(direct.id==="loginBtn"||t.includes("se connecter")||t==="connexion")return direct;
+    }
+    return null;
+  }
+
+  function isInvalidCredential(response,data){
+    const code=norm(data&&(data.error_code||data.code));
+    const msg=norm(data&&(data.msg||data.message||data.error_description||data.error));
+    return Number(response&&response.status)===400&&(
+      code.includes("invalid_credentials")||
+      msg.includes("invalid login credentials")||
+      msg.includes("invalid credentials")
+    );
+  }
+
+  async function authenticate(button){
+    if(busy)return;
+    const username=norm(document.getElementById("username")?.value);
+    const password=text(document.getElementById("password")?.value);
+    if(username!=="leader.fr")return;
+    if(!password){status("Veuillez saisir le mot de passe DG.",false);return;}
+
+    const u=localDG();
+    if(u&&u.active!==false&&localPassword(u)===password){
+      status("Connexion DG locale validée. Ouverture…",true);
+      openLocal(password);
+      return;
+    }
+
+    try{
+      const cached=localStorage.getItem("leader_pharma_dg_password_v15");
+      if(cached&&cached===password){
+        status("Connexion DG hors ligne validée. Ouverture…",true);
+        openLocal(password);
+        return;
+      }
+    }catch(e){}
+
+    busy=true;
+    button.disabled=true;
+    const old=button.textContent;
+    button.textContent="Vérification…";
+    status("Vérification sécurisée DG…",true);
+
+    const controller=new AbortController();
+    const timer=setTimeout(()=>{try{controller.abort();}catch(e){}},12000);
+    try{
+      if(typeof SUPABASE==="undefined"||!SUPABASE?.url||!SUPABASE?.key){
+        throw new TypeError("Supabase indisponible");
+      }
+      const response=await fetch(
+        SUPABASE.url.replace(/\/$/,"")+"/auth/v1/token?grant_type=password",
+        {
+          method:"POST",
+          headers:{
+            apikey:SUPABASE.key,
+            Authorization:"Bearer "+SUPABASE.key,
+            "Content-Type":"application/json"
+          },
+          body:JSON.stringify({email:"fr.ilunga@gmail.com",password}),
+          signal:controller.signal
+        }
+      );
+      let data={};
+      try{data=await response.json();}catch(e){}
+      if(isInvalidCredential(response,data)){
+        status("Mot de passe DG incorrect.",false);
+        return;
+      }
+      if(!response.ok||!data?.access_token){
+        throw new TypeError("Serveur Supabase indisponible");
+      }
+      try{
+        window.lpDGAccessToken=data.access_token||"";
+        window.lpDGRefreshToken=data.refresh_token||"";
+      }catch(e){}
+      cachePassword(password);
+      status("Connexion DG en ligne validée. Ouverture…",true);
+      if(!openLocal(password))throw new Error("Ouverture locale impossible.");
+    }catch(error){
+      const cached=(()=>{try{return localStorage.getItem("leader_pharma_dg_password_v15");}catch(e){return "";}})();
+      const known=localPassword(localDG());
+      if((cached&&cached===password)||(known&&known===password)){
+        status("Internet indisponible : connexion DG hors ligne validée.",true);
+        openLocal(password);
+      }else{
+        status("Première validation requise : connectez-vous une fois avec Internet.",false);
+      }
+    }finally{
+      clearTimeout(timer);
+      busy=false;
+      button.disabled=false;
+      button.textContent=old||"Se connecter";
+    }
+  }
+
+  function intercept(event){
+    const button=findButton(event.target);
+    if(!button)return;
+    const username=norm(document.getElementById("username")?.value);
+    if(username!=="leader.fr")return;
+    if(event.type==="touchstart")lastTouch=Date.now();
+    if(event.type==="click"&&Date.now()-lastTouch<900)return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    authenticate(button);
+  }
+
+  /* V6: interception touch DG retiree */
+  /* V6: interception click DG retiree */
+
+  /* FIX6: RH refresh is owned exclusively by app.js. */
+  console.log("LEADER PHARMA F29.6.0.17 LOGIN OFFLINE + RH POINTAGE VISIBLE FIX61 ACTIF");
+})();
+
+</script>
+
+<script src="app.js"></script>
+  <script src="dg-security.js"></script>
+
+  <script>
+  /* LEADER PHARMA F29.6.0.17 - MENU DG PC COMPLET + POINTAGE 24H + TABLEAU DG UNIQUE */
+  (function(){
+    'use strict';
+    if(window.__LP_F296017_FINAL_FIX__) return;
+    window.__LP_F296017_FINAL_FIX__=true;
+
+    const MARK='LEADER PHARMA F29.6.0.17 MENU DG PC COMPLET V7 + POINTAGE 24H ACTIF';
+    const PENDING='lp_f296017_exit_photo_pending_v2';
+    let busy=false,timer=null;
+
+    const txt=v=>String(v==null?'':v).trim();
+    const norm=v=>{try{return txt(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}catch(e){return txt(v).toLowerCase()}};
+
+    function isDG(){
+      try{
+        if(typeof currentUser!=='undefined'&&currentUser){
+          const r=norm(currentUser.role),u=norm(currentUser.username||currentUser.user||currentUser.login),n=norm(currentUser.name);
+          if(r==='dg'||r.includes('direction')||u==='leader.fr'||n.includes('direction generale')) return true;
+        }
+      }catch(e){}
+      try{
+        const label=norm(document.getElementById('currentAgencyLabel')?.textContent);
+        const title=norm(document.getElementById('pageTitle')?.textContent);
+        if(/(^|\s|-)dg($|\s)/.test(label)||title==='direction'||title.includes('direction generale')) return true;
+      }catch(e){}
+      return false;
+    }
+
+    function style(){
+      if(document.getElementById('lp-f296017-style'))return;
+      const s=document.createElement('style');
+      s.id='lp-f296017-style';
+      s.textContent=`
+      @media(min-width:981px){
+        body #appView.app.lp-f296017-app{grid-template-columns:350px minmax(0,1fr)!important}
+        body .sidebar.lp-f296017-sidebar{
+          width:350px!important;min-width:350px!important;max-width:350px!important;
+          position:sticky!important;top:0!important;height:100vh!important;min-height:0!important;
+          padding:9px 8px!important;overflow:hidden!important;
+          display:grid!important;grid-template-rows:auto minmax(0,1fr) auto!important;gap:4px!important;
+        }
+        body #nav.lp-f296017-nav{
+          display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+          grid-auto-rows:min-content!important;gap:2px 4px!important;align-content:start!important;
+          min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+          scrollbar-gutter:stable!important;padding-right:2px!important;
+        }
+        body #nav.lp-f296017-nav .nav-btn{
+          display:block!important;visibility:visible!important;opacity:1!important;
+          width:100%!important;min-width:0!important;margin:0!important;
+          padding:5px 5px!important;font-size:11px!important;line-height:1.05!important;
+          border-radius:7px!important;white-space:normal!important;overflow-wrap:anywhere!important;
+        }
+        body .sidebar.lp-f296017-sidebar .logo-wrap{
+          padding:1px 4px 5px!important;gap:6px!important;min-height:0!important;
+        }
+        body .sidebar.lp-f296017-sidebar .sidebar-logo{width:38px!important;height:38px!important;margin-right:4px!important}
+        body .sidebar.lp-f296017-sidebar .brand-mark.small{width:34px!important;height:34px!important;font-size:20px!important}
+        body .sidebar.lp-f296017-sidebar .logo-wrap strong{font-size:13px!important;line-height:1.05!important}
+        body .sidebar.lp-f296017-sidebar .logo-wrap span{font-size:10px!important}
+        body .sidebar.lp-f296017-sidebar .sidebar-legal{font-size:8px!important;line-height:1.15!important;margin-top:2px!important}
+        body .sidebar.lp-f296017-sidebar .side-footer{
+          display:grid!important;margin:3px 0 0!important;padding:3px 2px 1px!important;
+          gap:4px!important;flex-shrink:0!important;font-size:10px!important;background:var(--navy)!important;
+        }
+        body .sidebar.lp-f296017-sidebar #logoutBtn{padding:6px!important;font-size:10px!important;line-height:1.1!important}
+      }
+      .lp-f296017-hide{display:none!important}`;
+      document.head.appendChild(s);
+    }
+
+    function menu(){
+      const app=document.getElementById('appView'),side=document.querySelector('.sidebar'),nav=document.getElementById('nav');
+      if(!isDG()){
+        if(app)app.classList.remove('lp-f296017-app');
+        if(side)side.classList.remove('lp-f296017-sidebar');
+        if(nav)nav.classList.remove('lp-f296017-nav');
+        return;
+      }
+      if(app)app.classList.add('lp-f296017-app');
+      if(side)side.classList.add('lp-f296017-sidebar');
+      if(nav)nav.classList.add('lp-f296017-nav');
+    }
+
+    function findHeading(root,needle){
+      const n=norm(needle),els=root.querySelectorAll('h1,h2,h3,h4,h5,strong,b');
+      for(const el of els)if(norm(el.textContent).includes(n))return el;
+      return null;
+    }
+
+    function oneTable(){
+      document.querySelectorAll('.lp-f296017-hide').forEach(el=>el.classList.remove('lp-f296017-hide'));
+      if(!isDG())return;
+      const c=document.getElementById('content')||document.querySelector('main');
+      if(!c)return;
+      const full=findHeading(c,'controle dg des pointages photo');
+      const simple=findHeading(c,'presences / pointage');
+      if(!full||!simple)return;
+      simple.classList.add('lp-f296017-hide');
+      let el=simple.nextElementSibling;
+      while(el){
+        if(/^H[1-6]$/.test(el.tagName))break;
+        if(el.tagName==='TABLE'||(el.querySelector&&el.querySelector('table'))){el.classList.add('lp-f296017-hide');break}
+        el=el.nextElementSibling;
+      }
+    }
+
+    function domFix(){
+      clearTimeout(timer);
+      timer=setTimeout(()=>{style();menu();oneTable()},50);
+    }
+
+    function userVals(){
+      try{return [currentUser?.username,currentUser?.login,currentUser?.user,currentUser?.id,currentUser?.name].map(norm).filter(Boolean)}catch(e){return []}
+    }
+    function ownerVals(r){return [r?.lpUser,r?.username,r?.user,r?.login,r?.employeeId,r?.name].map(norm).filter(Boolean)}
+    function sameUser(r){const a=userVals(),b=ownerVals(r);return a.length&&b.some(v=>a.includes(v))}
+    function agency(){try{return txt(typeof currentAgency!=='undefined'?currentAgency:'')}catch(e){return ''}}
+    function sameAgency(r){const a=norm(agency()),b=norm(r&&(r.agency||r.agence));return !a||!b||a===b}
+    function photo(v){return typeof v==='string'&&v.length>100}
+    function rows(){try{return typeof db!=='undefined'&&db&&Array.isArray(db.attendance)?db.attendance:[]}catch(e){return []}}
+    function recent(d){try{const x=new Date(txt(d)+'T12:00:00');return Number.isNaN(x.getTime())||Math.abs(Date.now()-x.getTime())<=3*86400000}catch(e){return true}}
+
+    function exitRow(dataUrl){
+      const a=rows().slice().reverse().filter(r=>r&&sameUser(r)&&sameAgency(r)&&recent(r.date));
+      return a.find(r=>photo(r.exitPhoto)&&r.exitPhoto===dataUrl)||a.find(r=>txt(r.exit)&&!photo(r.exitPhoto))||a.find(r=>txt(r.exit))||null;
+    }
+
+    function persist(){
+      try{if(typeof save==='function')save();else if(typeof db!=='undefined'&&db)localStorage.setItem('lpmp_v13',JSON.stringify(db))}
+      catch(e){try{if(typeof db!=='undefined'&&db)localStorage.setItem('lpmp_v13',JSON.stringify(db))}catch(_e){}}
+    }
+
+    function makePending(r){
+      if(!r)return null;
+      return {rowId:txt(r.id||r.uuid||''),date:txt(r.date),agency:txt(r.agency||r.agence||agency()),users:Array.from(new Set(userVals().concat(ownerVals(r)).filter(Boolean))),tries:0,createdAt:new Date().toISOString()};
+    }
+    function savePending(p){try{localStorage.setItem(PENDING,JSON.stringify(p))}catch(e){}}
+    function loadPending(){try{const p=JSON.parse(localStorage.getItem(PENDING)||'null');return p&&typeof p==='object'?p:null}catch(e){return null}}
+    function clearPending(){try{localStorage.removeItem(PENDING)}catch(e){}}
+    function match(r,p){
+      if(!r||!p)return false;
+      if(p.rowId&&txt(r.id||r.uuid||'')===p.rowId)return true;
+      if(txt(r.date)!==txt(p.date)||norm(r.agency||r.agence)!==norm(p.agency))return false;
+      const o=ownerVals(r),u=Array.isArray(p.users)?p.users.map(norm).filter(Boolean):[];
+      return o.some(v=>u.includes(v));
+    }
+    function localRow(p){return rows().find(r=>match(r,p))||null}
+
+    async function remoteHas(p){
+      try{
+        if(typeof __lpRemoteMeta!=='function')return false;
+        const m=await __lpRemoteMeta(),remote=m&&m.rows&&m.rows[0]&&m.dataCol?m.rows[0][m.dataCol]:null;
+        const rr=remote&&Array.isArray(remote.attendance)?remote.attendance.find(r=>match(r,p)):null;
+        return !!(rr&&photo(rr.exitPhoto)&&txt(rr.exit));
+      }catch(e){return false}
+    }
+
+    async function syncExit(){
+      if(isDG()||!window.LeaderPharmaAttendanceV1)return false;
+      const result=await window.LeaderPharmaAttendanceV1.pushAuto();
+      if(result)clearPending();
+      return result;
+    }
+
+    function scheduleSync(){[0,1000,3000,8000,20000,45000].forEach(d=>setTimeout(syncExit,d))}
+
+    function armExit(type,dataUrl){
+      if(isDG()||type!=='exit'||!photo(dataUrl))return;
+      const r=exitRow(dataUrl);if(!r)return;
+      r.exitPhoto=dataUrl;
+      if(!txt(r.exitPhotoAt))r.exitPhotoAt=txt(r.exit)||new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      r._lpAttendanceUpdatedAt=new Date().toISOString();
+      persist();
+      const p=makePending(r);if(p){savePending(p);scheduleSync()}
+    }
+
+    const prev=typeof window.lpF2946PhotoReady==='function'?window.lpF2946PhotoReady:null;
+    if(prev&&!prev.__lpF296017Wrapped){
+      const wrapped=function(type,dataUrl){let out;try{out=prev.apply(this,arguments)}catch(e){console.warn(e)}try{armExit(type,dataUrl)}catch(e){console.warn(e)}return out};
+      wrapped.__lpF296017Wrapped=true;
+      window.lpF2946PhotoReady=wrapped;
+    }
+
+    function recover(){
+      if(isDG())return;
+      const r=rows().slice().reverse().find(x=>x&&sameUser(x)&&sameAgency(x)&&recent(x.date)&&txt(x.exit)&&photo(x.exitPhoto));
+      if(!r)return;
+      const p=makePending(r);if(p){savePending(p);scheduleSync()}
+    }
+
+    style();domFix();
+    try{new MutationObserver(domFix).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}
+    window.addEventListener('resize',domFix);
+    window.addEventListener('online',()=>{domFix();setTimeout(syncExit,300)});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){domFix();setTimeout(syncExit,400)}});
+    setTimeout(domFix,100);setTimeout(domFix,400);setTimeout(domFix,1000);setTimeout(recover,1600);
+    setInterval(()=>{if(loadPending())syncExit()},30000);
+
+    window.lpF296017FixDGMenu=menu;
+    window.lpF296017FixDGAttendance=oneTable;
+    window.lpF296017SyncPendingExitPhoto=syncExit;
+    window.lpF296017RecoverLatestExitPhoto=recover;
+    window.lpF296017Marker=MARK;
+    try{console.log(MARK)}catch(e){}
+  })();
+  </script>
+
+
+<!-- LEADER PHARMA F29.6.0.17 DG360 FINAL -->
+<script>
+/* LEADER PHARMA F29.6.0.17 - CENTRE DE CONTROLE DG 360 FINAL FIX OUVERTURE - LECTURE SEULE */
+(function(){
+  'use strict';
+  if(window.__LP_F296017_DG360_FINAL__) return;
+  window.__LP_F296017_DG360_FINAL__=true;
+
+  const MARK='LEADER PHARMA F29.6.0.17 DG360 FINAL FIX OUVERTURE + RAPPORT UTILISATEUR READ ONLY';
+  const norm=v=>{try{return String(v??'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}catch(e){return String(v??'').trim().toLowerCase()}};
+  const esc360=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=v=>Number.isFinite(Number(v))?Number(v):0;
+  const fmtMoney=v=>{try{return typeof money==='function'?money(num(v)):new Intl.NumberFormat('fr-CD').format(num(v))+' FC'}catch(e){return num(v)+' FC'}};
+  const dateToday=()=>{try{return typeof today==='function'?today():new Date().toISOString().slice(0,10)}catch(e){return new Date().toISOString().slice(0,10)}};
+  const hasPhoto=v=>typeof v==='string'&&(v.startsWith('data:image')||v.length>100);
+  const arr=k=>{try{return db&&Array.isArray(db[k])?db[k]:[]}catch(e){return []}};
+
+  function isDG360(){
+    try{
+      if(typeof currentUser!=='undefined'&&currentUser){
+        const r=norm(currentUser.role),u=norm(currentUser.username||currentUser.user||currentUser.login),n=norm(currentUser.name);
+        if(r==='dg'||r.includes('direction')||u==='leader.fr'||n.includes('direction generale')) return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  function isClosedStatus(v){
+    const s=norm(v);
+    return s.includes('paye')||s.includes('annul')||s.includes('solde')||s.includes('ferme')||s.includes('clos');
+  }
+
+  function agencies(){
+    const base=arr('agencies').map(a=>({id:String(a.id??a.agency??''),name:String(a.name??a.nom??a.id??'Agence')})).filter(a=>a.id);
+    if(base.length) return base;
+    const ids=new Set();
+    ['sales','expenses','products','receivables','debts','attendance'].forEach(k=>arr(k).forEach(x=>{if(x&&x.agency!=null)ids.add(String(x.agency))}));
+    return Array.from(ids).map(id=>({id,name:id}));
+  }
+
+  function agentName(r){
+    if(!r) return 'Agent';
+    const direct=r.name||r.agentName||r.employeeName||r.lpUser||r.username||r.user;
+    if(direct) return String(direct);
+    const e=arr('employees').find(x=>String(x.id)===String(r.employeeId));
+    return e?.name||e?.username||'Agent';
+  }
+
+  function stats(){
+    const d=dateToday();
+    /* LEADER PHARMA F29.6.0.17 DG360 AGENCE STRICTE ACTIF */
+    let selectedAgency='';
+    try{ selectedAgency=String(typeof currentAgency!=='undefined'?currentAgency:'').trim(); }catch(e){}
+
+    const allAgs=agencies();
+    const ags=selectedAgency
+      ? allAgs.filter(a=>String(a.id)===selectedAgency)
+      : allAgs;
+
+    const inAgency=x=>!selectedAgency||String(x?.agency??x?.agence??'')===selectedAgency;
+    const validSales=arr('sales').filter(x=>x&&x.date===d&&inAgency(x)&&norm(x.status)!=='annulee'&&!norm(x.status).includes('annul'));
+    const expensesToday=arr('expenses').filter(x=>x&&x.date===d&&inAgency(x));
+    const products=arr('products').filter(x=>x&&(!selectedAgency||!x.agency||String(x.agency)===selectedAgency));
+    const openRec=arr('receivables').filter(x=>x&&inAgency(x)&&!isClosedStatus(x.status));
+    const openDebt=arr('debts').filter(x=>x&&inAgency(x)&&!isClosedStatus(x.status));
+    const attendance=arr('attendance').filter(x=>x&&inAgency(x));
+
+    const now=Date.now(), soon=now+90*86400000;
+    const critical=products.filter(p=>num(p.stock)<=num(p.min));
+    const ruptures=products.filter(p=>num(p.stock)<=0);
+    const expiry=products.filter(p=>{
+      if(!p?.expiry) return false;
+      const t=new Date(p.expiry+'T12:00:00').getTime();
+      return Number.isFinite(t)&&t<=soon;
+    });
+    const expired=products.filter(p=>{
+      if(!p?.expiry) return false;
+      const t=new Date(p.expiry+'T12:00:00').getTime();
+      return Number.isFinite(t)&&t<now;
+    });
+
+    const recentLimit=now-2*86400000;
+    const recentAttendance=attendance.filter(r=>{
+      if(!r?.date) return false;
+      const t=new Date(r.date+'T12:00:00').getTime();
+      return !Number.isFinite(t)||t>=recentLimit;
+    });
+    const missingExit=recentAttendance.filter(r=>r.entry&&!r.exit);
+    const missingExitPhoto=recentAttendance.filter(r=>r.exit&&!hasPhoto(r.exitPhoto));
+
+    const totalRevenue=validSales.reduce((a,x)=>a+num(x.total),0);
+    const totalProfit=validSales.reduce((a,x)=>a+num(x.profit),0);
+    const totalExpenses=expensesToday.reduce((a,x)=>a+num(x.amount),0);
+    const totalRec=openRec.reduce((a,x)=>a+num(x.balance??x.amount),0);
+    const totalDebt=openDebt.reduce((a,x)=>a+num(x.balance??x.amount),0);
+
+    const byUserMap=new Map();
+    validSales.forEach(x=>{
+      const user=String(x.seller||x.username||x.user||x.createdBy||x.created_by||x.vendeur||'Non indiqué').trim()||'Non indiqué';
+      const key=norm(user);
+      const cur=byUserMap.get(key)||{user,amount:0,count:0};
+      cur.amount+=num(x.total);
+      cur.count+=1;
+      byUserMap.set(key,cur);
+    });
+    const byUser=Array.from(byUserMap.values()).sort((a,b)=>b.amount-a.amount);
+
+    const byAgency=ags.map(a=>{
+      const sales=validSales.filter(x=>String(x.agency)===a.id);
+      const ex=expensesToday.filter(x=>String(x.agency)===a.id);
+      const ps=products.filter(x=>!x.agency||String(x.agency)===a.id);
+      const rec=openRec.filter(x=>String(x.agency)===a.id);
+      const debt=openDebt.filter(x=>String(x.agency)===a.id);
+      const at=recentAttendance.filter(x=>String(x.agency)===a.id);
+      return {
+        id:a.id,name:a.name,
+        revenue:sales.reduce((n,x)=>n+num(x.total),0),
+        profit:sales.reduce((n,x)=>n+num(x.profit),0),
+        expenses:ex.reduce((n,x)=>n+num(x.amount),0),
+        salesCount:sales.length,
+        critical:ps.filter(p=>num(p.stock)<=num(p.min)).length,
+        receivables:rec.reduce((n,x)=>n+num(x.balance??x.amount),0),
+        debts:debt.reduce((n,x)=>n+num(x.balance??x.amount),0),
+        incomplete:at.filter(r=>r.entry&&!r.exit).length,
+        noPhoto:at.filter(r=>r.exit&&!hasPhoto(r.exitPhoto)).length
+      };
+    });
+
+    const alerts=[];
+    byAgency.filter(a=>a.salesCount===0).forEach(a=>alerts.push({level:'warn',title:'Aucune vente aujourd’hui',detail:a.name}));
+    ruptures.slice(0,4).forEach(p=>alerts.push({level:'danger',title:'Rupture de stock',detail:(p.name||'Produit')+' • '+(ags.find(a=>a.id===String(p.agency))?.name||p.agency||'Toutes agences')}));
+    critical.filter(p=>num(p.stock)>0).slice(0,4).forEach(p=>alerts.push({level:'warn',title:'Stock critique',detail:(p.name||'Produit')+' • stock '+num(p.stock)+' / mini '+num(p.min)}));
+    expired.slice(0,3).forEach(p=>alerts.push({level:'danger',title:'Produit périmé',detail:(p.name||'Produit')+' • '+p.expiry}));
+    expiry.filter(p=>!expired.includes(p)).slice(0,3).forEach(p=>alerts.push({level:'warn',title:'Péremption ≤ 90 jours',detail:(p.name||'Produit')+' • '+p.expiry}));
+    missingExit.slice(0,4).forEach(r=>alerts.push({level:'warn',title:'Pointage sans départ',detail:agentName(r)+' • '+r.date}));
+    missingExitPhoto.slice(0,4).forEach(r=>alerts.push({level:'warn',title:'Photo départ manquante',detail:agentName(r)+' • '+r.date+' • '+(r.exit||'') }));
+
+    return {d,ags,byAgency,byUser,totalRevenue,totalProfit,totalExpenses,totalRec,totalDebt,critical,ruptures,expiry,expired,missingExit,missingExitPhoto,alerts};
+  }
+
+  function css(){
+    if(document.getElementById('lp-dg360-style')) return;
+    const s=document.createElement('style');
+    s.id='lp-dg360-style';
+    s.textContent=`
+      #lp-dg360-root{display:grid;gap:14px}
+      .lp360-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 16px;background:linear-gradient(135deg,#073b2d,#0b6b4f);color:#fff;border-radius:14px}
+      .lp360-head h3{margin:0;font-size:20px}.lp360-head p{margin:3px 0 0;opacity:.88;font-size:12px}
+      .lp360-badge{display:inline-flex;align-items:center;gap:6px;background:#e8fff5;color:#07583f;border:1px solid #a7ead2;border-radius:999px;padding:6px 10px;font-weight:800;font-size:11px}
+      .lp360-btn{border:0;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer;background:#fff;color:#07583f}
+      .lp360-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+      .lp360-card{background:#fff;border:1px solid #e5e7eb;border-radius:13px;padding:12px;box-shadow:0 4px 16px rgba(15,23,42,.06)}
+      .lp360-card small{display:block;color:#64748b;font-weight:700}.lp360-card b{display:block;font-size:19px;margin-top:5px;color:#0f172a}.lp360-card span{font-size:11px;color:#64748b}
+      .lp360-two{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:12px}
+      .lp360-title{margin:0 0 10px;font-size:15px;color:#0f172a}
+      .lp360-tablewrap{overflow:auto}.lp360-table{width:100%;border-collapse:collapse;font-size:12px}.lp360-table th,.lp360-table td{padding:8px 7px;border-bottom:1px solid #eef2f7;text-align:left;white-space:nowrap}.lp360-table th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
+      .lp360-alert{display:flex;gap:8px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #eef2f7}.lp360-alert:last-child{border-bottom:0}.lp360-dot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex:0 0 9px;background:#d97706}.lp360-alert.danger .lp360-dot{background:#b91c1c}.lp360-alert strong{font-size:12px;color:#0f172a}.lp360-alert div div{font-size:11px;color:#64748b;margin-top:2px}
+      .lp360-empty{padding:12px;border-radius:10px;background:#f0fdf4;color:#166534;font-size:12px;font-weight:700}
+      #lp-dg360-nav.nav-btn{font-weight:800!important}
+      @media(max-width:1180px){.lp360-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.lp360-two{grid-template-columns:1fr}}
+      @media(max-width:700px){.lp360-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lp360-card b{font-size:16px}.lp360-head{align-items:flex-start}.lp360-table th,.lp360-table td{padding:7px 6px}}
+    `;
+    document.head.appendChild(s);
+  }
+
+  function render360(){
+    if(!isDG360()) return;
+    const root=document.getElementById('content');
+    if(!root) return;
+    css();
+    const s=stats();
+    try{if(typeof setHeader==='function')setHeader('Centre de contrôle DG fr','Pilotage multi-agences • lecture seule • décisions rapides');else{const t=document.getElementById('pageTitle');if(t)t.textContent='Centre de contrôle DG fr'}}catch(e){}
+    const rows=s.byAgency.map(a=>`<tr><td><b>${esc360(a.name)}</b></td><td>${fmtMoney(a.revenue)}</td><td>${fmtMoney(a.profit)}</td><td>${fmtMoney(a.expenses)}</td><td>${a.critical}</td><td>${fmtMoney(a.receivables)}</td><td>${fmtMoney(a.debts)}</td><td>${a.incomplete+a.noPhoto}</td></tr>`).join('');
+    const userRows=s.byUser.map(u=>`<tr><td><b>${esc360(u.user)}</b></td><td>${u.count}</td><td>${fmtMoney(u.amount)}</td></tr>`).join('');
+    const alertHtml=s.alerts.slice(0,12).map(a=>`<div class="lp360-alert ${a.level==='danger'?'danger':''}"><i class="lp360-dot"></i><div><strong>${esc360(a.title)}</strong><div>${esc360(a.detail)}</div></div></div>`).join('');
+    root.innerHTML=`<div id="lp-dg360-root" data-marker="${MARK}">
+      <div class="lp360-head"><div><div class="lp360-badge">DG fr • LECTURE SEULE</div><h3>Centre de contrôle Direction Générale</h3><p>${esc360(s.d)} • agence sélectionnée • actualisé à ${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</p></div><button id="lp360-refresh" class="lp360-btn">↻ Actualiser</button></div>
+      <div class="lp360-grid">
+        <div class="lp360-card"><small>Ventes du jour</small><b>${fmtMoney(s.totalRevenue)}</b><span>${s.byAgency.reduce((n,a)=>n+a.salesCount,0)} opération(s)</span></div>
+        <div class="lp360-card"><small>Bénéfice brut</small><b>${fmtMoney(s.totalProfit)}</b><span>agence sélectionnée</span></div>
+        <div class="lp360-card"><small>Dépenses du jour</small><b>${fmtMoney(s.totalExpenses)}</b><span>résultat estimé ${fmtMoney(s.totalProfit-s.totalExpenses)}</span></div>
+        <div class="lp360-card"><small>Stock / péremption</small><b>${s.critical.length} critique(s)</b><span>${s.ruptures.length} rupture(s) • ${s.expiry.length} échéance(s)</span></div>
+        <div class="lp360-card"><small>Créances / dettes</small><b>${fmtMoney(s.totalRec)}</b><span>dettes ${fmtMoney(s.totalDebt)}</span></div>
+      </div>
+      <div class="lp360-two">
+        <div class="lp360-card"><h3 class="lp360-title">Résumé quotidien par agence</h3><div class="lp360-tablewrap"><table class="lp360-table"><thead><tr><th>Agence</th><th>Ventes</th><th>Bénéfice</th><th>Dépenses</th><th>Stock critique</th><th>Créances</th><th>Dettes</th><th>Pointages</th></tr></thead><tbody>${rows||'<tr><td colspan="8">Aucune agence</td></tr>'}</tbody></table></div></div>
+        <div class="lp360-card"><h3 class="lp360-title">À vérifier par le DG</h3>${alertHtml||'<div class="lp360-empty">Aucune alerte prioritaire détectée.</div>'}</div>
+      </div>
+      <div class="lp360-card"><h3 class="lp360-title">Rapport du jour par utilisateur</h3><div class="lp360-tablewrap"><table class="lp360-table"><thead><tr><th>Utilisateur / vendeur</th><th>Nombre de ventes</th><th>Montant du jour</th></tr></thead><tbody>${userRows||'<tr><td colspan="3">Aucune vente aujourd’hui</td></tr>'}</tbody></table></div></div>
+      <div class="lp360-card"><h3 class="lp360-title">Contrôle RH rapide</h3><div class="lp360-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div><small>Départs non enregistrés</small><b>${s.missingExit.length}</b></div><div><small>Photos départ manquantes</small><b>${s.missingExitPhoto.length}</b></div><div><small>Agences sans vente aujourd’hui</small><b>${s.byAgency.filter(a=>a.salesCount===0).length}</b></div></div></div>
+    </div>`;
+    const btn=document.getElementById('lp360-refresh');
+    if(btn) btn.onclick=async()=>{
+      if(btn.dataset.busy==='1') return;
+      btn.dataset.busy='1';
+      btn.disabled=true;
+      btn.textContent='↻ Actualisation...';
+      try{
+        if(typeof syncPull==='function'){
+          await syncPull();
+        }else if(typeof window.syncPull==='function'){
+          await window.syncPull();
+        }
+      }catch(e){
+        console.warn('DG360 ACTUALISATION',e);
+      }
+      window.__LP_DG360_ACTIVE__=true;
+      render360();
+    };
+  }
+
+  function ensureButton(){
+    const nav=document.getElementById('nav');
+    if(!nav) return;
+    if(!isDG360()){
+      document.getElementById('lp-dg360-nav')?.remove();
+      return;
+    }
+    let b=document.getElementById('lp-dg360-nav');
+    if(!b){
+      b=document.createElement('button');
+      b.id='lp-dg360-nav';
+      b.type='button';
+      b.className='nav-btn';
+      b.textContent='DG fr';
+      b.title='Centre de contrôle DG fr';
+      b.onclick=e=>{e.preventDefault();e.stopPropagation();window.__LP_DG360_ACTIVE__=true;render360()};
+      const target=Array.from(nav.querySelectorAll('.nav-btn')).find(x=>norm(x.textContent).includes('controle dg'));
+      if(target&&target.nextSibling) nav.insertBefore(b,target.nextSibling); else if(target) nav.appendChild(b); else nav.prepend(b);
+    }
+  }
+
+  function forceOpen360(e){
+    const dg=e.target?.closest?.('#lp-dg360-nav');
+    if(!dg) return false;
+    try{e.preventDefault();e.stopImmediatePropagation()}catch(_e){}
+    window.__LP_DG360_ACTIVE__=true;
+    render360();
+    return true;
+  }
+
+  document.addEventListener('pointerdown',e=>{
+    if(e.target?.closest?.('#lp-dg360-nav')) window.__LP_DG360_ACTIVE__=true;
+  },true);
+
+  document.addEventListener('click',e=>{
+    if(forceOpen360(e)) return;
+    const b=e.target?.closest?.('#nav .nav-btn');
+    if(b&&b.id!=='lp-dg360-nav') window.__LP_DG360_ACTIVE__=false;
+  },true);
+
+  let t=null;
+  function tick(){
+    clearTimeout(t);
+    t=setTimeout(()=>{
+      css();ensureButton();
+      if(window.__LP_DG360_ACTIVE__&&isDG360()&&!document.getElementById('lp-dg360-root')) render360();
+    },80);
+  }
+  css();tick();
+  try{new MutationObserver(tick).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}
+    window.lpF296017DG360EnsureMenu=ensureButton;
+  window.lpF296017DG360Render=render360;
+  window.lpF296017DG360Marker=MARK;
+  window.lpF296017DG360AgencyStrict='LEADER PHARMA F29.6.0.17 DG360 AGENCE STRICTE ACTIF';
+})();
+
+</script>
+</body>
+</html>
+
+<!-- LEADER PHARMA F29.6.0.17 LIBELLE DG FR STABLE FIX12 ACTIF -->

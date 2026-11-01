@@ -1,3 +1,130 @@
+/* LP_V90_INVOICES_PAGED_PRESERVED_REV4 */
+(function(){
+'use strict';
+const S=v=>String(v??'').trim(),N=v=>S(v).toLowerCase(),E=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const el=id=>document.getElementById(id),actor=()=>typeof currentUser==='undefined'?null:currentUser,dg=()=>N(actor()?.role)==='dg';
+const agency=()=>S(typeof currentAgency==='undefined'?'':currentAgency),context=()=>JSON.stringify([actor()?.id,actor()?.username,actor()?.role,agency()]);
+const own=r=>N(r.agency)===N(agency())&&(dg()||window.lpV38OwnSale?.(r));
+const amount=r=>Number(r.total||0).toLocaleString('fr-FR')+' '+(N(r.currency||'CDF')==='cdf'?'FC':S(r.currency));
+const key=r=>r.sale_key||'id:'+S(r.id),hiddenKey=()=> 'lp_invoice_archived_v90:'+context();
+const readHidden=()=>{try{return JSON.parse(localStorage.getItem(hiddenKey())||'{}')}catch{return {}}};
+const fingerprint=r=>JSON.stringify(projection(r));
+function projection(row){const r=window.lpV38SaleForPush?window.lpV38SaleForPush(row):row,o={};for(const k of ['id','invoice','date','time','agency','sellerUsername','sellerName','seller','clientId','clientName','priceMode','currency','payment','total','paidAmount','profit','status','items'])if(r[k]!==undefined)o[k]=r[k];return o;}
+async function hash(r){if(!crypto?.subtle)throw Error('Vérification locale indisponible sur cet appareil.');return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(fingerprint(r))))].map(b=>b.toString(16).padStart(2,'0')).join('');}
+let scope='',panel=null,mode='local',rowsMode='local',rows=[],pageIndex=0,committedPage=0,cursors=[null],nextCursor=null,hasMore=false,busy=false,painted='';
+function status(t){const node=el('lpInv90State');if(node&&node.textContent!==t)node.textContent=t;}
+function valid(who,node){return context()===who&&panel===node&&node?.isConnected&&String(page)==='sales';}
+async function rpc(action,args){if(navigator.onLine===false)throw Error('Internet requis pour consulter les archives. Les factures locales restent disponibles.');return window.lpV80.rpc('lp_invoices_v90',{p_action:action,p_args:{...args,agency:agency()}});}
+function filters(){return {query:S(el('lpInv90Query')?.value),from:S(el('lpInv90From')?.value),to:S(el('lpInv90To')?.value)};}
+async function localRows(){
+ const hidden=readHidden(),f=filters(),seen=new Set(),out=[];
+ for(const r of db.sales||[]){if(!own(r))continue;const k=r.id!=null?'id:'+S(r.id):'legacy:'+JSON.stringify([r.invoice,r.date,r.time,r.sellerUsername||r.seller,r.total]);if(seen.has(k))continue;seen.add(k);
+  if(f.from&&S(r.date)<f.from||f.to&&S(r.date)>f.to)continue;
+  if(f.query&&!N([r.invoice,r.sellerName,r.seller,r.date].join(' ')).includes(N(f.query)))continue;
+  if(hidden[k]){try{if(hidden[k].localHash===await hash(r))continue;}catch{}}
+  out.push(r);
+ }
+ return out.sort((a,b)=>(S(b.date)+' '+S(b.time)).localeCompare(S(a.date)+' '+S(a.time))||S(b.id).localeCompare(S(a.id),undefined,{numeric:true}));
+}
+function paint(){
+ const node=el('lpInv90Rows');if(!node)return;
+ const html=rows.length?rows.map((r,i)=>'<article class="lp90-invoice"><div><b>'+E(r.invoice||r.id||'Facture historique')+'</b> <b>'+E(amount(r))+'</b></div><div>'+E(r.date)+' '+E(r.time)+' • '+E(r.sellerName||r.seller||'')+'</div><div>'+E(r.status||'')+(r.source_present===false?' • Archive retirée du registre actif':'')+'</div><button type="button" data-invoice-action="open" data-index="'+i+'">Consulter</button></article>').join(''):'<p>Aucune facture pour ces filtres.</p>';
+ if(painted!==html){node.innerHTML=html;painted=html;}
+ el('lpInv90Previous').disabled=busy||pageIndex===0;el('lpInv90Next').disabled=busy||!hasMore;
+ el('lpInv90Page').textContent='Page '+(pageIndex+1)+' • '+rows.length+' facture(s) • '+(rowsMode==='local'?'sur cet appareil':'archives serveur');
+}
+async function load(reset=false){
+ if(busy)return;busy=true;const who=context(),node=panel;if(reset){pageIndex=0;cursors=[null];}
+ try{
+  status(mode==='local'?'Lecture des factures locales…':'Lecture de 20 archives au maximum…');
+  if(mode==='local'){const all=await localRows();if(!valid(who,node))return;rows=all.slice(pageIndex*20,pageIndex*20+20);hasMore=all.length>(pageIndex+1)*20;}
+  else{const result=await rpc('list',{...filters(),limit:20,before:cursors[pageIndex]});if(!valid(who,node))return;rows=result.rows||[];hasMore=result.has_more;nextCursor=rows.at(-1)?.cursor||null;}
+  rowsMode=mode;committedPage=pageIndex;status(mode==='local'?'Factures locales disponibles. Pour retrouver une ancienne facture absente, ouvrez Archives serveur.':'Documents conservés sur le serveur. Leur consultation ne crée aucune vente.');paint();
+ }catch(e){if(valid(who,node)){mode=rowsMode;pageIndex=committedPage;status(e.message||'Lecture non confirmée. Les factures précédentes sont conservées.');}}
+ finally{if(valid(who,node)){busy=false;paint();}}
+}
+function show(snapshot,info=''){
+ const old=el('lpInvoice90Dialog');if(old)old.remove();const box=document.createElement('dialog');box.id='lpInvoice90Dialog';
+ box.innerHTML='<h3></h3><p data-info></p><pre></pre><button type="button">Fermer</button>';box.querySelector('h3').textContent='Facture '+S(snapshot.invoice||snapshot.id);
+ box.querySelector('[data-info]').textContent=info;
+ const lines=[S(snapshot.invoice),S(snapshot.date)+' '+S(snapshot.time),'Vendeur : '+S(snapshot.sellerName||snapshot.seller),'Paiement : '+S(snapshot.payment),''];
+ for(const i of snapshot.items||[])lines.push(S(i.name||i.productName)+' • '+S(i.qty??i.quantity)+' × '+S(i.price??i.unitPrice));
+ if(!Array.isArray(snapshot.items)||!snapshot.items.length)lines.push('Détail des articles absent de cet ancien enregistrement.');
+ lines.push('','TOTAL : '+amount(snapshot));box.querySelector('pre').textContent=lines.join('\n');box.querySelector('button').onclick=()=>box.remove();document.body.append(box);
+ if(box.showModal)box.showModal();else{box.setAttribute('open','');box.style.cssText='position:fixed;top:10%;left:5%;z-index:2147483646;max-height:80vh;overflow:auto;background:white';}
+}
+async function open(i){
+ const r=rows[i];if(!r)return;if(rowsMode==='local')return show(r,'Copie présente sur cet appareil.');
+ const who=context(),node=panel;status('Ouverture du document conservé…');const doc=await rpc('get',{sale_key:r.sale_key});if(!valid(who,node))return;
+ show(doc.payload,'Archive serveur • empreinte '+S(doc.hash).slice(0,16)+'…'+(doc.source_present?'':' • retirée du registre actif'));status('Document conservé ouvert.');
+}
+function cutoff(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lubumbashi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()-30*86400000));}
+function protectedSale(r){const payment=N(r.payment).normalize('NFD').replace(/[\u0300-\u036f]/g,''),state=N(r.status);return state.includes('attente')||state.includes('pending')||(r.paidAmount!=null&&Number(r.paidAmount)<Number(r.total))||(payment.includes('credit')&&(r.paidAmount==null||Number(r.paidAmount)<Number(r.total)));}
+async function archiveLocal(){
+ if(busy)return;
+ if(!confirm('Archiver dans l’historique de cet appareil les factures de plus de 30 jours déjà vérifiées au serveur ? Les ventes et les totaux comptables restent conservés.'))return;
+ busy=true;const who=context(),node=panel,storageKey=hiddenKey(),before=localStorage.getItem(storageKey),hidden=readHidden();let count=0;
+ try{
+  const candidates=(db.sales||[]).filter(r=>own(r)&&r.id!=null&&/^\d{4}-\d\d-\d\d$/.test(S(r.date))&&S(r.date)<cutoff()&&Array.isArray(r.items)&&r.items.length&&!protectedSale(r));
+  for(let n=0;n<candidates.length;n+=40){
+   const batch=candidates.slice(n,n+40),fingerprints=batch.map(fingerprint),digests=await Promise.all(batch.map(hash));
+   const result=await rpc('verify',{rows:batch.map(projection)});if(!valid(who,node))throw Error('Le compte ou la rubrique a changé. Aucun archivage local appliqué.');
+   for(const c of result.confirmed||[]){const j=batch.findIndex(r=>S(r.id)===S(c.id));if(j<0)continue;const r=batch[j],live=(db.sales||[]).find(x=>S(x.id)===S(r.id)&&N(x.agency)===N(r.agency));if(!live||fingerprint(live)!==fingerprints[j])continue;
+    hidden[key(r)]={localHash:digests[j],serverHash:c.hash};count++;
+   }
+  }
+  if(localStorage.getItem(storageKey)!==before)throw Error('L’historique local a changé. Réessayez.');
+  localStorage.setItem(storageKey,JSON.stringify(hidden));rows=[];painted='';pageIndex=0;cursors=[null];mode='local';
+  status(count+' facture(s) archivées dans cet historique. Les factures non confirmées restent visibles. Le registre comptable est conservé.');
+ }catch(e){if(valid(who,node))status(e.message||'Archivage non confirmé. Données conservées.');}
+ finally{if(valid(who,node)){busy=false;const message=el('lpInv90State')?.textContent;await load(true);status(message);}}
+}
+async function backup(){
+ if(!dg()||busy)return;if(!confirm('Télécharger une sauvegarde des factures et de leurs révisions pour cette agence ? Elle peut contenir des données commerciales confidentielles.'))return;
+ busy=true;const who=context(),node=panel,documents=[];let before=null;
+ try{
+  do{const data=await rpc('backup',{limit:100,before});if(!valid(who,node)||!dg())throw Error('Le compte ou l’agence a changé. Export annulé.');documents.push(...data.rows);if(!data.has_more)break;const next=data.rows.at(-1)?.cursor;if(!next||next===before)throw Error('Pagination interrompue. Aucun export incomplet enregistré.');before=next;}while(true);
+  const filename='Leader-Pharma-Archives-factures-'+agency()+'-'+new Date().toISOString().slice(0,10)+'.json';const text=JSON.stringify({schema:1,agency:agency(),generated_at:new Date().toISOString(),documents},null,2);
+  const plugin=window.Capacitor?.Plugins?.LeaderFile;
+  if(plugin?.saveCsv){const bytes=new TextEncoder().encode(text);let raw='';for(const b of bytes)raw+=String.fromCharCode(b);await plugin.saveCsv({filename,base64:btoa(raw)});}
+  else{const url=URL.createObjectURL(new Blob([text],{type:'application/json;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+  status('Sauvegarde préparée : '+documents.length+' document(s) et révision(s). Conservez-la dans un endroit protégé.');
+ }catch(e){if(valid(who,node))status(e.message||'Sauvegarde non confirmée.');}finally{if(valid(who,node)){busy=false;paint();}}
+}
+function mount(){
+ if(!actor()||typeof page==='undefined'||page!=='sales'){el('lpInvoices90')?.remove();return;}
+ if(el('printReceipt')||el('newSale'))return;
+ const host=el('content');if(!host)return;
+ const next=context();if(next===scope&&panel?.isConnected&&el('lpInvoices90')===panel)return;
+ el('lp1514History')?.remove();el('lpInvoices90')?.remove();scope=next;busy=false;mode=rowsMode='local';pageIndex=committedPage=0;cursors=[null];rows=[];painted='';
+ panel=document.createElement('section');panel.id='lpInvoices90';panel.className='card';
+ panel.innerHTML='<h3>Factures et archives</h3><p>20 factures par page. La conservation serveur est indépendante de cet historique.</p><div class="toolbar"><label>Facture, agent ou date<input id="lpInv90Query" autocomplete="off"></label><label>Du<input type="date" id="lpInv90From"></label><label>Au<input type="date" id="lpInv90To"></label></div><div class="toolbar"><button type="button" data-invoice-action="local">Sur cet appareil</button><button type="button" data-invoice-action="server">Archives serveur</button><button type="button" data-invoice-action="refresh">Rechercher / actualiser</button></div><p id="lpInv90State" role="status" aria-live="polite" style="min-height:3em"></p><div id="lpInv90Rows"></div><div class="toolbar"><button type="button" id="lpInv90Previous" data-invoice-action="previous">Précédent</button><span id="lpInv90Page"></span><button type="button" id="lpInv90Next" data-invoice-action="next">Suivant</button></div><hr><p class="muted">L’archivage local retire les anciennes factures de cet historique. Il ne vide pas le registre nécessaire aux rapports et aux totaux.</p><button type="button" data-invoice-action="archive">Archiver les anciennes factures sur cet appareil</button> <button type="button" data-invoice-action="restore">Réafficher l’historique local</button>'+(dg()?' <button type="button" data-invoice-action="backup">Sauvegarder les archives de cette agence</button>':'');
+ host.append(panel);load(true);
+}
+window.lpInvoiceBrowser={mount,projection,localRows};
+window.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing&&e.target?.closest?.('#lpInvoices90 input')){e.preventDefault();e.stopImmediatePropagation();load(true);}},true);
+window.addEventListener('click',e=>{
+ const b=e.target?.closest?.('#lpInvoices90 [data-invoice-action]');if(!b)return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();if(busy)return;
+ const action=b.dataset.invoiceAction;let task;
+ if(action==='local'||action==='server'){mode=action==='local'?'local':'server';task=load(true);}
+ else if(action==='refresh')task=load(true);
+ else if(action==='next'&&hasMore){if(mode==='server')cursors[pageIndex+1]=nextCursor;pageIndex++;task=load();}
+ else if(action==='previous'&&pageIndex){pageIndex--;task=load();}
+ else if(action==='open')task=open(Number(b.dataset.index));
+ else if(action==='archive')task=archiveLocal();
+ else if(action==='restore'){localStorage.removeItem(hiddenKey());task=load(true);}
+ else if(action==='backup')task=backup();
+ Promise.resolve(task).catch(error=>status(error.message));
+},true);
+function install(){
+ const style=document.createElement('style');style.textContent='#lpInvoices90{overflow-anchor:none}#lpInvoices90 .lp90-invoice{border-bottom:1px solid #dce5e2;padding:12px 0;min-height:105px}#lpInvoices90 button{min-height:44px;padding:8px 12px}#lpInvoices90 input{font-size:16px;min-height:44px;max-width:100%}#lpInvoice90Dialog{width:min(94vw,640px);max-height:85vh;overflow:auto;border:1px solid #dce5e2;border-radius:12px}#lpInvoice90Dialog pre{white-space:pre-wrap;overflow-wrap:anywhere}';document.head.append(style);
+ if(typeof sales==='function'){const base=sales;sales=function(){const result=base.apply(this,arguments);mount();return result;};window.sales=sales;}
+ if(typeof render==='function'){const base=render;render=function(){const result=base.apply(this,arguments);mount();return result;};window.render=render;}
+ mount();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+
 /* LP_V90_ACCOUNT_FORM_ROLES */
 (function(){
 'use strict';
@@ -52103,6 +52230,7 @@ console.log(
   }
 
   function lp1514CreatePanel() {
+    if(window.lpInvoiceBrowser)return window.lpInvoiceBrowser.mount();
     if(typeof page==='undefined'||String(page)!=='sales')return;
     if (document.getElementById("lp1514History")) {
       return;
@@ -52399,6 +52527,7 @@ console.log(
   }
 
   function lp1514Render() {
+    if(window.lpInvoiceBrowser)return window.lpInvoiceBrowser.mount();
     if(typeof currentUser!=='undefined'&&String(currentUser?.role||'').toLowerCase()==='dg'&&typeof window.lpF294RenderSalesAgencyDG==='function')return window.lpF294RenderSalesAgencyDG();
     var summary =
       document.getElementById("lp1514Summary");
@@ -130519,6 +130648,7 @@ console.log('LEADER PHARMA UTILISATEURS MDP FIX25 ABSOLU ACTIF');
   }
 
   function lp294RenderHistory(){
+    if(window.lpInvoiceBrowser)return window.lpInvoiceBrowser.mount();
     if(!lp294IsDG()){
       return;
     }
