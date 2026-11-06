@@ -1,3 +1,29 @@
+/* LP_V92_EARLY_ATOMIC_CHECKOUT: loaded before all legacy capture handlers. */
+(function(){
+'use strict';
+window.addEventListener('click',function(e){
+ const b=e.target?.closest?.('#checkout,#returnBtn,[data-lp92-action]');if(!b)return;
+ const api=window.lpAtomic92;if(!api)return;
+ if(b.id==='returnBtn'&&!api.isAtomicReturn())return;
+ e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
+ if(b.disabled)return;
+ if(b.id==='checkout')api.checkout();else if(b.id==='returnBtn')api.cancel();else api.click(b);
+},true);
+// Capture only sale documents before legacy startup sync can replace its local array.
+// No account passwords, photos, signatures or full application snapshot are copied.
+try{
+ const raw=localStorage.getItem('lpmp_v13');if(!raw)return;const data=JSON.parse(raw),key='lp92_legacy_sale_candidates';
+ const prior=JSON.parse(localStorage.getItem(key)||'[]'),map=new Map(prior.map(r=>[String(r.agency)+'|'+String(r.id||r.invoice)+'|'+String(r.date)+'|'+String(r.time),r]));
+ const cutoff=new Date(Date.now()-3*86400000).toISOString().slice(0,10);
+ for(const sale of data.sales||[]){
+  if(!sale||sale.atomicSchema===92||String(sale.date||'')<cutoff||!Array.isArray(sale.items))continue;
+  const copy={};for(const f of ['id','invoice','date','time','agency','sellerUsername','sellerName','seller','clientId','clientName','priceMode','currency','payment','total','paidAmount','status','items','operationAt'])if(sale[f]!==undefined)copy[f]=sale[f];
+  map.set(String(sale.agency)+'|'+String(sale.id||sale.invoice)+'|'+String(sale.date)+'|'+String(sale.time),copy);
+ }
+ localStorage.setItem(key,JSON.stringify([...map.values()].slice(-50)));
+}catch(error){window.lp92CandidateBackupFailed=true;}
+})();
+
 /* LP_V90_INVOICES_PAGED_PRESERVED_REV4 */
 (function(){
 'use strict';
@@ -33729,6 +33755,8 @@ function lp171021Qty(item){
 
 
 function lp171021QueueSale(sale){
+  if(sale&&sale.atomicSchema===92)return 0;
+
 
   if(!sale){
     return 0;
@@ -137530,7 +137558,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.90 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.93 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137545,9 +137573,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.90 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.93 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.90 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.93 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138655,7 +138683,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.90 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.93 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138824,14 +138852,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.90 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.93 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.90 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.93 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138995,7 +139023,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.90 MASTER PRO
+   - affiche partout F29.6.0.93 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -139004,7 +139032,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.90 MASTER PRO';
+    'F29.6.0.93 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139341,9 +139369,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.90';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.93';
 
-  const MASTER_DISPLAY = 'F29.6.0.90 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.93 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139614,9 +139642,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.90';
+  const CURRENT_NUMERIC = '29.6.0.93';
 
-  const DISPLAY = 'F29.6.0.90 MASTER PRO';
+  const DISPLAY = 'F29.6.0.93 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140835,7 +140863,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.90 MASTER PRO'
+          : 'F29.6.0.93 MASTER PRO'
       );
 
       try{
@@ -141413,7 +141441,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.90 MASTER PRO'
+          : 'F29.6.0.93 MASTER PRO'
       );
 
       feedback(
@@ -142592,10 +142620,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.90';
+    '29.6.0.93';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.90 MASTER PRO';
+    'F29.6.0.93 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142750,7 +142778,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.90 MASTER PRO' && tech){
+    if(display === 'F29.6.0.93 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -143090,7 +143118,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.90 MASTER PRO';
+    'F29.6.0.93 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -143764,7 +143792,7 @@ console.log('LEADER PHARMA F29.6.0.16 AFFICHAGE UNIQUE UPDATE UTILISATEURS ACTIF
     try{
       const sent=readSent();
       const d=day();
-      const rows=db.sales.filter(x=>x&&(!window.lpV38OwnSale||window.lpV38OwnSale(x)));
+      const rows=db.sales.filter(x=>x&&x.atomicSchema!==92&&(!window.lpV38OwnSale||window.lpV38OwnSale(x)));
 
       for(const sale of rows){
         const k=keyOf(sale);
@@ -147253,12 +147281,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.90';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.90 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.93';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.93 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.90 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.93 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.90 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.93 V11 ACTIF');
 })();
 
 
@@ -147267,7 +147295,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.90 MASTER PRO';
+  const DISPLAY='F29.6.0.93 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147291,7 +147319,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.90';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.93';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -147940,6 +147968,7 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
       if(user()&&!navigating&&!commandEvent&&(editing()||dirty))return;
       // Aucun tableau caché n'est reconstruit à l'ouverture ou au retour menu.
       if(user()&&!navigating&&!commandEvent&&root.getAttribute('data-lp-ui-view')==='menu')return;
+      if(user()&&!navigating&&!commandEvent&&window.lpAtomic92?.keepReceipt())return;
       const node=document.getElementById('content')?.firstElementChild||null,model=modelFingerprint();
       if(user()&&!navigating&&!commandEvent&&renderedRoute===route()&&node&&node===paintNode&&model!==null&&model===paintModel)return;
       // LP_V88: background data updates must not replace an already open form/page.
@@ -147948,7 +147977,12 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
         if(typeof window.lp88RefreshCurrentView==='function'&&['stock','sales'].includes(route()))window.lp88RefreshCurrentView(route());
         // A passive synchronization must not clear a report, signature canvas,
         // search input or open form. Re-entering a page from Menu is explicit.
-        rememberPaint();return;
+        // LP_V91_PASSIVE_PAINT: reuse the fingerprint already calculated
+        // in this render instead of serializing the business arrays twice.
+        paintModel=model;
+        paintNode=document.getElementById('content')?.firstElementChild||null;
+        paintContext88=JSON.stringify([user()?.id||user()?.username,user()?.role,typeof currentAgency==='undefined'?'':currentAgency]);
+        return;
       }
       const out=directDG(route())?undefined:baseRender.apply(this,arguments);
       mountReadyPage();
@@ -148610,7 +148644,7 @@ async function download(p,rows){
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.90.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.93.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
@@ -149520,9 +149554,12 @@ window.lpV80Click=function(e){
 let scheduled=false;
 const observer=typeof MutationObserver!=='undefined'?new MutationObserver(schedule):null;
 function observe(){observer?.observe(document.documentElement,{childList:true,subtree:true});}
-function schedule(){if(scheduled)return;scheduled=true;queueMicrotask(()=>{
- try{observer?.disconnect();mount();}finally{scheduled=false;observe();}
-});}
+function schedule(){
+ if(scheduled||document.hidden||typeof page==='undefined'||!['sales','expenses','stock','reports','treasury'].includes(page))return;
+ scheduled=true;requestAnimationFrame(()=>{
+  try{observer?.disconnect();mount();}finally{scheduled=false;observe();}
+ });
+}
 observe();
 window.addEventListener('online',flush);document.addEventListener('visibilitychange',()=>{if(!document.hidden)flush();});setInterval(()=>{if(!document.hidden&&Object.keys(queue).length)flush();},45000);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{mount();flush();},{once:true});else{mount();flush();}
@@ -149667,4 +149704,359 @@ body,#appView,#appView>.sidebar,#nav{overflow-anchor:none!important}
 }
 `;
 (document.head||document.documentElement).appendChild(style);
+})();
+
+/* LP_V91_PERFORMANCE_WORKED_DAYS_STABLE compatibility; LP_V93_ALL_AGENCIES_STABLE */
+(function(){
+'use strict';
+if(window.lpPerformance91)return;
+const $=id=>document.getElementById(id),S=v=>String(v??''),N=v=>S(v).trim().toLowerCase();
+const E=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const actor=()=>typeof currentUser==='undefined'?null:currentUser;
+const dg=()=>N(actor()?.role)==='dg';
+const baseAgency=()=>typeof currentAgency==='undefined'?'':S(currentAgency);
+let selectedAgency='';
+const agency=()=>dg()?(selectedAgency||baseAgency()):baseAgency();
+const session=()=>JSON.stringify([actor()?.id,actor()?.username,actor()?.role,baseAgency()]);
+const scope=()=>JSON.stringify([session(),agency()]);
+const label=a=>({centre:'Centre',kamina:'Kamina',all:'Toutes les agences'}[a]||a);
+const preferences=new Map();
+const savePreference=()=>{preferences.set(session(),{kind,date,agency:agency()});if(preferences.size>8)preferences.delete(preferences.keys().next().value);};
+const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lubumbashi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const onPage=()=>actor()&&typeof page!=='undefined'&&['reports','statistics','stats'].includes(S(page));
+const money=v=>Number(v||0).toLocaleString('fr-FR',{maximumFractionDigits:2});
+let panel=null,identity='',sequence=0,controller=null,flight=null,lastPaint='',kind='day',date=today();
+const cache=new Map();
+function state(t){const node=$('lp91State');if(node&&node.textContent!==t)node.textContent=t;}
+function reset(){sequence++;controller?.abort();controller=null;flight=null;cache.clear();lastPaint='';}
+function valid(id,node,ticket){return ticket===sequence&&scope()===id&&onPage()&&panel===node&&node?.isConnected;}
+function paint(data){
+ const node=$('lp91Rows');if(!node)return;
+ const rows=data.rows||[],me=N(actor()?.username);
+ const summary=(data.agency_totals||[]);
+ const html='<p>Du '+E(data.from)+' au '+E(data.to)+' • '+E(label(data.agency))+'</p>'+
+ (dg()?'<div class="lp93-summary"><b>Total : '+money(summary.reduce((n,r)=>n+Number(r.net_cdf||0),0))+' FC</b><span>'+summary.reduce((n,r)=>n+Number(r.invoices||0),0)+' facture(s)</span></div>':'')+
+ (dg()&&data.agency==='all'?'<table class="lp93-agency-totals"><thead><tr><th>Agence</th><th>Ventes nettes FC</th><th>Factures</th></tr></thead><tbody>'+summary.map(r=>'<tr><td>'+E(label(r.agency))+'</td><td>'+money(r.net_cdf)+'</td><td>'+E(r.invoices)+'</td></tr>').join('')+'</tbody></table><p>Un même jour travaillé dans les deux agences compte une seule fois dans l’objectif global de l’agent.</p>':'')+
+ '<p class="muted">Objectif journalier actuel appliqué aux jours travaillés : comparaison indicative pour les périodes passées.</p><p class="muted">Faites glisser le tableau pour voir toutes les colonnes.</p>'+
+ '<div class="lp91-scroll"><table><thead><tr><th>Rang</th><th>Agent</th><th>Agence(s)</th><th>Jours travaillés</th><th>Ventes nettes FC</th><th>Objectif FC</th><th>Atteint</th><th>Reste FC</th></tr></thead><tbody>'+
+ rows.map(r=>'<tr'+(N(r.user_key)===me?' class="lp91-me"':'')+'><td>'+E(r.rank==null?'—':(['🥇','🥈','🥉'][Number(r.rank)-1]||r.rank))+'</td><td>'+E(r.name)+(N(r.user_key)===me?' (vous)':'')+'</td><td>'+E((r.agencies||[data.agency]).map(label).join(', '))+'</td><td>'+E(r.worked_days)+'</td><td>'+money(r.net_cdf)+'</td><td>'+money(r.objective)+'</td><td>'+E(r.score==null?'Objectif non défini':money(r.score)+' %')+'</td><td>'+money(Math.max(0,Number(r.objective)-Number(r.net_cdf)))+'</td></tr>').join('')+
+ (rows.length?'':'<tr><td colspan="8">Aucun jour travaillé identifié pour cette période.</td></tr>')+'</tbody></table></div>'+
+ (rows.some(r=>Number(r.net_usd)>0)?'<details><summary>Ventes en USD, séparées du classement en FC</summary>'+rows.filter(r=>Number(r.net_usd)>0).map(r=>'<p>'+E(r.name)+' : '+money(r.net_usd)+' USD</p>').join('')+'</details>':'')+
+ (Number(data.unattributed_sales)?'<p>'+E(data.unattributed_sales)+' vente(s) sans vendeur identifiable : à rapprocher par le DG.</p>':'')+
+ (Number(data.unsupported_currency_sales)?'<p>'+E(data.unsupported_currency_sales)+' vente(s) dans une autre devise, non classées.</p>':'');
+ if(lastPaint!==html){node.innerHTML=html;lastPaint=html;}
+ const own=rows.find(r=>N(r.user_key)===me),message=$('lp91Encouragement');
+ const encouragement=own?(own.score==null?'Demandez au DG de définir votre objectif.':Number(own.score)>=100?'Objectif atteint : continuez ainsi !':Number(own.score)>=75?'Vous approchez de votre objectif : poursuivez vos efforts !':'Chaque vente compte. Suivez votre progression ici.'):'Votre progression apparaîtra après un pointage ou une vente enregistrée.';
+ if(message){message.hidden=dg();if(!dg()&&message.textContent!==encouragement)message.textContent=encouragement;}
+}
+function controls(busy){const button=$('lp91Refresh');if(button)button.disabled=busy;}
+function changeFilter(){sequence++;controller?.abort();controller=null;flight=null;controls(false);lastPaint='';$('lp91Rows')?.replaceChildren();savePreference();load();}
+async function load(force=false){
+ if(!onPage()||!panel?.isConnected)return false;
+ if(flight)return flight;
+ const id=scope(),node=panel,ticket=++sequence,key=JSON.stringify([id,kind,date]),cached=cache.get(key);
+ if(cached){paint(cached);if(!force){state('Dernière réception : '+new Date(cached.generated_at).toLocaleString('fr-FR',{timeZone:'Africa/Lubumbashi'})+'. Actualisez pour vérifier les nouvelles opérations.');return true;}}
+ if(navigator.onLine===false){state(cached?'Hors ligne : dernier classement reçu conservé.':'Internet requis pour recevoir le classement.');return false;}
+ const run=async()=>{
+  controls(true);state('Réception du classement…');controller=new AbortController();
+  const ownController=controller;
+  const timer=setTimeout(()=>ownController.abort(),20000),signal=ownController.signal;
+  try{
+   const token=await window.lpGetSessionTokenV16();if(!valid(id,node,ticket))return false;
+   const raw=window.__lpV80RawFetch||window.fetch.bind(window);
+   const res=await raw(SUPABASE.url.replace(/\/$/,'')+'/rest/v1/rpc/lp_performance_v93',{
+    method:'POST',headers:{apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({p_agency:agency(),p_kind:kind,p_day:date}),signal});
+   if(!res.ok)throw Error('SERVER_'+res.status);
+   const data=await res.json();if(!valid(id,node,ticket))return false;
+   if(data.schema!==93||!Array.isArray(data.rows)||N(data.agency)!==N(agency()))throw Error('REPLY_INVALID');
+   cache.set(key,data);if(cache.size>12)cache.delete(cache.keys().next().value);
+   paint(data);state('Reçu le '+new Date(data.generated_at).toLocaleString('fr-FR',{timeZone:'Africa/Lubumbashi'})+' — opérations présentes sur le serveur.');return true;
+  }catch(error){if(valid(id,node,ticket))state(error.message==='SERVER_404'?'Classement pas encore activé sur le serveur.':error.name==='AbortError'?'Délai dépassé. Dernier résultat conservé ; réessayez.':'Réception non confirmée. Dernier résultat conservé ; réessayez.');return false;}
+  finally{clearTimeout(timer);if(valid(id,node,ticket)){controller=null;controls(false);}}
+ };
+ const current=run();flight=current;try{return await current;}finally{if(flight===current)flight=null;}
+}
+function mount(){
+ const next=session();
+ if(next!==identity){
+ const previousUser=identity?JSON.parse(identity).slice(0,3).join('|'):'';
+ const nextUser=JSON.parse(next).slice(0,3).join('|');
+ if(previousUser&&previousUser!==nextUser)preferences.clear();
+ reset();panel?.remove();panel=null;identity=next;
+ const saved=preferences.get(next);kind=saved?.kind||'day';date=saved?.date||today();selectedAgency=dg()?(saved?.agency||baseAgency()):baseAgency();
+}
+ if(!onPage()){if(panel){reset();panel.remove();panel=null;}return;}
+ if(panel?.isConnected&&$('lpPerformance91')===panel)return;
+ reset();panel=document.createElement('section');panel.id='lpPerformance91';panel.className='card';
+ panel.innerHTML='<h2>🏆 Performances et classement</h2><p>Objectifs calculés sur les jours travaillés identifiés. Un poste de 24 heures compte sur sa date d’entrée. Une date de vente sans pointage compte également comme jour travaillé.</p>'+
+ '<div class="lp91-toolbar">'+(dg()?'<label>Agence<select id="lp93Agency"><option value="centre">Centre</option><option value="kamina">Kamina</option><option value="all">Toutes les agences</option></select></label>':'')+'<label>Période<select id="lp91Kind"><option value="day">Journalière</option><option value="week">Hebdomadaire</option><option value="month">Mensuelle</option><option value="year">Annuelle</option></select></label><label>Date de référence<input id="lp91Day" type="date" max="'+today()+'" value="'+E(date)+'"></label><button type="button" id="lp91Refresh">Actualiser le classement</button></div>'+
+ '<p id="lp91State" role="status" aria-live="polite"></p><p id="lp91Encouragement"></p><div id="lp91Rows"></div>'+
+ '<details><summary>Règles du classement</summary><p>Classement par pourcentage atteint, puis montant net vendu en FC. Les ex æquo gardent le même rang. Sans objectif, aucun rang n’est attribué. Les crédits sont comptés dans les ventes ; ce tableau ne représente pas la caisse.</p><p>Objectif de période = objectif journalier actuel × jours travaillés identifiés. Les anciens changements d’objectif ne sont pas historisés : les périodes passées sont des comparaisons indicatives. Les pointages absents et les comptes partagés peuvent limiter la précision.</p><p>Poste traversant minuit : les ventes horodatées sont rattachées au jour d’entrée si le pointage contient les heures et la date de sortie. Avant la sortie, ou sans heures exploitables, les dates de vente restent provisoirement séparées.</p><p>Ventes annulées exclues. Retours identifiés déduits des ventes d’origine, à hauteur du montant vendu, à la date de fin de période. FC et USD restent séparés. Une semaine commence le lundi.</p></details>';
+ $('content')?.prepend(panel);$('lp91Kind').value=kind;
+ $('lp91Kind').onchange=e=>{kind=e.target.value;changeFilter();};
+ if($('lp93Agency')){$('lp93Agency').value=agency();$('lp93Agency').onchange=e=>{selectedAgency=e.target.value;changeFilter();};}
+ $('lp91Day').onchange=e=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)||e.target.value>today()){e.target.value=date;return;}date=e.target.value;changeFilter();};
+ $('lp91Refresh').onclick=()=>load(true);load();
+}
+function install(){
+ const style=document.createElement('style');style.id='lp91Style';style.textContent='#lpPerformance91{overflow-anchor:none}#lp91State{min-height:3em}#lpPerformance91 .lp91-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:end}#lpPerformance91 label{display:grid;gap:5px}#lpPerformance91 input,#lpPerformance91 select,#lpPerformance91 button{min-height:44px;font-size:16px}#lpPerformance91 .lp91-scroll{overflow-x:auto}#lpPerformance91 table{min-width:760px;width:100%}#lpPerformance91 .lp93-agency-totals{min-width:0!important}#lpPerformance91 .lp93-summary{display:flex;flex-wrap:wrap;gap:14px;padding:12px 0}#lpPerformance91 .lp91-me{background:#e2f5eb;font-weight:600}';document.head.append(style);
+ if(typeof render==='function'){const base=render;render=function(){const result=base.apply(this,arguments);mount();return result;};window.render=render;}
+ // Observe route/session changes and detached panels once per frame; never poll the network.
+ let queued=false;const observer=new MutationObserver(()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;mount();});});
+ observer.observe($('content')||document.documentElement,{childList:true});
+ const app=$('appView');if(app)observer.observe(app,{attributes:true,attributeFilter:['class']});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)mount();});
+ mount();
+}
+window.lpPerformance93=window.lpPerformance91={mount,load,reset};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+
+/* LP_V92_ATOMIC_INVOICE_STOCK_OUTBOX */
+(function(){
+'use strict';if(window.lpAtomic92)return;
+const S=v=>String(v??'').trim(),N=v=>S(v).toLowerCase(),$=id=>document.getElementById(id);
+const E=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const actor=()=>typeof currentUser==='undefined'?null:currentUser,agency=()=>S(typeof currentAgency==='undefined'?'':currentAgency);
+const context=()=>JSON.stringify([actor()?.username,actor()?.role,agency()]);
+const own=(record)=>N(record.owner)===N(actor()?.username)&&record.sale.agency===agency();
+const dg=()=>N(actor()?.role)==='dg';const KEY='lp92_sale_outbox',CANDIDATES='lp92_legacy_sale_candidates';
+const day=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lubumbashi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const clock=()=>new Intl.DateTimeFormat('fr-FR',{timeZone:'Africa/Lubumbashi',hour:'2-digit',minute:'2-digit'}).format(new Date());
+const say=t=>{if(typeof toast==='function')toast(t);status(t);};
+const read=(key,fallback)=>{const raw=localStorage.getItem(key);if(!raw)return fallback;return JSON.parse(raw);};
+const outbox=()=>{const rows=read(KEY,[]);if(!Array.isArray(rows))throw Error('OUTBOX_INVALID');return rows;};
+const saveRows=rows=>localStorage.setItem(KEY,JSON.stringify(rows));
+const persist=()=>localStorage.setItem('lpmp_v13',JSON.stringify(db));
+const selected=()=>outbox().filter(own),money=v=>Number(v||0).toLocaleString('fr-FR',{maximumFractionDigits:2});
+let busy=false,loading=false,checkoutFlight=null,card=null,cardContext='',painted='',lastMessage='',ready=false,receiptContext='';
+const flights=new Map();let orphanRows=[],recoveryDraft=null,readBefore=null,more=false,remoteScope='';
+function status(t){lastMessage=t;const n=$('lp92Status');if(n&&n.textContent!==t)n.textContent=t;}
+function keepReceipt(){return context()===receiptContext&&typeof page!=='undefined'&&page==='sales'&&!!$('printReceipt')&&!!$('newSale');}
+function showConfirmed(sale){receiptContext=context();if(typeof showReceipt==='function')showReceipt(sale);mount();}
+function errorMessage(error){
+ const text=S(error.message);
+ if(text.includes('STOCK_INSUFFICIENT'))return 'Stock serveur insuffisant. Vente conservée en attente. Vérifiez le stock puis annulez cette attente avant de corriger le panier.';
+ if(text.includes('GENERATION'))return 'Les données serveur ont été réinitialisées. Vente conservée pour contrôle DG ; elle ne sera pas envoyée sous une nouvelle génération.';
+ if(text.includes('SALE_KEY_CONFLICT'))return 'Identifiant déjà utilisé avec un contenu différent. Vente conservée ; contrôle DG nécessaire.';
+ if(text.includes('SALE_ALREADY_EXISTS'))return 'Cette vente existe déjà. Consultez les factures au lieu de la recréer.';
+ if(text.includes('RECOVERY'))return 'Reconstitution refusée : vérifiez les articles déjà déduits, le vendeur et les justificatifs.';
+ if(text.includes('404'))return 'Le service V92 doit être installé sur Supabase.';
+ if(error.name==='QuotaExceededError'||text.includes('quota'))return 'Mémoire locale pleine. La vente n’est pas déclarée reçue : libérez de l’espace sans effacer les données de l’application.';
+ return 'Réception non confirmée. Vente conservée en attente ; réessayez avec Internet.';
+}
+async function rpc(action,args,generation){
+ if(navigator.onLine===false)throw Error('OFFLINE');const who=context(),token=await window.lpGetSessionTokenV16();
+ if(who!==context())throw Error('ACCOUNT_CHANGED');
+ const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),30000);
+ try{
+  const raw=window.__lpV80RawFetch||window.fetch.bind(window),headers={apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'};
+  if(generation!=null)headers['x-lp-data-generation']=String(generation);
+  const r=await raw(SUPABASE.url.replace(/\/$/,'')+'/rest/v1/rpc/lp_atomic_sale_v92',{method:'POST',headers,body:JSON.stringify({p_action:action,p_args:{...args,agency:args.agency||agency()}}),signal:abort.signal});
+  const data=await r.json();if(!r.ok)throw Error(data.message||'SERVER_'+r.status);return data;
+ }finally{clearTimeout(timer);}
+}
+function generation(){const n=Number(localStorage.getItem('lp_data_generation_v39')||db?._lpDataGeneration);if(!Number.isSafeInteger(n)||n<1)throw Error('GENERATION_UNAVAILABLE');return n;}
+function replace(array,row){const i=array.findIndex(x=>S(x.id)===S(row.id)&&N(x.agency)===N(row.agency));if(i<0)array.push(row);else array[i]=row;}
+function install(data,save=true){
+ if(data.schema!==92||data.confirmed!==true||!data.sale||data.sale.atomicSchema!==92||N(data.sale.agency)!==N(agency()))throw Error('REPLY_INVALID');
+ if(data.generation!==generation())throw Error('GENERATION_CHANGED');
+ db.sales=db.sales||[];replace(db.sales,data.sale);
+ for(const stock of data.products||[]){const p=(db.products||[]).find(p=>S(p.id)===S(stock.id)&&N(p.agency)===N(stock.agency));if(p)p.stock=stock.stock;}
+ const s=data.sale;db.treasury=db.treasury||[];
+ replace(db.treasury,{id:'A92-CASH-'+s.id,agency:s.agency,date:s.date,type:'Entrée',category:'Vente',desc:s.invoice,amount:s.paidAmount,currency:'CDF',username:s.sellerUsername,sourceSaleId:S(s.id),atomicSchema:92});
+ if(s.payment==='Crédit'){db.receivables=db.receivables||[];const prior=db.receivables.find(x=>S(x.id)==='A92-CREDIT-'+s.id);if(!prior)replace(db.receivables,{id:'A92-CREDIT-'+s.id,date:s.date,agency:s.agency,clientId:s.clientId,ref:s.invoice,amount:s.total,balance:s.status==='Annulée'?0:s.total,status:s.status==='Annulée'?'Annulé':'Ouvert',atomicSchema:92});}
+ if(s.status==='Annulée'){
+  const returnDate=s.atomicCancellation?.date||day();
+  db.returns=db.returns||[];replace(db.returns,s.atomicCancellation||{id:'A92-RETURN-'+s.id,saleId:s.id,invoice:s.invoice,agency:s.agency,date:returnDate,amount:s.total,reason:s.returnReason,atomicSchema:92});
+  replace(db.treasury,{id:'A92-REFUND-'+s.id,agency:s.agency,date:returnDate,type:'Sortie',category:'Retour vente',desc:s.invoice,amount:s.paidAmount,currency:'CDF',atomicSchema:92});
+  const credit=(db.receivables||[]).find(x=>S(x.id)==='A92-CREDIT-'+s.id);if(credit){credit.balance=0;credit.status='Annulé';}
+ }
+ if(save)persist();
+}
+async function send(record,show=false){
+ const id=S(record.sale.id);if(flights.has(id))return flights.get(id);
+ const who=context();if(!own(record))return false;
+ const task=(async()=>{
+  status('Confirmation commune de la facture et du stock…');
+  try{
+   const result=await rpc(record.action||'commit',{agency:record.sale.agency,sale:record.sale,generation:record.generation,reason:record.reason},record.generation);
+   // Preserve the outbox if the reply belongs to an account/page switched meanwhile.
+   if(who!==context())return false;
+   if(result.abandoned===true&&S(result.sale?.id)===id){saveRows(outbox().filter(r=>S(r.sale.id)!==id||r.sale.agency!==record.sale.agency));status('Cette attente a été annulée au serveur. Aucun nouveau stock retiré.');mount();return true;}
+   install(result);saveRows(outbox().filter(r=>S(r.sale.id)!==id||r.sale.agency!==record.sale.agency));
+   status('Facture '+result.sale.invoice+' et stock confirmés ensemble au serveur.');painted='';mount();
+   if(show&&typeof page!=='undefined'&&page==='sales')try{showConfirmed(result.sale);}catch{say('Facture confirmée au serveur. Actualisez les factures V92 pour la consulter.');}
+   return true;
+  }catch(error){if(who===context()){status(errorMessage(error));mount();}return false;}
+ })();flights.set(id,task);try{return await task;}finally{if(flights.get(id)===task)flights.delete(id);mount();}
+}
+async function doCheckout(){
+ if(!actor()||typeof cart==='undefined'||!cart.length)return say('Ajoutez des produits.');
+ const pending=selected();if(pending.length){say('Une vente est déjà en attente pour ce compte et cette agence. Terminez sa transmission ou annulez son attente avant une nouvelle validation.');return;}
+ const who=context(),snapshot=JSON.stringify(cart),items=cart.map(c=>{
+  const p=(db.products||[]).find(p=>S(p.id)===S(c.id)&&N(p.agency)===N(agency()));
+  if(!p)throw Error('PRODUCT_MISSING');const qty=Number(c.qty),price=Math.round(Number(typeof salePrice==='function'?salePrice(p):p.price)*100)/100;
+  if(!Number.isSafeInteger(qty)||qty<1||!Number.isFinite(price)||price<0)throw Error('ITEM_INVALID');
+  return {id:p.id,name:p.name,lot:p.lot||'',qty,price};
+ });
+ const total=items.reduce((sum,i)=>sum+Math.round(i.price*100)*i.qty,0)/100;
+ const random=new Uint8Array(16);crypto.getRandomValues(random);random[6]=(random[6]&15)|64;random[8]=(random[8]&63)|128;
+ const id='A92-'+Array.from(random,v=>v.toString(16).padStart(2,'0')).join('');
+ const sale={id,agency:agency(),date:day(),time:clock(),operationAt:new Date().toISOString(),sellerUsername:actor().username,sellerName:actor().name||actor().username,seller:actor().name||actor().username,
+  items,total,currency:'CDF',payment:$('payment')?.value||'Espèces',clientId:$('saleClient')?.value||null,clientName:S($('manualClient')?.value)||'Client comptoir',priceMode:$('priceMode')?.value||'retail'};
+ const record={owner:actor().username,sale,generation:generation(),action:'commit',createdAt:new Date().toISOString()};
+ // Persist before touching cart, stock or the main sale array. Quota failure fails closed.
+ saveRows([...outbox(),record]);if(who!==context())return;
+ if(JSON.stringify(cart)===snapshot){cart=[];if(typeof drawCart==='function')drawCart();}
+ status('Vente sauvegardée en attente. Aucun stock serveur retiré avant confirmation commune.');mount();
+ if(navigator.onLine!==false)await send(record,true);
+}
+async function checkout(){
+ if(checkoutFlight)return checkoutFlight;
+ const job=Promise.resolve().then(doCheckout).catch(e=>say(e.message==='GENERATION_UNAVAILABLE'?'Reconnectez cet appareil avec Internet avant de valider.':errorMessage(e)));
+ checkoutFlight=job;try{return await job;}finally{if(checkoutFlight===job)checkoutFlight=null;}
+}
+function isAtomicReturn(){const id=S($('returnSale')?.value);return (db.sales||[]).some(s=>S(s.id)===id&&s.atomicSchema===92);}
+async function cancel(){
+ const s=(db.sales||[]).find(s=>S(s.id)===S($('returnSale')?.value)&&s.atomicSchema===92);if(!s||busy)return;
+ const reason=S($('returnReason')?.value);if(reason.length<3)return say('Indiquez le motif du retour.');
+ const who=context();busy=true;try{const r=await rpc('cancel',{sale_id:S(s.id),reason,generation:generation()},generation());if(who!==context())return;install(r);say('Annulation et remise en stock confirmées ensemble.');if(typeof sales==='function'&&typeof page!=='undefined'&&page==='sales')sales();mount();}catch(e){if(who===context())say(errorMessage(e));}finally{busy=false;}
+}
+async function syncConfirmed(reset=true){
+ if(loading||!actor())return;loading=true;const who=context();
+ try{if(reset){readBefore=null;more=false;}const data=await rpc('list',{before:readBefore,limit:20});if(who!==context())return;
+  if(data.generation!==generation())throw Error('GENERATION_CHANGED');
+  for(const r of data.rows||[])install({schema:92,confirmed:true,generation:data.generation,sale:r.sale,products:[]},false);
+  persist();
+  more=!!data.has_more;readBefore=data.rows?.at(-1)?.cursor||null;status((data.rows?.length||0)+' facture(s) V92 reçue(s) du serveur.');
+  const node=$('lp92Confirmed');if(node){if(reset)node.replaceChildren();const block=document.createElement('div');block.innerHTML=(data.rows||[]).map(r=>'<p><button type="button" data-lp92-action="open" data-sale="'+E(r.sale.id)+'">'+E(r.sale.invoice)+' — '+money(r.sale.total)+' FC</button> '+E(r.sale.date)+' '+E(r.sale.sellerName)+' '+E(r.sale.status)+'</p>').join('');node.append(block);}
+  $('lp92More')?.toggleAttribute('hidden',!more);
+ }catch(e){if(who===context())status(errorMessage(e));}finally{loading=false;}
+}
+async function exportCandidate(id){
+ const row=read(CANDIDATES,[]).find(r=>S(r.id||r.invoice)===S(id)&&N(r.agency)===N(agency()));if(!row)return;
+ if(!dg()&&![row.sellerUsername,row.sellerName,row.seller].map(N).includes(N(actor()?.username))&&N(row.sellerName||row.seller)!==N(actor()?.name))throw Error('OWNER_REQUIRED');
+ const text=JSON.stringify({schema:92,kind:'legacy_sale_candidate',sale:row},null,2),filename='Leader-Pharma-vente-locale-'+S(row.id||row.invoice).replace(/[^a-zA-Z0-9_-]/g,'')+'.json';
+ const plugin=window.Capacitor?.Plugins?.LeaderFile;
+ if(plugin?.saveCsv){let raw='';for(const b of new TextEncoder().encode(text))raw+=String.fromCharCode(b);await plugin.saveCsv({filename,base64:btoa(raw)});}else{const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+ say('Document local exporté. Il reste à le rapprocher du serveur avant toute restauration.');
+}
+function recoveryForm(candidate){
+ if(!dg())return;const local=read(CANDIDATES,[]).find(s=>S(s.id)===S(candidate.sale_id)&&N(s.agency)===N(agency()));
+ const items=(local?.items||candidate.items).map(i=>({id:i.id,name:i.name,qty:Number(i.qty),price:local?Number(i.price):null}));
+ recoveryDraft={candidate,items};const node=$('lp92Recovery');
+ node.innerHTML='<h3>Reconstituer '+E(candidate.invoice)+'</h3><p>Les articles déjà déduits ne seront pas retirés une deuxième fois. Les prix et le paiement doivent venir du document original ou être vérifiés avec l’agent. Aucun montant n’est supposé.</p>'+
+ '<label>Vendeur<select id="lp92RecoveryOwner"><option value="">Choisir le vendeur…</option>'+(db.users||[]).filter(u=>u.active!==false&&N(u.role)!=='dg'&&S(u.username)).map(u=>'<option value="'+E(u.username)+'">'+E(u.name||u.username)+' — '+E(u.username)+'</option>').join('')+'</select></label><label>Jour<input id="lp92RecoveryDate" type="date" value="'+E(local?.date||S(candidate.last_at).slice(0,10))+'"></label><label>Heure<input id="lp92RecoveryTime" type="time" value="'+E(local?.time||'')+'"></label>'+
+ '<label>Paiement<select id="lp92RecoveryPayment"><option value="">Choisir après vérification…</option><option>Espèces</option><option>Mobile Money</option><option>Carte</option><option>Crédit</option></select></label>'+
+ '<div id="lp92RecoveryLines"></div><p id="lp93RecoveryTotal"></p><button type="button" data-lp92-action="addRecoveryLine">Ajouter un article non encore déduit</button><p>Une ligne supplémentaire sera retirée du stock uniquement lors de la confirmation commune.</p>'+
+ '<label>Justification du rapprochement<textarea id="lp92RecoveryReason" minlength="10" placeholder="Document original, contrôle de l’agent et quantités vérifiées"></textarea></label><label><input type="checkbox" id="lp92RecoveryCert"> J’ai vérifié chaque article, quantité, prix et paiement.</label><button type="button" data-lp92-action="recover">Confirmer la reconstitution</button>';
+ if(local?.payment)$('lp92RecoveryPayment').value=local.payment;if(local?.sellerUsername)$('lp92RecoveryOwner').value=local.sellerUsername;drawRecoveryLines();
+}
+function drawRecoveryLines(){
+ const node=$('lp92RecoveryLines');if(!node||!recoveryDraft)return;
+ node.innerHTML=recoveryDraft.items.map((i,index)=>'<label>'+E(i.name)+' — quantité '+E(i.qty)+'<span>Prix unitaire réellement facturé (FC)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-recovery-price="'+index+'" value="'+(i.price==null?'':E(i.price))+'"><small id="lp93LineTotal'+index+'"></small></label>').join('');
+ function totals(){let total=0,missing=false;recoveryDraft.items.forEach((item,index)=>{const valid=item.price!=null&&Number.isFinite(item.price)&&item.price>=0;const line=$('lp93LineTotal'+index);if(line)line.textContent=valid?'Total ligne : '+money(Math.round(item.price*100)*item.qty/100)+' FC':'Prix unitaire à renseigner';if(valid)total+=Math.round(item.price*100)*item.qty;else missing=true;});const result=$('lp93RecoveryTotal');if(result)result.textContent='Total '+(missing?'partiel':'à reconstituer')+' : '+money(total/100)+' FC'+(missing?' — prix manquants':'');}
+ node.querySelectorAll('[data-recovery-price]').forEach(input=>input.oninput=()=>{recoveryDraft.items[Number(input.dataset.recoveryPrice)].price=input.value===''?null:Number(input.value);totals();});totals();
+}
+function addRecoveryLine(){
+ if(!recoveryDraft)return;const node=$('lp92RecoveryLines'),box=document.createElement('div');
+ box.innerHTML='<label>Produit<select data-new-product><option value="">Choisir…</option>'+(db.products||[]).filter(p=>N(p.agency)===N(agency())&&!recoveryDraft.items.some(i=>S(i.id)===S(p.id))).map(p=>'<option value="'+E(p.id)+'">'+E(p.name)+'</option>').join('')+'</select></label><label>Quantité vendue<input data-new-qty type="number" inputmode="numeric" min="1" step="1"></label><button type="button" data-add-line>Ajouter cette ligne</button>';
+ node.append(box);box.querySelector('[data-add-line]').onclick=()=>{const p=db.products.find(p=>S(p.id)===box.querySelector('[data-new-product]').value&&N(p.agency)===N(agency())),qty=Number(box.querySelector('[data-new-qty]').value);if(!p||!Number.isSafeInteger(qty)||qty<1)return say('Vérifiez le produit et la quantité.');recoveryDraft.items.push({id:p.id,name:p.name,qty,price:null});drawRecoveryLines();};
+}
+async function recover(){
+ if(!dg()||busy||!recoveryDraft)return;
+ const owner=S($('lp92RecoveryOwner')?.value),date=S($('lp92RecoveryDate')?.value),time=S($('lp92RecoveryTime')?.value),payment=S($('lp92RecoveryPayment')?.value),reason=S($('lp92RecoveryReason')?.value);
+ if(!$('lp92RecoveryCert')?.checked||!owner||!date||!time||!payment||reason.length<10||recoveryDraft.items.some(i=>i.price==null||!Number.isFinite(i.price)||i.price<0))return say('Complétez et vérifiez toutes les informations avant confirmation.');
+ const c=recoveryDraft.candidate,items=structuredClone(recoveryDraft.items),total=items.reduce((sum,i)=>sum+Math.round(i.price*100)*i.qty,0)/100;
+ const id=/^\d+$/.test(S(c.sale_id))&&Number.isSafeInteger(Number(c.sale_id))?Number(c.sale_id):c.sale_id;
+ const sale={id,agency:agency(),invoice:c.invoice,date,time,sellerUsername:owner,items,total,currency:'CDF',payment,priceMode:'retail',clientName:'Client comptoir'};
+ const record={owner:actor().username,sale,generation:generation(),action:'recover',reason,createdAt:new Date().toISOString()};
+ // DG outbox owner is the DG, while the recovered sale remains attributed to seller.
+ if(selected().some(r=>S(r.sale.id)===S(id)))return say('Cette reconstitution est déjà en attente. Utilisez Réessayer.');
+ saveRows([...outbox(),record]);busy=true;try{if(await send(record,true)){$('lp92Recovery')?.replaceChildren();recoveryDraft=null;}}finally{busy=false;mount();}
+}
+async function click(button){
+ const action=button.dataset.lp92Action;if(button.disabled)return;button.disabled=true;const who=context();
+ try{
+  if(action==='retry'){const r=selected().find(r=>S(r.sale.id)===button.dataset.sale);if(r)await send(r,true);}
+  else if(action==='refresh')await syncConfirmed();else if(action==='more')await syncConfirmed(false);
+  else if(action==='open'){const result=await rpc('get',{sale_id:button.dataset.sale});if(who!==context())return;install(result);if(typeof page!=='undefined'&&page==='sales')showConfirmed(result.sale);mount();}
+  else if(action==='export')await exportCandidate(button.dataset.sale);
+  else if(action==='import'&&dg())$('lp92ImportCandidate')?.click();
+  else if(action==='orphans'&&dg()){const data=await rpc('orphans',{});if(who!==context())return;orphanRows=data.rows||[];const host=$('lp92Orphans');if(host)host.innerHTML=orphanRows.map((r,i)=>'<p>'+E(r.invoice)+' • '+r.items.length+' article(s) déjà déduit(s) <button type="button" data-lp92-action="prepareRecovery" data-index="'+i+'">Examiner</button></p>').join('')||'<p>Aucun mouvement de vente sans document trouvé sur les 90 derniers jours.</p>';}
+  else if(action==='prepareRecovery')recoveryForm(orphanRows[Number(button.dataset.index)]);
+  else if(action==='addRecoveryLine')addRecoveryLine();else if(action==='recover')await recover();
+  else if(action==='abandon'){const r=selected().find(r=>S(r.sale.id)===button.dataset.sale);if(r&&r.action!=='recover'){
+   if(!confirm('Vérifier au serveur puis annuler cette attente uniquement si aucune vente n’a été confirmée ?'))return;
+   const result=await rpc('abandon',{sale:r.sale,generation:r.generation},r.generation);if(who!==context())return;
+   if(result.abandoned===true){saveRows(outbox().filter(x=>S(x.sale.id)!==S(r.sale.id)||x.sale.agency!==r.sale.agency));say('Attente annulée au serveur. Aucun stock retiré. Vous pouvez corriger le panier.');}
+   else if(result.confirmed===true){install(result);saveRows(outbox().filter(x=>S(x.sale.id)!==S(r.sale.id)||x.sale.agency!==r.sale.agency));say('Cette vente avait déjà été confirmée. Sa facture a été récupérée.');}
+  }}
+ }catch(e){if(who===context())say(errorMessage(e));}finally{button.disabled=false;mount();}
+}
+function mount(){
+ if(!actor()||typeof page==='undefined'||page!=='sales'){card?.remove();card=null;return;}
+ const host=$('content'),who=context();if(!host)return;
+ if(!card?.isConnected||cardContext!==who){card?.remove();card=document.createElement('section');card.id='lpAtomic92';card.className='card';cardContext=who;painted='';orphanRows=[];recoveryDraft=null;
+  card.innerHTML='<h2>Factures et stock sécurisés</h2><p>Une facture est confirmée lorsque la vente et le stock sont enregistrés ensemble au serveur. Hors ligne, elle reste en attente et n’est pas une facture validée.</p><p id="lp92Status" role="status" aria-live="polite"></p><div id="lp92Pending"></div><button type="button" data-lp92-action="refresh">Actualiser les factures V92</button><div id="lp92Confirmed"></div><button type="button" id="lp92More" data-lp92-action="more" hidden>20 suivantes</button><details><summary>Documents locaux conservés avant mise à jour</summary><div id="lp92Candidates"></div></details>'+(dg()?'<details><summary>Rapprochement DG : stock sorti, facture manquante</summary><button type="button" data-lp92-action="import">Importer le document local envoyé par l’agent</button><input type="file" id="lp92ImportCandidate" accept=".json,application/json" hidden><button type="button" data-lp92-action="orphans">Rechercher les mouvements sans facture</button><div id="lp92Orphans"></div><div id="lp92Recovery"></div></details>':'');host.prepend(card);
+  const importer=$('lp92ImportCandidate');if(importer)importer.onchange=async()=>{
+   const file=importer.files?.[0],scope=context();if(!file)return;
+   try{if(file.size>200000)throw Error('IMPORT_INVALID');const parsed=JSON.parse(await file.text()),s=parsed.sale;
+    if(scope!==context()||!dg())return;
+    if(parsed.kind!=='legacy_sale_candidate'||!s||!s.id||!s.agency||!Array.isArray(s.items)||s.items.length<1||s.items.length>100)throw Error('IMPORT_INVALID');
+    const copy={};for(const field of ['id','invoice','date','time','agency','sellerUsername','sellerName','seller','clientId','clientName','priceMode','currency','payment','total','paidAmount','status','items','operationAt'])if(s[field]!==undefined)copy[field]=s[field];
+    const prior=read(CANDIDATES,[]).filter(x=>!(S(x.id)===S(copy.id)&&N(x.agency)===N(copy.agency)));localStorage.setItem(CANDIDATES,JSON.stringify([...prior,copy].slice(-50)));
+    status('Document local importé pour examen. Aucune vente ni quantité modifiée. Recherchez ensuite les mouvements sans facture.');mount();
+   }catch{status('Document non importé. Sélectionnez le fichier JSON de vente locale exporté par V92.');}finally{importer.value='';}
+  };
+ }
+ if($('lp92Status')?.textContent!==lastMessage)$('lp92Status').textContent=lastMessage;
+ try{
+  const html=selected().map(r=>'<p><strong>Vente en attente</strong> — '+money(r.sale.total)+' FC • '+E(r.sale.date)+' '+E(r.sale.time)+' <button type="button" data-lp92-action="retry" data-sale="'+E(r.sale.id)+'" '+(flights.has(S(r.sale.id))?'disabled':'')+'>Réessayer / vérifier</button>'+(r.action!=='recover'?'<button type="button" data-lp92-action="abandon" data-sale="'+E(r.sale.id)+'">Annuler cette attente</button>':'')+'</p>').join('')||'<p>Aucune vente en attente pour ce compte et cette agence.</p>';
+  if(html!==painted){$('lp92Pending').innerHTML=html;painted=html;}
+  const candidates=read(CANDIDATES,[]).filter(r=>N(r.agency)===N(agency())&&(dg()||[r.sellerUsername,r.sellerName,r.seller].map(N).some(x=>x&&[actor().username,actor().name].map(N).includes(x))));
+  const ch=candidates.map(r=>'<p>'+E(r.invoice)+' • '+E(r.date)+' • '+money(r.total)+' FC <button type="button" data-lp92-action="export" data-sale="'+E(r.id||r.invoice)+'">Exporter ce document local</button></p>').join('')||'<p>Aucun document local récent conservé.</p>';
+  if($('lp92Candidates').innerHTML!==ch)$('lp92Candidates').innerHTML=ch;
+ }catch(e){status('Lecture des attentes impossible. Ne videz pas les données de cette application.');}
+}
+async function flush(){if(!actor()||navigator.onLine===false)return;const who=context();for(const r of selected()){if(who!==context())break;if(!await send(r,false))break;}}
+function boot(){
+ if(ready)return;ready=true;
+ if(typeof checkout!=='undefined'){window.lp92PreviousCheckout=checkout;window.checkout=checkout=window.lpAtomic92.checkout;}
+ if(typeof render==='function'){const base=render;render=function(){const r=base.apply(this,arguments);mount();return r;};window.render=render;}
+ const style=document.createElement('style');style.textContent='#lpAtomic92{overflow-anchor:none}#lp92Status{min-height:3em}#lpAtomic92 button,#lpAtomic92 input,#lpAtomic92 select{min-height:44px;font-size:16px;max-width:100%}#lp92Recovery label{display:grid;gap:5px;margin:10px 0}#lp92Recovery input[type=checkbox]{min-height:auto}';document.head.append(style);
+ let scheduled=false;const observe=new MutationObserver(()=>{if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;mount();});});observe.observe($('content')||document.documentElement,{childList:true});
+ const app=$('appView');if(app)observe.observe(app,{attributes:true,attributeFilter:['class']});
+ window.addEventListener('online',()=>{flush();mount();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)mount();});mount();flush();
+}
+window.lpAtomic92={checkout,cancel,isAtomicReturn,click,mount,send,install,rpc,flush,generation,exportCandidate,keepReceipt};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+
+/* LP_V93_FINISHING_KEYBOARD_RECEIPT */
+(function(){
+'use strict';if(window.lpFinishing93)return;window.lpFinishing93=true;
+const S=v=>String(v??'').trim(),N=v=>S(v).toLowerCase();
+function receipt(sale,base){
+ const text=String(base(sale)||''),a=N(sale.agency),entry=(db.agencies||[]).find(x=>N(x.id)===a);
+ const name=S(entry?.name)||(a==='centre'?'Leader Pharma Centre':a==='kamina'?'Leader Pharma Kamina':S(sale.agency));
+ const lines=text.split('\n');const globalAddress=typeof ID!=='undefined'?S(ID.address)+', '+S(ID.city):'';
+ const index=lines.findIndex(line=>globalAddress&&line.trim()===globalAddress);
+ const address=S(entry?.address||entry?.adresse),city=S(entry?.city||entry?.ville);
+ // Never print the other site's global address. No Centre address is invented.
+ const replacement=['Agence : '+name];
+ if(address)replacement.push(address+(city?', '+city:''));
+ else if(a==='kamina'&&globalAddress&&N(globalAddress).includes('kamina'))replacement.push(globalAddress);
+ if(index>=0)lines.splice(index,1,...replacement);else if(!lines.some(line=>line===replacement[0]))lines.splice(1,0,...replacement);
+ return lines.join('\n');
+}
+function install(){
+ if(typeof receiptText==='function'){const base=receiptText;receiptText=sale=>receipt(sale,base);window.receiptText=receiptText;}
+ const style=document.createElement('style');style.id='lp93FinishingStyle';
+ style.textContent='#lp92RecoveryCert{width:22px!important;height:22px!important;min-height:22px!important;max-width:22px!important;justify-self:start}#lp92Recovery textarea{font-size:16px;min-height:88px;width:100%;box-sizing:border-box}#lpPerformance91 select,#lpPerformance91 input{max-width:100%;box-sizing:border-box}#lp93RecoveryTotal{font-weight:700;padding:10px 0}';document.head.append(style);
+}
+window.lp93ReceiptText=receipt;
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
