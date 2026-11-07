@@ -1,3 +1,30 @@
+/* LP_V95_FIX3_VIEW_SCHEDULER: finite, read-only accounting visual jobs. */
+(function(){
+ 'use strict';
+ const jobs=new Map();let frame=0;
+ const actor=()=>{try{return currentUser||null;}catch{return null;}};
+ const route=()=>{try{return String(page||'');}catch{return '';}};
+ function current(t,expected){
+  if(!actor()||route()!==expected||document.documentElement.getAttribute('data-lp-ui-view')!=='page')return false;
+  return !t||typeof window.lp95ViewIsCurrent!=='function'||window.lp95ViewIsCurrent(t);
+ }
+ function drain(){
+  frame=0;
+  while(jobs.size){
+   const [key,entry]=jobs.entries().next().value;jobs.delete(key);
+   if(!current(entry.ticket,entry.route))continue;
+   try{entry.job();}catch(error){console.warn('Affichage comptable différé',error?.message||error);}
+   break; // At most one legacy installer per frame; keep input/navigation responsive.
+  }
+  if(jobs.size)frame=requestAnimationFrame(drain);
+ }
+ window.lp95CancelViewJobs=function(){if(frame)cancelAnimationFrame(frame);frame=0;jobs.clear();};
+ window.lp95ScheduleViewJob=function(key,expected,job){
+  const ticket=typeof window.lp95CaptureView==='function'?window.lp95CaptureView():null;
+  if(typeof job!=='function'||!current(ticket,expected))return;
+  jobs.set(key,{job,route:expected,ticket});if(!frame)frame=requestAnimationFrame(drain);
+ };
+})();
 /* LP_V92_EARLY_ATOMIC_CHECKOUT: loaded before all legacy capture handlers. */
 (function(){
 'use strict';
@@ -1301,7 +1328,7 @@ function setHeader(t,h){$('#pageTitle').textContent=t;$('#pageHint').textContent
 function productsHere(){return db.products.filter(p=>!p.agency||p.agency===currentAgency)}
 function dashboard(){setHeader('Tableau de bord Direction','Vue synthétique de '+agencyName());const s=db.sales.filter(x=>x.agency===currentAgency&&x.date===today()),rev=s.reduce((a,x)=>a+x.total,0),profit=s.reduce((a,x)=>a+x.profit,0),exp=db.expenses.filter(x=>x.agency===currentAgency&&x.date===today()).reduce((a,x)=>a+x.amount,0),low=productsHere().filter(p=>p.stock<=p.min).length,credits=db.receivables.filter(x=>x.agency===currentAgency&&x.status!=='Payé').reduce((a,x)=>a+x.balance,0);$('#content').innerHTML=`<div class="grid kpis"><div class="card kpi"><div class="label">Ventes du jour</div><div class="value">${money(rev)}</div></div><div class="card kpi"><div class="label">Bénéfice brut</div><div class="value">${money(profit)}</div></div><div class="card kpi"><div class="label">Dépenses du jour</div><div class="value">${money(exp)}</div></div><div class="card kpi"><div class="label">Créances ouvertes</div><div class="value">${money(credits)}</div></div></div><div class="grid two-col" style="margin-top:16px"><div class="card"><h3>Dernières ventes</h3>${salesTable(s.slice(-7).reverse())}</div><div class="card"><h3>Alertes opérationnelles</h3><div class="list"><div class="list-item"><span>Stock critique</span><b>${low}</b></div><div class="list-item"><span>Transferts en attente</span><b>${db.transfers.filter(x=>x.status==='En attente').length}</b></div><div class="list-item"><span>Version</span><b>V${db.version}</b></div></div></div></div>`}
 function salesTable(rows){return `<table><thead><tr><th>Facture</th><th>Date</th><th>Total</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.invoice)}</td><td>${x.date}</td><td>${money(x.total)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">Aucune vente</td></tr>'}</tbody></table>`}
-function sales(){setHeader('Ventes & facturation','Caisse, vendeurs, facture et impression');$('#content').innerHTML=`<div class="sale-layout"><div class="card"><div class="toolbar"><input id="productSearch" placeholder="Rechercher un produit..."></div><div id="productGrid" class="product-grid"></div></div><div class="card"><div class="section-title"><h3>Panier</h3><button class="secondary" id="clearCart">Vider</button></div><div id="cart"></div><div class="field"><label>Client</label><select id="saleClient">${db.clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label>Vendeur</label><input id="seller" value="${esc(currentUser?.name||currentUser?.username||'')}"></div><div class="field"><label>Paiement</label><select id="payment"><option>Espèces</option><option>Mobile Money</option><option>Carte</option><option>Crédit</option></select></div><div id="cartTotal" class="total">0 FC</div><button class="btn" id="checkout" style="width:100%;margin-top:12px">Valider & générer facture</button></div></div>`;$('#productSearch').oninput=e=>drawProducts(e.target.value);$('#clearCart').onclick=()=>{cart=[];drawCart()};$('#checkout').onclick=checkout;drawProducts('');drawCart()}
+function sales(){setHeader('Ventes & facturation','Caisse, vendeurs, facture et impression');$('#content').innerHTML=`<div class="sale-layout"><div class="card"><div class="toolbar"><input id="productSearch" placeholder="Rechercher un produit..."></div><div id="productGrid" class="product-grid"></div></div><div class="card"><div class="section-title"><h3>Panier</h3><button class="secondary" id="clearCart">Vider</button></div><div id="cart"></div><div class="field"><label>Client</label><select id="saleClient">${db.clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label>Vendeur</label><input id="seller" value="${esc(currentUser?.name||currentUser?.username||'')}"></div><div class="field"><label>Paiement</label><select id="payment"><option>Espèces</option><option>Mobile Money</option><option>Carte</option><option>Crédit</option></select></div><div id="cartTotal" class="total">0 FC</div><button class="btn" id="checkout" style="width:100%;margin-top:12px">Valider & générer facture</button></div></div>`;window.lp95ConfigureSearchInput?.($('#productSearch'));$('#productSearch').oninput=e=>{if(typeof window.lp95QueueProductSearch==='function')window.lp95QueueProductSearch(e.target);else drawProducts(e.target.value);};$('#clearCart').onclick=()=>{cart=[];drawCart()};$('#checkout').onclick=checkout;drawProducts('');drawCart()}
 function drawProducts(q){const arr=productsHere().filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));$('#productGrid').innerHTML=arr.map(p=>`<div class="product-card" data-id="${p.id}"><b>${esc(p.name)}</b><p>${money(p.price)}</p><small>Stock: ${p.stock} • Lot ${esc(p.lot||'—')}</small></div>`).join('');document.querySelectorAll('.product-card').forEach(x=>x.onclick=()=>addCart(x.dataset.id))}
 function addCart(id){const p=db.products.find(p=>String(p.id)===String(id));if(!p||Number(p.stock)<1)return toast('Stock insuffisant');const c=cart.find(x=>String(x.id)===String(p.id));if(c)c.qty=Math.min(c.qty+1,Number(p.stock));else cart.push({id:p.id,qty:1});drawCart()}
 function drawCart(){const r=$('#cart');if(!r)return;r.innerHTML=cart.map(c=>{const p=db.products.find(x=>String(x.id)===String(c.id));return `<div class="cart-row"><span>${esc(p.name)}<br><small>${money(p.price)}</small></span><input data-q="${c.id}" type="number" min="1" max="${p.stock}" value="${c.qty}"><button data-r="${c.id}" class="secondary">×</button></div>`}).join('')||'<p class="muted">Panier vide</p>';document.querySelectorAll('[data-q]').forEach(i=>i.onchange=()=>{const c=cart.find(x=>String(x.id)===String(i.dataset.q)),p=db.products.find(x=>String(x.id)===String(c.id));c.qty=Math.max(1,Math.min(+i.value,p.stock));drawCart()});document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{cart=cart.filter(x=>String(x.id)!==String(b.dataset.r));drawCart()});$('#cartTotal').textContent=money(cart.reduce((a,c)=>{const p=db.products.find(x=>String(x.id)===String(c.id));return a+p.price*c.qty},0))}
@@ -1375,7 +1402,7 @@ function sales(){
   setHeader('Ventes & facturation','Caisse, prix détail/gros, retours et impression Z91');
   const recent=db.sales.filter(x=>x.agency===currentAgency).slice(-12).reverse();
   $('#content').innerHTML=`<div class="sale-layout"><div class="card"><div class="toolbar"><input id="productSearch" placeholder="Rechercher un produit..."></div><div id="productGrid" class="product-grid"></div><hr><h3>Annulation / retour</h3><div class="field"><label>Facture</label><select id="returnSale"><option value="">Choisir...</option>${recent.map(s=>`<option value="${s.id}">${esc(s.invoice)} — ${money(s.total)}</option>`).join('')}</select></div><div class="field"><label>Motif</label><input id="returnReason" placeholder="Motif du retour"></div><button class="secondary" id="returnBtn">Annuler et remettre en stock</button></div><div class="card"><div class="section-title"><h3>Panier</h3><button class="secondary" id="clearCart">Vider</button></div><div id="cart"></div><div class="field"><label>Client existant (facultatif)</label><select id="saleClient"><option value="">— Saisie manuelle —</option>${db.clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label>Nom du client</label><input id="manualClient" placeholder="Écrire librement le nom du client"></div><div class="field"><label>Tarif</label><select id="priceMode"><option value="retail">Prix détail</option><option value="wholesale">Prix gros</option></select></div><div class="field"><label>Vendeur</label><input id="seller" value="${esc(currentUser?.name||currentUser?.username||'')}"></div><div class="field"><label>Paiement</label><select id="payment"><option>Espèces</option><option>Mobile Money</option><option>Carte</option><option>Crédit</option></select></div><div id="cartTotal" class="total">0 FC</div><button class="btn" id="checkout" style="width:100%;margin-top:12px">Valider & générer facture</button></div></div>`;
-  $('#productSearch').oninput=e=>drawProducts(e.target.value);$('#clearCart').onclick=()=>{cart=[];drawCart()};$('#checkout').onclick=checkout;$('#priceMode').onchange=()=>{drawProducts($('#productSearch').value);drawCart()};$('#saleClient').onchange=()=>{const c=db.clients.find(x=>x.id==+$('#saleClient').value);if(c)$('#manualClient').value=c.name};$('#returnBtn').onclick=processReturn;drawProducts('');drawCart();
+  window.lp95ConfigureSearchInput?.($('#productSearch'));$('#productSearch').oninput=e=>{if(typeof window.lp95QueueProductSearch==='function')window.lp95QueueProductSearch(e.target);else drawProducts(e.target.value);};$('#clearCart').onclick=()=>{cart=[];drawCart()};$('#checkout').onclick=checkout;$('#priceMode').onchange=()=>{drawProducts($('#productSearch').value);drawCart()};$('#saleClient').onchange=()=>{const c=db.clients.find(x=>x.id==+$('#saleClient').value);if(c)$('#manualClient').value=c.name};$('#returnBtn').onclick=processReturn;drawProducts('');drawCart();
 }
 function salePrice(p){return $('#priceMode')?.value==='wholesale'?(p.wholesalePrice||p.price):(p.retailPrice||p.price)}
 function drawProducts(q){const arr=productsHere().filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));$('#productGrid').innerHTML=arr.map(p=>`<div class="product-card" data-id="${p.id}"><b>${esc(p.name)}</b><p>${money(salePrice(p))}</p><small>Stock: ${p.stock} • Lot ${esc(p.lot||'—')}</small></div>`).join('');document.querySelectorAll('.product-card').forEach(x=>x.onclick=()=>addCart(x.dataset.id))}
@@ -50093,6 +50120,12 @@ console.log('LEADER PHARMA SECURITE LOGIN UNIQUE V3 PROTEGEE ACTIF');
 
   "use strict";
 
+  function scannerContext95(input){
+    return {input,actor:typeof currentUser==='undefined'?null:currentUser,agency:String(typeof currentAgency==='undefined'?'':currentAgency),ticket:typeof window.lp95CaptureView==='function'?window.lp95CaptureView():null};
+  }
+  function scannerCurrent95(snapshot){
+    return typeof page!=='undefined'&&page==='sales'&&document.documentElement.getAttribute('data-lp-ui-view')!=='menu'&&snapshot.input?.isConnected&&document.getElementById('lp155BarcodeInput')===snapshot.input&&snapshot.actor===(typeof currentUser==='undefined'?null:currentUser)&&snapshot.agency===String(typeof currentAgency==='undefined'?'':currentAgency)&&(snapshot.ticket==null||typeof window.lp95ViewIsCurrent!=='function'||window.lp95ViewIsCurrent(snapshot.ticket));
+  }
   function normalizeCode(value) {
     return String(value || "")
       .trim()
@@ -50254,7 +50287,7 @@ console.log('LEADER PHARMA SECURITE LOGIN UNIQUE V3 PROTEGEE ACTIF');
   }
 
   function searchBarcode(code) {
-
+    if(typeof page==='undefined'||page!=='sales'||document.documentElement.getAttribute('data-lp-ui-view')==='menu'||!document.getElementById('lp155BarcodeInput'))return;
     code = normalizeCode(code);
 
     if (!code) {
@@ -50383,7 +50416,8 @@ console.log('LEADER PHARMA SECURITE LOGIN UNIQUE V3 PROTEGEE ACTIF');
     if (button && input) {
 
       button.onclick = function () {
-
+        if(!scannerCurrent95(scannerContext95(input)))return;
+        clearTimeout(timer);
         input.focus();
 
         var code =
@@ -50404,7 +50438,8 @@ console.log('LEADER PHARMA SECURITE LOGIN UNIQUE V3 PROTEGEE ACTIF');
         "keydown",
         function (event) {
 
-          if (event.key === "Enter") {
+          if (event.key === "Enter"&&!event.isComposing&&event.keyCode!==229&&!scannerComposing95) {
+            clearTimeout(timer);
 
             event.preventDefault();
 
@@ -50415,32 +50450,18 @@ console.log('LEADER PHARMA SECURITE LOGIN UNIQUE V3 PROTEGEE ACTIF');
         }
       );
 
-      var timer = null;
-
-      input.addEventListener(
-        "input",
-        function () {
-
-          clearTimeout(timer);
-
-          var value =
-            normalizeCode(
-              input.value
-            );
-
-          if (
-            /^[0-9]{6,18}$/.test(value)
-          ) {
-
-            timer = setTimeout(
-              function () {
-                searchBarcode(value);
-              },
-              120
-            );
-          }
-        }
-      );
+      var timer = null,scannerComposing95=false;
+      function queueScan95(event){
+        clearTimeout(timer);
+        if(scannerComposing95||event?.isComposing)return;
+        const value=normalizeCode(input.value),snapshot=scannerContext95(input);
+        if(/^[0-9]{6,18}$/.test(value))timer=setTimeout(function(){
+          if(scannerCurrent95(snapshot)&&normalizeCode(input.value)===value)searchBarcode(value);
+        },120);
+      }
+      input.addEventListener('input',queueScan95);
+      input.addEventListener('compositionstart',function(){scannerComposing95=true;clearTimeout(timer);});
+      input.addEventListener('compositionend',function(){scannerComposing95=false;queueScan95();});
     }
 
     console.log(
@@ -63601,7 +63622,7 @@ console.log(
     const baseAccounting=accounting;
     accounting=function(){
       const r=baseAccounting.apply(this,arguments);
-      setTimeout(c1install,80);
+      window.lp95ScheduleViewJob('c1install','accounting',c1install);
       return r;
     };
   }
@@ -64198,10 +64219,7 @@ console.log(
         arguments
       );
 
-      setTimeout(
-        c2install,
-        120
-      );
+      window.lp95ScheduleViewJob('c2install','accounting',c2install);
 
       return r;
 
@@ -64623,10 +64641,7 @@ console.log(
         arguments
       );
 
-      setTimeout(
-        c3install,
-        150
-      );
+      window.lp95ScheduleViewJob('c3install','accounting',c3install);
 
       return r;
 
@@ -65121,10 +65136,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c4install,
-        180
-      );
+      window.lp95ScheduleViewJob('c4install','accounting',c4install);
 
       return r;
     };
@@ -66021,10 +66033,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c5install,
-        220
-      );
+      window.lp95ScheduleViewJob('c5install','accounting',c5install);
 
       return r;
 
@@ -66793,10 +66802,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c6install,
-        260
-      );
+      window.lp95ScheduleViewJob('c6install','accounting',c6install);
 
       return r;
 
@@ -67507,10 +67513,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c7install,
-        300
-      );
+      window.lp95ScheduleViewJob('c7install','accounting',c7install);
 
       return r;
 
@@ -68289,10 +68292,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c8install,
-        340
-      );
+      window.lp95ScheduleViewJob('c8install','accounting',c8install);
 
       return r;
 
@@ -69133,10 +69133,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c9install,
-        380
-      );
+      window.lp95ScheduleViewJob('c9install','accounting',c9install);
 
       return r;
 
@@ -69858,10 +69855,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c10install,
-        420
-      );
+      window.lp95ScheduleViewJob('c10install','accounting',c10install);
 
       return r;
 
@@ -70622,10 +70616,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c11install,
-        460
-      );
+      window.lp95ScheduleViewJob('c11install','accounting',c11install);
 
       return r;
 
@@ -71427,10 +71418,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c12install,
-        500
-      );
+      window.lp95ScheduleViewJob('c12install','accounting',c12install);
 
       return r;
 
@@ -72189,10 +72177,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c13install,
-        540
-      );
+      window.lp95ScheduleViewJob('c13install','accounting',c13install);
 
       return r;
 
@@ -73088,10 +73073,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c14install,
-        580
-      );
+      window.lp95ScheduleViewJob('c14install','accounting',c14install);
 
       return r;
 
@@ -73887,10 +73869,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c15install,
-        620
-      );
+      window.lp95ScheduleViewJob('c15install','accounting',c15install);
 
       return r;
 
@@ -74658,10 +74637,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c16install,
-        620
-      );
+      window.lp95ScheduleViewJob('c16install','accounting',c16install);
 
       return r;
 
@@ -75471,10 +75447,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c17install,
-        700
-      );
+      window.lp95ScheduleViewJob('c17install','accounting',c17install);
 
       return r;
 
@@ -76287,10 +76260,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c18install,
-        760
-      );
+      window.lp95ScheduleViewJob('c18install','accounting',c18install);
 
       return r;
 
@@ -77206,10 +77176,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c19install,
-        760
-      );
+      window.lp95ScheduleViewJob('c19install','accounting',c19install);
 
       return r;
 
@@ -78212,10 +78179,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c20install,
-        900
-      );
+      window.lp95ScheduleViewJob('c20install','accounting',c20install);
 
       return r;
     };
@@ -79119,10 +79083,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c21install,
-        760
-      );
+      window.lp95ScheduleViewJob('c21install','accounting',c21install);
 
       return r;
 
@@ -79893,10 +79854,7 @@ console.log(
           arguments
         );
 
-      setTimeout(
-        c22install,
-        900
-      );
+      window.lp95ScheduleViewJob('c22install','accounting',c22install);
 
       return r;
 
@@ -80649,10 +80607,7 @@ console.log(
       3200
     ].forEach(delay=>{
 
-      setTimeout(
-        c23Install,
-        delay
-      );
+      window.lp95ScheduleViewJob('c23Install','accounting',c23Install);
 
     });
 
@@ -80698,10 +80653,7 @@ console.log(
       clearTimeout(c23Timer);
 
       c23Timer=
-        setTimeout(
-          c23Install,
-          120
-        );
+        window.lp95ScheduleViewJob('c23Install','accounting',c23Install);
 
     });
 
@@ -81657,10 +81609,7 @@ console.log(
       3200
     ].forEach(delay=>{
 
-      setTimeout(
-        c24Install,
-        delay
-      );
+      window.lp95ScheduleViewJob('c24Install','accounting',c24Install);
 
     });
 
@@ -81695,10 +81644,7 @@ console.log(
       clearTimeout(c24Timer);
 
       c24Timer=
-        setTimeout(
-          c24Install,
-          140
-        );
+        window.lp95ScheduleViewJob('c24Install','accounting',c24Install);
 
     });
 
@@ -82806,10 +82752,7 @@ console.log(
       3200
     ].forEach(delay=>{
 
-      setTimeout(
-        c25Install,
-        delay
-      );
+      window.lp95ScheduleViewJob('c25Install','accounting',c25Install);
 
     });
 
@@ -82850,10 +82793,7 @@ console.log(
         );
 
         c25Timer=
-          setTimeout(
-            c25Install,
-            140
-          );
+          window.lp95ScheduleViewJob('c25Install','accounting',c25Install);
 
       }
     );
@@ -83906,10 +83846,7 @@ console.log(
       3200
     ].forEach(delay=>{
 
-      setTimeout(
-        c26Install,
-        delay
-      );
+      window.lp95ScheduleViewJob('c26Install','accounting',c26Install);
 
     });
 
@@ -83950,10 +83887,7 @@ console.log(
         );
 
         c26Timer=
-          setTimeout(
-            c26Install,
-            140
-          );
+          window.lp95ScheduleViewJob('c26Install','accounting',c26Install);
 
       }
     );
@@ -84999,10 +84933,7 @@ console.log(
       3200
     ].forEach(delay=>{
 
-      setTimeout(
-        c27Install,
-        delay
-      );
+      window.lp95ScheduleViewJob('c27Install','accounting',c27Install);
 
     });
 
@@ -85043,10 +84974,7 @@ console.log(
         );
 
         c27Timer=
-          setTimeout(
-            c27Install,
-            140
-          );
+          window.lp95ScheduleViewJob('c27Install','accounting',c27Install);
 
       }
     );
@@ -86042,10 +85970,7 @@ console.log(
       3200
     ].forEach(delay=>{
 
-      setTimeout(
-        c28Install,
-        delay
-      );
+      window.lp95ScheduleViewJob('c28Install','accounting',c28Install);
 
     });
 
@@ -86081,10 +86006,7 @@ console.log(
       clearTimeout(c28Timer);
 
       c28Timer=
-        setTimeout(
-          c28Install,
-          140
-        );
+        window.lp95ScheduleViewJob('c28Install','accounting',c28Install);
 
     });
 
@@ -87150,10 +87072,7 @@ console.log(
       4500
     ].forEach(delay=>{
 
-      setTimeout(
-        c29Install,
-        delay
-      );
+      window.lp95ScheduleViewJob('c29Install','accounting',c29Install);
 
     });
 
@@ -87192,10 +87111,7 @@ console.log(
       );
 
       c29Timer=
-        setTimeout(
-          c29Install,
-          120
-        );
+        window.lp95ScheduleViewJob('c29Install','accounting',c29Install);
 
     });
 
@@ -93481,6 +93397,9 @@ console.log(
   }
 
   function c30FindAccountingHost(){
+    const owner95=document.getElementById('content');
+    if(typeof page!=='undefined'&&page==='accounting'&&owner95?.dataset.lp95Route==='accounting'&&document.documentElement.getAttribute('data-lp-ui-view')!=='menu')return owner95;
+
 
     const existing =
       document.getElementById(
@@ -93718,6 +93637,7 @@ console.log(
       !B
     ){
 
+      delete result.__lp95AccountingHtml;
       result.innerHTML =
         '<div style="padding:16px;border-radius:14px;background:#fff3cd;font-weight:700;">⚠️ Vérifiez les dates des deux périodes.</div>';
 
@@ -93749,7 +93669,7 @@ console.log(
 
     }
 
-    result.innerHTML = `
+    const accountingHtml95 = `
       <div style="
         margin-top:22px;
         background:#ffffff;
@@ -93920,6 +93840,11 @@ console.log(
 
       </div>
     `;
+    if(result.__lp95AccountingHtml!==accountingHtml95||!result.firstElementChild){
+      result.innerHTML=accountingHtml95;
+      result.__lp95AccountingHtml=accountingHtml95;
+    }
+
 
   }
 
@@ -93984,7 +93909,7 @@ console.log(
   }
 
   function c30Install(){
-    if(typeof page==='undefined'||page!=='accounting')return;
+    if(typeof page==='undefined'||page!=='accounting'||document.documentElement.getAttribute('data-lp-ui-view')==='menu')return;
 
     /* U7 : C30 doit vivre uniquement dans la rubrique Comptabilite. */
     try{
@@ -94326,15 +94251,9 @@ console.log(
     'click',
     function(){
 
-      setTimeout(
-        c30Install,
-        250
-      );
+      window.lp95ScheduleViewJob('c30Install','accounting',c30Install);
 
-      setTimeout(
-        c30Install,
-        800
-      );
+      window.lp95ScheduleViewJob('c30Install','accounting',c30Install);
 
     },
     true
@@ -94466,6 +94385,8 @@ console.log(
   }
 
   function lpC30Fix1BuildCards(){
+    if(typeof page==='undefined'||page!=='accounting'||document.documentElement.getAttribute('data-lp-ui-view')==='menu')return false;
+
 
     const result =
       document.getElementById(
@@ -94488,11 +94409,15 @@ console.log(
         'lpC30Fix1MobileCards'
       );
 
-    if(mobile){
-
-      mobile.remove();
-
+    const signature95=JSON.stringify(Array.from(table.querySelectorAll('tbody tr')).map(row=>Array.from(row.querySelectorAll('td')).map(lpC30Fix1Text)));
+    if(mobile&&mobile.__lp95SourceTable===table&&mobile.__lp95SourceSignature===signature95){
+      const mobileMode=window.innerWidth<=900;
+      const tableDisplay=mobileMode?'none':'table',cardDisplay=mobileMode?'grid':'none';
+      if(table.style.display!==tableDisplay)table.style.display=tableDisplay;
+      if(mobile.style.display!==cardDisplay)mobile.style.display=cardDisplay;
+      return true;
     }
+    if(mobile)mobile.remove();
 
     const rows =
       Array.from(
@@ -94797,6 +94722,7 @@ console.log(
       'afterend',
       mobile
     );
+    mobile.__lp95SourceTable=table;mobile.__lp95SourceSignature=signature95;
 
     /*
      * Le tableau reste dans le DOM.
@@ -94973,7 +94899,9 @@ console.log(
 
     const observer =
       new MutationObserver(
-        function(){
+        function(records){
+          const current95=document.getElementById('lpC30Result');
+          if(!current95||!records.some(record=>record.target===current95||current95.contains(record.target)||Array.from(record.addedNodes).some(node=>node===current95||(node.nodeType===1&&node.contains(current95)))))return;
 
           const result =
             document.getElementById(
@@ -95717,6 +95645,9 @@ console.log(
   }
 
   function c31FindHost(){
+    const owner95=document.getElementById('content');
+    if(typeof page!=='undefined'&&page==='accounting'&&owner95?.dataset.lp95Route==='accounting'&&document.documentElement.getAttribute('data-lp-ui-view')!=='menu')return owner95;
+
 
     const c30 =
       document.getElementById(
@@ -95772,6 +95703,7 @@ console.log(
   }
 
   function c31Render(){
+    if(document.documentElement.getAttribute('data-lp-ui-view')==='menu')return false;
 
     const lpC31Role = String(
       (typeof currentUser !== 'undefined' && currentUser)
@@ -95871,7 +95803,7 @@ console.log(
         </div>
       `;
 
-    card.innerHTML = `
+    const accountingHtml95 = `
 
       <div style="
         margin:24px 0;
@@ -96133,6 +96065,11 @@ console.log(
       </div>
 
     `;
+    if(card.__lp95AccountingHtml!==accountingHtml95||!card.firstElementChild){
+      card.innerHTML=accountingHtml95;
+      card.__lp95AccountingHtml=accountingHtml95;
+    }
+
 
     const refresh =
       document.getElementById(
@@ -108413,7 +108350,8 @@ console.log(
     document.head.appendChild(style);
   }
 
-  function lpU8Render(){
+  window.lp94RefreshLegacyPurchaseViews=function(){return lpU8Render(true);};
+  function lpU8Render(lp94RefreshOnly){
     lpU8InstallStyle();
     try{
       setHeader('Achats & approvisionnements','Commande • réception • lot • péremption • facture • paiement • contrôle fournisseur');
@@ -108513,6 +108451,20 @@ console.log(
         <div class="lp-u8-order-line"><span>Bons partiels</span><b>${x.partials}</b></div>
       </div>`;
     }).join('') || '<p class="muted">Pas encore de données fournisseur</p>';
+
+    if(lp94RefreshOnly===true){
+      const root=document.getElementById('content');if(!root)return;
+      const sections=[['Historique achats professionnel',desktopHistory,mobileHistory],['Performance fournisseurs',supplierPerfRows,supplierPerfCards]];
+      for(const [title,table,cards] of sections){
+        const heading=Array.from(root.querySelectorAll('h3')).find(h=>h.textContent.trim()===title);
+        const card=heading?.closest('.card');if(!card)continue;
+        const body=card.querySelector('.lp-u8-desktop-table tbody');if(body)body.innerHTML=table;
+        const mobile=card.querySelector('.lp-u8-mobile-cards');if(mobile)mobile.innerHTML=cards;
+      }
+      const kpis=root.querySelector(':scope > .grid.kpis');
+      if(kpis){const values=kpis.querySelectorAll('.value');[lpU8Money(k.total),String(k.remaining),String(k.partials),lpU8Money(k.debt)].forEach((v,i)=>{if(values[i])values[i].textContent=v;});}
+      return;
+    }
 
     const products = (typeof productsHere === 'function' ? productsHere() : (db.products || []))
       .map(function(p){
@@ -124500,30 +124452,30 @@ console.log('LEADER PHARMA RH JUSTIFICATION UNIQUE ACTIVE');
     return String(value) + ' FC';
   }
 
+  // LP_V95_QUICK_SEARCH: cached normalization + bounded top-eight selection.
+  const lp95SearchText=new WeakMap();
   function lp20Search(q){
-    const query = lp20Norm(q);
-    const rows = lp20Products();
-    if(!query) return [];
-
-    return rows
-      .map(function(p){
-        const name = lp20Norm(p?.name);
-        const lot = lp20Norm(p?.lot);
-        const code = lp20Norm(lp20Code(p));
-        let score = 99;
-        if(name === query || code === query || lot === query) score = 0;
-        else if(name.startsWith(query) || code.startsWith(query)) score = 1;
-        else if(name.includes(query)) score = 2;
-        else if(code.includes(query) || lot.includes(query)) score = 3;
-        return {p:p, score:score};
-      })
-      .filter(function(x){ return x.score < 99; })
-      .sort(function(a,b){
-        if(a.score !== b.score) return a.score - b.score;
-        return String(a.p?.name || '').localeCompare(String(b.p?.name || ''));
-      })
-      .slice(0,8)
-      .map(function(x){ return x.p; });
+    const query=lp20Norm(q);if(!query)return [];
+    const best=[];
+    for(const p of lp20Products()){
+      if(!p||typeof p!=='object')continue;
+      const rawName=String(p?.name||''),rawLot=String(p?.lot||''),rawCode=lp20Code(p);
+      let cached=lp95SearchText.get(p);
+      if(!cached||cached.rawName!==rawName||cached.rawLot!==rawLot||cached.rawCode!==rawCode){
+        cached={rawName,rawLot,rawCode,name:lp20Norm(rawName),lot:lp20Norm(rawLot),code:lp20Norm(rawCode)};
+        lp95SearchText.set(p,cached);
+      }
+      const {name,lot,code}=cached;let score=99;
+      if(name===query||code===query||lot===query)score=0;
+      else if(name.startsWith(query)||code.startsWith(query))score=1;
+      else if(name.includes(query))score=2;
+      else if(code.includes(query)||lot.includes(query))score=3;
+      if(score===99)continue;
+      const item={p,score};let index=0;
+      while(index<best.length&&(best[index].score<score||(best[index].score===score&&String(best[index].p?.name||'').localeCompare(String(p?.name||''))<=0)))index++;
+      if(index<8){best.splice(index,0,item);if(best.length>8)best.pop();}
+    }
+    return best.map(x=>x.p);
   }
 
   function lp20Add(product, qty){
@@ -124654,7 +124606,7 @@ console.log('LEADER PHARMA RH JUSTIFICATION UNIQUE ACTIVE');
         <div class="muted" style="margin-bottom:12px">Nom, quelques lettres, code-barres ou lot. Touchez le résultat : il va directement au panier.</div>
 
         <div style="display:grid;grid-template-columns:minmax(0,1fr) 90px;gap:8px">
-          <input id="lp20QuickInput" type="text" autocomplete="off" autocorrect="off" spellcheck="false"
+          <input id="lp20QuickInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
             placeholder="Ex. amo, doli, VITC-001..." style="font-size:18px;min-height:52px;width:100%;box-sizing:border-box">
           <input id="lp20QuickQty" type="number" min="1" value="1" inputmode="numeric"
             aria-label="Quantité" style="font-size:18px;min-height:52px;width:100%;box-sizing:border-box;text-align:center">
@@ -124673,9 +124625,22 @@ console.log('LEADER PHARMA RH JUSTIFICATION UNIQUE ACTIVE');
       card.insertBefore(box, toolbar);
 
       const input = document.getElementById('lp20QuickInput');
-      input.addEventListener('input', lp20RenderResults);
+      let lp95Frame=0,lp95Composing=false;
+      function scheduleResults95(){
+        if(lp95Frame)cancelAnimationFrame(lp95Frame);
+        const actor95=typeof currentUser==='undefined'?null:currentUser,agency95=String(currentAgency),ticket95=typeof window.lp95CaptureView==='function'?window.lp95CaptureView():null;
+        lp95Frame=requestAnimationFrame(()=>{
+          lp95Frame=0;
+          if(ticket95!=null&&typeof window.lp95ViewIsCurrent==='function'&&!window.lp95ViewIsCurrent(ticket95))return;
+          if(input.isConnected&&document.getElementById('lp20QuickInput')===input&&page==='sales'&&actor95===(typeof currentUser==='undefined'?null:currentUser)&&agency95===String(currentAgency)&&document.documentElement.getAttribute('data-lp-ui-view')!=='menu')lp20RenderResults();
+        });
+      }
+      input.addEventListener('input',function(){scheduleResults95();});
+      input.addEventListener('compositionstart',function(){lp95Composing=true;if(lp95Frame)cancelAnimationFrame(lp95Frame);lp95Frame=0;});
+      input.addEventListener('compositionend',function(){lp95Composing=false;scheduleResults95();});
       input.addEventListener('keydown', function(event){
-        if(event.key !== 'Enter') return;
+        if(event.key !== 'Enter'||event.isComposing||event.keyCode===229||lp95Composing) return;
+        if(lp95Frame)cancelAnimationFrame(lp95Frame);lp95Frame=0;
         event.preventDefault();
         const rows = lp20RenderResults();
         if(rows.length){
@@ -147360,6 +147325,8 @@ function suppliersPage53(){
     '/rest/v1/rpc/lp_purchase_batches_v1',
     '/rest/v1/rpc/lp_set_stock_dg',
     '/rest/v1/rpc/lp_save_product_dg_v41',
+    '/rest/v1/rpc/lp_save_product_purchase_v94',
+    '/rest/v1/rpc/lp_purchases_read_v94',
     '/rest/v1/rpc/lp_set_product_expiry_dg',
   ];
   let sessionEpoch=0;
@@ -147638,6 +147605,7 @@ function suppliersPage53(){
   }
   function signature(list){return JSON.stringify(list.map(function(r){return [r.date,agent(r),r.role,r.entry,!!r.entryPhoto,r.exit,!!r.exitPhoto,r.entryPhotoAt,r.exitPhotoAt,(r.entryPhoto||'').length,(r.exitPhoto||'').length,r.entryPhoto||'',r.exitPhoto||''];}));}
   function refreshOnlyRows(){
+    if(!onRH()||document.documentElement.getAttribute('data-lp-ui-view')==='menu')return false;
     const card=document.getElementById('lpFix12DgAttendance');
     if(!card)return false;
     const tbody=card.querySelector('tbody');
@@ -147652,12 +147620,14 @@ function suppliersPage53(){
   async function run(button){
     if(busy||!onRH())return;
     busy=true;
+    const viewTicket=typeof window.lp95CaptureView==='function'?window.lp95CaptureView():null;
     const originalLabel=button.textContent;
     button.disabled=true;
     button.textContent='↻ Actualisation…';
     try{
       if(baseRecover)await baseRecover(true);
       if(!window.LeaderPharmaAttendanceV1||!(await window.LeaderPharmaAttendanceV1.pull()))throw new Error('POINTAGES_DISTANTS_NON_RECUPERES');
+      if(!onRH()||document.documentElement.getAttribute('data-lp-ui-view')==='menu'||(viewTicket&&typeof window.lp95ViewIsCurrent==='function'&&!window.lp95ViewIsCurrent(viewTicket)))return;
       refreshOnlyRows();
       try{if(typeof window.lpF2945DecorateDGPointage==='function')window.lpF2945DecorateDGPointage();}catch(e){}
       button.textContent='✓ Pointages actualisés';
@@ -147736,6 +147706,17 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
   const menuId='lpBoutonMenuGlobalV7';
   const oldBackIds=new Set(['lpV32AccountingBack','lpRapportsRetourMenuDGV2','lpRapportsRetourMenuDGV3','lpNavigationStableV6Button']);
   let navigating=false,dirty=false,commandEvent=false;
+  let lp95ViewEpoch=0;
+  function invalidateView95(){lp95ViewEpoch++;if(typeof window.lp95CancelViewJobs==='function')window.lp95CancelViewJobs();}
+  window.lp95CaptureView=function(){return {epoch:lp95ViewEpoch,route:route(),actor:user(),role:String(user()?.role||''),agency:String(typeof currentAgency==='undefined'?'':currentAgency),active:root.getAttribute('data-lp-ui-view')==='page'};};
+  window.lp95ViewIsCurrent=function(t){return !!t&&t.active&&t.epoch===lp95ViewEpoch&&t.route===route()&&t.actor===user()&&t.role===String(user()?.role||'')&&t.agency===String(typeof currentAgency==='undefined'?'':currentAgency)&&root.getAttribute('data-lp-ui-view')==='page';};
+  function prepareView95(name,changed){
+    const host=document.getElementById('content');if(!host)return;
+    // Remove the previous module synchronously, before any async target mount.
+    if(changed)host.replaceChildren();
+    host.dataset.lp95Route=name;
+    root.classList.toggle('lp95-accounting-scroll',name==='accounting');
+  }
   let lastRoute='',lastClick=-Infinity,sessionKey='';
   let renderedRoute='',menuY=0,paintModel='',paintNode=null;let paintContext88='';
   const dgRoutes=new Set(['dgfr','dghealth','dgcontrol','audit','analytics','dgsurveillance','users','agencies']);
@@ -147864,7 +147845,7 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
   function syncSession(){
     const u=user(),key=u?String(u.id||u.username||'')+'|'+String(u.role||''):'';
     if(key!==sessionKey){
-      sessionKey=key;dirty=false;renderedRoute='';lastRoute='';lastClick=-Infinity;menuY=0;
+      invalidateView95();sessionKey=key;dirty=false;renderedRoute='';lastRoute='';lastClick=-Infinity;menuY=0;
       window.__LP_DG360_ACTIVE__=false;view('menu');reportsState(false);
     }
     button();
@@ -147883,6 +147864,7 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
   function showMenu(){
     if(!user())return;
     const alreadyMenu=root.getAttribute('data-lp-ui-view')==='menu';
+    invalidateView95();
     if(editing())document.activeElement.blur();
     // Revenir au menu ne reconstruit ni la rubrique ni le formulaire.
     if(typeof window.lpV31CloseReportPreview==='function')window.lpV31CloseReportPreview();
@@ -147898,18 +147880,18 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
     if(!requested)return;
     if((dgRoutes.has(requested)||requested==='accounting')&&!dg())return;
     if(!dg()&&typeof allowed==='function'&&!allowed(requested))return;
-    if(renderedRoute===requested&&root.getAttribute('data-lp-ui-view')==='page'&&document.getElementById('content')?.firstElementChild)return;
+    if(renderedRoute===requested&&route()===(special360?'dashboard':requested)&&root.getAttribute('data-lp-ui-view')==='page'&&document.getElementById('content')?.firstElementChild)return;
     const now=performance.now();
-    if(lastRoute===requested&&now-lastClick<350)return;
+    if(lastRoute===requested&&route()===(special360?'dashboard':requested)&&now-lastClick<350&&root.getAttribute('data-lp-ui-view')!=='menu')return; // LP_V95_MENU_SINGLE_CLICK_FIX1
     lastRoute=requested;lastClick=now;
     if(requested==='stock'&&!dg()){
       const security=window.LP_DG_SECURITY;
       if(!security||typeof security.authorizeStock!=='function'||!security.authorizeStock())return;
     }
-    navigating=true;window.__LP_V28_NAVIGATING__=true;
+    invalidateView95();navigating=true;window.__LP_V28_NAVIGATING__=true;
     const fromMenu=root.getAttribute('data-lp-ui-view')==='menu';
     if(fromMenu)menuY=window.scrollY||0;
-    const changed=requested!==renderedRoute;
+    const changed=requested!==renderedRoute||route()!==(special360?'dashboard':requested);
     const keepDraft90=dirty||!!document.querySelector('#lp2959RepSig canvas,#lp2959InvSig canvas');
     try{
       if(editing())document.activeElement.blur();
@@ -147920,13 +147902,13 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
       // Rendre la page visible avant leur rendu synchrone.
       view('page');
       if(special360){
-        page='dashboard';
+        page='dashboard';prepareView95(requested,changed);
         if(changed&&typeof window.lpF296017DG360Render==='function')window.lpF296017DG360Render();
       }else if(requested==='dgsurveillance'){
-        page=requested;
+        page=requested;prepareView95(requested,changed);
         if(changed&&typeof window.lpF2942OpenSurveillanceDG==='function')window.lpF2942OpenSurveillanceDG(event);
       }else{
-        page=requested;
+        page=requested;prepareView95(requested,changed);
         const content=document.getElementById('content');
         if(changed||(fromMenu&&!keepDraft90)||!content||!content.firstElementChild){
           if(!directDG(requested))render();
@@ -147969,20 +147951,23 @@ console.log('LEADER PHARMA V25 RH ACTUALISATION UNIQUE SANS MOUVEMENT ACTIF');
       // Aucun tableau caché n'est reconstruit à l'ouverture ou au retour menu.
       if(user()&&!navigating&&!commandEvent&&root.getAttribute('data-lp-ui-view')==='menu')return;
       if(user()&&!navigating&&!commandEvent&&window.lpAtomic92?.keepReceipt())return;
-      const node=document.getElementById('content')?.firstElementChild||null,model=modelFingerprint();
+      // LP_V95_PASSIVE_RENDER: keep the established incremental guard, without
+      // serializing the full business model before a render that will be skipped.
+      const node=document.getElementById('content')?.firstElementChild||null;
+      const context95=JSON.stringify([user()?.id||user()?.username,user()?.role,typeof currentAgency==='undefined'?'':currentAgency]);
+      const sameContext88=paintContext88===context95;
+      if(user()&&!navigating&&!commandEvent&&sameContext88&&renderedRoute===route()&&paintNode&&document.getElementById('content')?.contains(paintNode)&&!['stock','sales'].includes(route())){
+        paintModel=null;
+        paintNode=document.getElementById('content')?.firstElementChild||null;
+        paintContext88=context95;
+        return;
+      }
+      const model=modelFingerprint();
       if(user()&&!navigating&&!commandEvent&&renderedRoute===route()&&node&&node===paintNode&&model!==null&&model===paintModel)return;
-      // LP_V88: background data updates must not replace an already open form/page.
-      const sameContext88=paintContext88===JSON.stringify([user()?.id||user()?.username,user()?.role,typeof currentAgency==='undefined'?'':currentAgency]);
+      // Stock/sales keep their existing data-change detection and incremental updates.
       if(user()&&!navigating&&!commandEvent&&sameContext88&&renderedRoute===route()&&paintNode&&document.getElementById('content')?.contains(paintNode)){
         if(typeof window.lp88RefreshCurrentView==='function'&&['stock','sales'].includes(route()))window.lp88RefreshCurrentView(route());
-        // A passive synchronization must not clear a report, signature canvas,
-        // search input or open form. Re-entering a page from Menu is explicit.
-        // LP_V91_PASSIVE_PAINT: reuse the fingerprint already calculated
-        // in this render instead of serializing the business arrays twice.
-        paintModel=model;
-        paintNode=document.getElementById('content')?.firstElementChild||null;
-        paintContext88=JSON.stringify([user()?.id||user()?.username,user()?.role,typeof currentAgency==='undefined'?'':currentAgency]);
-        return;
+        paintModel=model;paintNode=document.getElementById('content')?.firstElementChild||null;paintContext88=context95;return;
       }
       const out=directDG(route())?undefined:baseRender.apply(this,arguments);
       mountReadyPage();
@@ -148163,7 +148148,7 @@ window.lpV36Fix1MountStock=function(){
  if(!onStock())return;
  compact();
  const search=document.getElementById('stockSearch');
- if(search){search.setAttribute('inputmode','search');search.setAttribute('enterkeyhint','done');search.removeAttribute('autofocus');}
+ if(search){search.setAttribute('inputmode','search');search.setAttribute('autocorrect','off');search.setAttribute('autocapitalize','none');search.setAttribute('spellcheck','false');search.setAttribute('enterkeyhint','done');search.removeAttribute('autofocus');}
  if(search&&!document.getElementById('lpV36CloseKeyboard')){
   const button=document.createElement('button');button.type='button';button.id='lpV36CloseKeyboard';button.className='secondary';button.textContent='Fermer le clavier';button.onclick=closeKeyboard;
   search.parentElement.appendChild(button);
@@ -148174,7 +148159,7 @@ if(typeof drawStock==='function'){
  drawStock=function(){const result=original.apply(this,arguments);compact();return result;};window.drawStock=drawStock;
 }
 document.addEventListener('keydown',function(event){
- if(onStock()&&event.target&&event.target.id==='stockSearch'&&event.key==='Enter'){
+ if(onStock()&&event.target&&event.target.id==='stockSearch'&&event.key==='Enter'&&!event.isComposing&&event.keyCode!==229){
   event.preventDefault();closeKeyboard();
  }
 },true);
@@ -148699,7 +148684,7 @@ const actor=()=>norm(currentUser&&(currentUser.username||currentUser.id));
 const stamp=r=>Math.max(...['updatedAt','decidedAt','completedAt','createdAt'].map(k=>{const x=r[k];return typeof x==='number'?x:(/^\d+$/.test(str(x))?Number(x):(Date.parse(x)||0));}));
 const snapshot=()=>Object.fromEntries(keys.map(k=>[k,Array.isArray(db[k])?db[k]:[]]));
 const signature=()=>JSON.stringify(snapshot());
-function state(message){const e=document.getElementById('lpV50State');if(e)e.textContent=message;}
+function state(message){if(page!=='payroll'||document.documentElement.getAttribute('data-lp-ui-view')==='menu')return;const e=document.getElementById('lpV50State');if(e)e.textContent=message;}
 async function rpc(changes){
  const token=await window.lpGetSessionTokenV16();
  const base=SUPABASE.url.replace(/\/$/,'');
@@ -148729,27 +148714,28 @@ async function run(manual){
  if(!manual&&actor()===identity&&Date.now()-lastRunAt<45000&&signature()===last)return true;
  identity=actor();
  if(navigator.onLine===false){state('À envoyer - hors ligne. Données conservées.');return false;}
- const who=actor();
+ const who=actor(),agencyAtStart=String(currentAgency),lease=typeof window.lp95CaptureView==='function'?window.lp95CaptureView():null;
+ const paintAllowed=()=>actor()===who&&String(currentAgency)===agencyAtStart&&page==='payroll'&&document.documentElement.getAttribute('data-lp-ui-view')!=='menu'&&(!lease||typeof window.lp95ViewIsCurrent!=='function'||window.lp95ViewIsCurrent(lease));
  flight=(async()=>{
-  mount();if(manual)state('Échange avec le serveur…');
+  if(paintAllowed()){mount();if(manual)state('Échange avec le serveur…');}
   try{
    const a=window.LeaderPharmaAttendanceV1;
    if(a){if(dg()){await (manual?a.pull():a.pullAuto());}else{await a.pushAuto();if(manual&&a.flushHistory)await a.flushHistory();}}
    if(actor()!==who)return false;
-   mount();if(dg()&&typeof window.lpV25RefreshRhRowsOnly==='function')window.lpV25RefreshRhRowsOnly();
+   if(paintAllowed()){mount();if(dg()&&typeof window.lpV25RefreshRhRowsOnly==='function')window.lpV25RefreshRhRowsOnly();}
    const sig=signature();let local=null;
    if(sig!==last){local=JSON.parse(sig);await rpc(local);}
    const remote=await rpc(null);if(actor()!==who)return false;
    if(local&&!confirmed(local,remote))throw new Error('NOT_CONFIRMED');
-   const before=signature();merge(remote);last=signature();lastRunAt=Date.now();if(before!==last&&page==='payroll'&&dg()&&typeof window.lpV14MountRH==='function'&&!(window.lpV28IsEditing&&window.lpV28IsEditing()))window.lpV14MountRH();state('Justifications RH : réception serveur confirmée.');
+   const before=signature();merge(remote);last=signature();lastRunAt=Date.now();if(before!==last&&paintAllowed()&&dg()&&typeof window.lpV14MountRH==='function'&&!(window.lpV28IsEditing&&window.lpV28IsEditing()))window.lpV14MountRH();if(paintAllowed())state('Justifications RH : réception serveur confirmée.');
 return true;
-  }catch(e){state('À envoyer / actualiser - réessayez avec Internet.');console.warn('V50 circuit',e.message);return false;}
+  }catch(e){if(paintAllowed())state('À envoyer / actualiser - réessayez avec Internet.');console.warn('V50 circuit',e.message);return false;}
  })();try{return await flight;}finally{flight=null;}
 }
 const esc50=v=>str(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function mine(r){const ids=[currentUser.username,currentUser.id,currentUser.name].map(norm);return ids.includes(norm(r.userId))||ids.includes(norm(r.userName));}
 function mount(){
- if(!currentUser||typeof page==='undefined'||page!=='payroll')return;
+ if(!currentUser||typeof page==='undefined'||page!=='payroll'||document.documentElement.getAttribute('data-lp-ui-view')==='menu')return;
  const content=document.getElementById('content');if(!content)return;
  if(dg()){
   let card=document.getElementById('lpFix12DgAttendance');
@@ -148775,6 +148761,7 @@ function mount(){
 }
 const oldSave=save;save=function(){const r=oldSave.apply(this,arguments);if(!saving&&currentUser){clearTimeout(timer);timer=setTimeout(()=>{if(signature()!==last)run(false);},1000);}return r;};window.save=save;
 const base=payroll;payroll=function(){
+ if(typeof page==='undefined'||page!=='payroll'||document.documentElement.getAttribute('data-lp-ui-view')==='menu')return; // LP_V95_FIX3_RH_ROUTE_OWNER
  if(!dg()){const r=base.apply(this,arguments);mount();setTimeout(()=>run(false),200);return r;}
  const content=document.getElementById('content');if(!content)return;
  page='payroll';
@@ -149353,7 +149340,7 @@ window.lpTreasury79={project,paid,refresh:refresh79};treasury=render79;window.tr
    }else{
     const expected=formDraft.prior?.stock??null;
     formDraft.attempted=true;
-    result=await rpc('lp_save_product_dg_v41',{p_product:p,p_expected_stock:expected,p_change_stock:!formDraft.prior||p.stock!==Number(expected)},who);
+    result=await rpc('lp_save_product_purchase_v94',{p_product:p,p_expected_stock:expected,p_change_stock:!formDraft.prior||p.stock!==Number(expected),p_operation:window.lp94OperationId(p,expected,!formDraft.prior||p.stock!==Number(expected))},who);
    }
    if(key(result)!==key(p)||!Number.isSafeInteger(Number(result.stock)))throw Error('Produit non confirmé. Saisie conservée.');
    if(actor()!==who||draft!==formDraft||agency()!==p.agency)throw Error('Produit reçu au serveur. Rouvrez le stock du compte concerné.');
@@ -149583,6 +149570,8 @@ function install(){
  (document.head||document.documentElement).appendChild(style);
  let activeHost=null,activeAgency='',body=null,table=null,empty=null,lastQuery='',entries=new Map();
  const text=v=>String(v??'');
+ const normalize95=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,' ');
+ const matches95=(name,q)=>!q||(/^[a-z]$/.test(q)?name.startsWith(q):name.includes(q));
  function setText(node,value){const next=text(value);if(node.textContent!==next)node.textContent=next;}
  function create(host,a){
   host.parentElement?.classList.add('lp86-stock-card');
@@ -149598,7 +149587,7 @@ function install(){
   const host=document.getElementById('stockTable');if(!host)return;
   const a=text(typeof currentAgency==='undefined'?'':currentAgency),input=document.getElementById('stockSearch');
   // Background refreshes must use the text currently being typed, not an old query.
-  const query=text(input?input.value:q).toLowerCase();
+  const query=normalize95(input?input.value:q);
   if(activeHost!==host||activeAgency!==a||host.querySelector('table')!==table)create(host,a);
   const rows=typeof productsHere==='function'?productsHere():[],seen=new Set();let visible=0;
   for(const p of rows){
@@ -149608,22 +149597,42 @@ function install(){
     const name=document.createElement('span');cells[0].append(name);
     const badge=document.createElement('span');cells[3].append(badge);
     const button=document.createElement('button');button.type='button';button.className='secondary';button.dataset.edit=key;button.textContent='Modifier';cells[6].append(button);
-    e={row,cells,name,badge,button,product:p};button.onclick=()=>productForm(e.product.id);entries.set(key,e);body.insertBefore(row,empty);
+    e={row,cells,name,badge,button,product:p,searchName:''};button.onclick=()=>productForm(e.product.id);entries.set(key,e);body.insertBefore(row,empty);
    }
    e.product=p;
-   setText(e.name,p.name);setText(e.cells[1],p.lot||'—');setText(e.cells[2],money(p.price));setText(e.badge,p.stock);setText(e.cells[4],p.min);setText(e.cells[5],p.expiry||'—');
-   const cls='badge'+(p.stock<=p.min?' danger':'');if(e.badge.className!==cls)e.badge.className=cls;
-   const hidden=!text(p.name).toLowerCase().includes(query);if(e.row.hidden!==hidden)e.row.hidden=hidden;if(!hidden)visible++;
+   const values95=[p.name,p.lot,p.price,p.stock,p.min,p.expiry];
+   if(!e.values95||values95.some((v,i)=>v!==e.values95[i])){
+    if(!e.values95||p.name!==e.values95[0])e.searchName=normalize95(p.name);
+    setText(e.name,p.name);setText(e.cells[1],p.lot||'—');
+    if(!e.values95||p.price!==e.values95[2])setText(e.cells[2],money(p.price));
+    setText(e.badge,p.stock);setText(e.cells[4],p.min);setText(e.cells[5],p.expiry||'—');
+    const cls='badge'+(p.stock<=p.min?' danger':'');if(e.badge.className!==cls)e.badge.className=cls;
+    e.values95=values95;
+   }
+   const hidden=!matches95(e.searchName,query);if(e.row.hidden!==hidden)e.row.hidden=hidden;if(!hidden)visible++;
   }
   for(const [id,e] of entries)if(!seen.has(id)){e.row.remove();entries.delete(id);}
   if(empty.hidden!==(visible>0))empty.hidden=visible>0;
   if(query!==lastQuery)host.scrollTop=0;lastQuery=query;
  }
  drawStock=render;window.drawStock=render;
- // Run immediately at the target; keep keyboard focus, selection and normal IME input.
- function input(e){if(e.target?.id!=='stockSearch')return;e.stopImmediatePropagation();render(e.target.value);}
+ // LP_V95_STOCK_FILTER: one light filter per animation frame, with native IME.
+ let filterFrame=0,composing95=false;
+ function filter95(input){
+  if(!input?.isConnected||document.getElementById('stockSearch')!==input||typeof page==='undefined'||page!=='stock'||activeHost!==document.getElementById('stockTable')||activeAgency!==text(currentAgency))return;
+  // Reconcile live product values once per frame; unchanged rows do no DOM/price work.
+  render(input.value);
+ }
+ function schedule95(input){
+  if(filterFrame)cancelAnimationFrame(filterFrame);
+  const who=typeof currentUser==='undefined'?null:currentUser,ticket=typeof window.lp95CaptureView==='function'?window.lp95CaptureView():null;
+  filterFrame=requestAnimationFrame(()=>{filterFrame=0;if(who===(typeof currentUser==='undefined'?null:currentUser)&&(ticket==null||typeof window.lp95ViewIsCurrent!=='function'||window.lp95ViewIsCurrent(ticket)))filter95(input);});
+ }
+ function input(e){if(e.target?.id!=='stockSearch')return;e.stopImmediatePropagation();schedule95(e.target);}
  window.addEventListener('input',input,true);
- window.lpStockRenderV86={render};
+ window.addEventListener('compositionstart',e=>{if(e.target?.id==='stockSearch'){composing95=true;if(filterFrame)cancelAnimationFrame(filterFrame);filterFrame=0;}},true);
+ window.addEventListener('compositionend',e=>{if(e.target?.id==='stockSearch'){composing95=false;schedule95(e.target);}},true);
+ window.lpStockRenderV86={render,filter:filter95};
  if(document.getElementById('stockTable'))render();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
@@ -150059,4 +150068,214 @@ function install(){
 }
 window.lp93ReceiptText=receipt;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+
+/* LP_V94_FIX1_CANCELLED_LOCAL_PURCHASES
+ * LP_V94_PURCHASES_ONLY — no intervals, observers, stock replay or treasury writes. */
+(function(){
+'use strict';
+if(window.lpPurchases94)return;
+const S=v=>String(v??'').trim(),N=v=>S(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const E=v=>S(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const number=v=>Number.isFinite(Number(v))?Number(v):0;
+const currency=r=>{const c=N(r.currency||r.devise||'CDF');return ['cdf','fc','c','francs','franc congolais'].includes(c)?'CDF':c==='usd'||c==='$'?'USD':S(r.currency||r.devise).toUpperCase();};
+const cancelled=r=>r.cancelled||r.deleted||r.supprime||/annul|refus|rejet|brouillon|attente/.test(N(r.status||r.validationStatus));
+const date=r=>{const raw=S(r.date||r.createdAt||r.created_at||r.invoiceDate);if(raw.length>10&&!Number.isNaN(Date.parse(raw)))return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lubumbashi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(raw));return raw.slice(0,10);};
+function project(data){
+ const rows=[],seen=new Set(),a=N(data.agency);let unresolved=0;
+ const add=(r,source,id,amount)=>{
+  const key=source+'|'+S(id);if(!S(id)||!/^\d{4}-\d{2}-\d{2}$/.test(date(r))||!Number.isFinite(Number(amount))){unresolved++;return;}
+  if(seen.has(key))return;seen.add(key);
+  rows.push({...r,id:key,date:date(r),source,currency:currency(r),amount:Number(amount)});
+ };
+ const batchIds=new Set();
+ for(const b of data.batches||[]){
+  if(N(b.agency)!==a)continue;
+  if(S(b.id))batchIds.add(S(b.id));
+  if(cancelled(b)||!b.stockApplied||!b.centralConfirmed)continue;
+  add({...b,date:b.approvedAt||b.centralConfirmedAt||b.date||b.createdAt||b.invoiceDate,productName:b.supplierInvoice||b.ref||'Facture validée'},'Achat existant',b.id,b.total);
+ }
+ for(const p of data.purchases||[]){
+  if(N(p.agency)!==a||cancelled(p)||batchIds.has(S(p.sourceBatchId||p.batchId)))continue;
+  const amount=p.declaredAmount??p.total??p.amount??(number(p.qty)*number(p.cost));
+  add(p,'Achat existant',p.id??p.ref,amount);
+ }
+ for(const r of data.manual||[]){if(N(r.agency)!==a)continue;add(r,'Stock manuel',r.id,r.amount);}
+ return {rows:rows.sort((a,b)=>b.date.localeCompare(a.date)||S(b.createdAt).localeCompare(S(a.createdAt))),unresolved};
+}
+function bounds(kind,day){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('Date invalide');
+ const d=new Date(day+'T12:00:00Z');if(d.toISOString().slice(0,10)!==day)throw Error('Date invalide');
+ let start=day,end=day;
+ if(kind==='week'){d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));start=d.toISOString().slice(0,10);d.setUTCDate(d.getUTCDate()+6);end=d.toISOString().slice(0,10);}
+ if(kind==='month'){start=day.slice(0,7)+'-01';end=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0,12)).toISOString().slice(0,10);}
+ if(kind==='year'){start=day.slice(0,4)+'-01-01';end=day.slice(0,4)+'-12-31';}
+ return {start,end};
+}
+function total(rows,kind,day){const b=bounds(kind,day),groups={};for(const r of rows){if(r.date<b.start||r.date>b.end)continue;const t=groups[r.currency]||(groups[r.currency]={existing:0,entries:0,corrections:0,net:0,count:0});if(r.source==='Achat existant')t.existing+=r.amount;else {const entry=Math.max(0,number(r.afterQty)-number(r.beforeQty))*number(r.afterCost);t.entries+=entry;t.corrections+=r.amount-entry;}t.net+=r.amount;t.count++;}return groups;}
+const actor=()=>typeof currentUser==='undefined'?null:currentUser;
+const agency=()=>typeof currentAgency==='undefined'?'':S(currentAgency);
+const dg=()=>N(actor()?.role)==='dg';
+const scope=()=>JSON.stringify([actor()?.authUserId,actor()?.username,actor()?.role,agency(),typeof db==='undefined'?'':db._lpDataGeneration]);
+const onPage=()=>typeof page!=='undefined'&&page==='purchases'&&dg();
+const localDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lubumbashi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const money=(n,c='CDF')=>Number(n||0).toLocaleString('fr-FR',{maximumFractionDigits:2})+' '+(c==='CDF'?'FC':c);
+let cache=null,identity='',panel=null,flight=null,sequence=0,selected=localDay(),kind='day';
+const get=id=>document.getElementById(id);
+function state(t){const e=get('lp94State');if(e)e.textContent=t;}
+function paint(){
+ if(!onPage()||!panel?.isConnected||identity!==scope()||!cache)return;
+ const view=project(cache),currencies=[...new Set(view.rows.map(r=>r.currency))];if(!currencies.length)currencies.push('CDF');
+ get('lp94Totals').innerHTML=['day','week','month','year'].map((k,i)=>{const t=total(view.rows,k,selected);return '<div class="card kpi"><div class="label">'+['Jour','Semaine (lundi–dimanche)','Mois','Année'][i]+'</div>'+currencies.map(c=>'<div class="value">'+E(money(t[c]?.net,c))+'</div>').join('')+'</div>';}).join('');
+ const b=bounds(kind,selected),rows=view.rows.filter(r=>r.date>=b.start&&r.date<=b.end),t=total(view.rows,kind,selected);
+ get('lp94Breakdown').innerHTML='<p>Du '+E(b.start)+' au '+E(b.end)+' • '+rows.length+' opération(s)</p>'+currencies.map(c=>{const g=t[c]||{};return '<p><b>'+E(c)+'</b> : achats existants '+E(money(g.existing,c))+' · entrées manuelles '+E(money(g.entries,c))+' · ajustements '+E(money(g.corrections,c))+'</p>';}).join('')+(view.unresolved?'<p>'+view.unresolved+' opération(s) à vérifier : date, montant ou référence manquante.</p>':'');
+ get('lp94Rows').innerHTML=rows.slice(0,100).map(r=>'<tr><td>'+E(r.date)+'</td><td>'+E(r.source==='Stock manuel'?r.kind:'Achat existant')+'</td><td>'+E(r.productName||r.ref||'—')+'</td><td>'+E(r.source==='Stock manuel'?r.beforeQty+' → '+r.afterQty:r.qty??'—')+'</td><td>'+E(r.source==='Stock manuel'?money(r.beforeCost,r.currency)+' → '+money(r.afterCost,r.currency):'—')+'</td><td>'+E(money(r.amount,r.currency))+'</td></tr>').join('')||'<tr><td colspan="6">Aucune opération pour cette période.</td></tr>';
+ get('lp94Limit').textContent=rows.length>100?'Les 100 dernières opérations sont affichées. Les totaux incluent toute la période.':'';
+ state('Données serveur reçues. Les corrections ajustent la valeur d’achat ; elles ne constituent pas un paiement.');
+}
+function reconcileCancellations(data){
+ const purchaseIds=new Set((data.cancelledPurchaseIds||[]).map(S));
+ const treasuryIds=new Set((data.cancelledTreasuryIds||[]).map(S));
+ let changed=false;
+ for(const [key,ids] of [['purchases',purchaseIds],['treasury',treasuryIds]]){
+  if(!Array.isArray(db[key]))continue;
+  const kept=db[key].filter(r=>N(r.agency)!==N(data.agency)||!ids.has(S(r.id)));
+  if(kept.length!==db[key].length){db[key]=kept;changed=true;}
+ }
+ if(changed){
+  // Persist the local purge only: no bulk write or stock replay.
+  localStorage.setItem('lpmp_v13',JSON.stringify(db));
+  if(typeof window.lp94RefreshLegacyPurchaseViews==='function')window.lp94RefreshLegacyPurchaseViews();
+ }
+ return changed;
+}
+async function read(){
+ if(!onPage()||!panel?.isConnected)return;
+ const who=actor(),a=agency(),id=scope(),node=panel;
+ if(flight?.id===id&&flight.node===node)return flight.promise;
+ const ticket=++sequence;
+ const promise=(async()=>{state('Lecture des achats…');try{
+  const token=await window.lpGetSessionTokenV16();if(actor()!==who||scope()!==id)return;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),30000);
+  let response;try{response=await fetch(SUPABASE.url.replace(/\/$/,'')+'/rest/v1/rpc/lp_purchases_read_v94',{method:'POST',headers:{apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({p_agency:a}),signal:controller.signal});}finally{clearTimeout(timer);}
+  if(!response.ok)throw Error('Lecture non confirmée');const data=await response.json();
+  if(ticket!==sequence||scope()!==id||!onPage()||panel!==node||!node.isConnected)return;
+  if(N(data.agency)!==N(a))throw Error('Agence non confirmée');reconcileCancellations(data);cache=data;selected=get('lp94Date')?.value||data.serverDate||localDay();paint();
+ }catch(e){if(ticket===sequence&&scope()===id&&onPage()&&panel===node)state('Réception non confirmée. Réessayez avec Internet ; votre formulaire d’achat est conservé.');}
+ })();flight={id,node,promise};try{return await promise;}finally{if(flight?.promise===promise)flight=null;}
+}
+function mount(){
+ if(!onPage()){panel?.remove();panel=null;if(identity&&identity!==scope()){identity='';cache=null;sequence++;}return;}
+ const content=get('content');if(!content)return;const id=scope();
+ if(identity!==id){get('lpPurchases94Panel')?.remove();identity=id;cache=null;sequence++;selected=localDay();}
+ if(get('lpPurchases94Panel')){panel=get('lpPurchases94Panel');return;}
+ panel=document.createElement('section');panel.id='lpPurchases94Panel';panel.className='card';panel.style.marginBottom='16px';
+ panel.innerHTML='<h2>Achats & stock manuel</h2><p>Vos achats habituels, complétés par les ajouts et les modifications manuelles enregistrés avec cette version. Une entrée de stock augmente les achats ; une correction ajuste leur valeur. Aucun décaissement n’est créé automatiquement.</p><div class="actions"><label>Date de référence <input type="date" id="lp94Date" value="'+E(selected)+'"></label><label>Historique <select id="lp94Period"><option value="day">Jour</option><option value="week">Semaine</option><option value="month">Mois</option><option value="year">Année</option></select></label><button type="button" class="secondary" id="lp94Refresh">Actualiser les achats</button></div><p id="lp94State" role="status"></p><div id="lp94Totals" class="grid kpis"></div><div id="lp94Breakdown"></div><div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Origine</th><th>Produit / référence</th><th>Quantité avant → après</th><th>Prix d’achat avant → après</th><th>Montant</th></tr></thead><tbody id="lp94Rows"></tbody></table></div><p id="lp94Limit"></p>';
+ content.prepend(panel);get('lp94Period').value=kind;
+ get('lp94Date').onchange=e=>{if(e.target.value){selected=e.target.value;paint();}};
+ get('lp94Period').onchange=e=>{kind=e.target.value;paint();};get('lp94Refresh').onclick=read;
+ // Only the former purchase summary is superseded; purchase forms remain intact.
+ const old=get('lpFix37PurchaseStats');if(old)old.hidden=true;
+ if(cache)paint();else read();
+}
+window.lpPurchases94={project,bounds,total,mount,read,reconcileCancellations};
+// Idempotency keys persist across HTTP timeouts/restarts, isolated by user and generation.
+window.lp94OperationId=function(product,expected,change){
+ const fingerprint=JSON.stringify([scope(),product,expected,change]),key='lp94ManualPurchasePending';let previous;
+ try{previous=JSON.parse(localStorage.getItem(key)||'null');}catch{}
+ if(previous?.fingerprint===fingerprint)return previous.id;
+ const id=crypto.randomUUID();localStorage.setItem(key,JSON.stringify({fingerprint,id}));return id;
+};
+const original=purchases;purchases=function(){const result=original.apply(this,arguments);mount();return result;};window.purchases=purchases;
+const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);mount();return result;};window.render=render;
+mount();
+})();
+
+/* LP_V95_KEYBOARD_RESPONSIVENESS: bounded search; IME-safe input; no business-model serialization on skipped passive render. */
+
+/* LP_V95_FIX3_SINGLE_MODULE_OWNER: 38 legacy accounting schedule sites coalesced (c10install, c11install, c12install, c13install, c14install, c15install, c16install, c17install, c18install, c19install, c1install, c20install, c21install, c22install, c23Install, c24Install, c25Install, c26Install, c27Install, c28Install, c29Install, c2install, c30Install, c3install, c4install, c5install, c6install, c7install, c8install, c9install). */
+
+/* LP_V95_FIX3_RH_ACCOUNTING_ROUTE_OWNERSHIP */
+
+/* LP_V95_KEYBOARD_FIX3: read-only searches coalesce; IME Enter remains guarded. */
+(function(){
+ 'use strict';
+ if(window.lp95QueueProductSearch)return;
+ window.lp95ConfigureSearchInput=function(input){if(!input)return;input.setAttribute('autocorrect','off');input.setAttribute('autocapitalize','none');input.setAttribute('spellcheck','false');input.setAttribute('inputmode','search');};
+ for(const id of ['productSearch','stockSearch','lp20QuickInput'])window.lp95ConfigureSearchInput(document.getElementById(id));
+ let frame=0;
+ window.lp95QueueProductSearch=function(input){
+  if(frame)cancelAnimationFrame(frame);
+  const actor=typeof currentUser==='undefined'?null:currentUser;
+  const agency=String(typeof currentAgency==='undefined'?'':currentAgency);
+  const ticket=typeof window.lp95CaptureView==='function'?window.lp95CaptureView():null;
+  frame=requestAnimationFrame(function(){
+   frame=0;
+   if(ticket!=null&&typeof window.lp95ViewIsCurrent==='function'&&!window.lp95ViewIsCurrent(ticket))return;
+   if(!input?.isConnected||input.id!=='productSearch'||document.getElementById('productSearch')!==input||typeof page==='undefined'||page!=='sales'||document.documentElement.getAttribute('data-lp-ui-view')==='menu')return;
+   if(actor!==(typeof currentUser==='undefined'?null:currentUser)||agency!==String(typeof currentAgency==='undefined'?'':currentAgency))return;
+   if(typeof drawProducts==='function')drawProducts(input.value);
+  });
+ };
+})();
+
+/* LP_V95_FIX3_ALL_MENU_OWNERS: a module cannot redraw another selected page. */
+(function(){
+'use strict';
+if(window.lp95OwnedModules)return;
+const open=routes=>typeof currentUser!=='undefined'&&currentUser&&typeof page!=='undefined'&&routes.includes(String(page))&&document.documentElement.getAttribute('data-lp-ui-view')!=='menu';
+const own=(fn,routes)=>function(){if(!open(routes))return;return fn.apply(this,arguments);};
+// These are presentation functions only; no save, sync, outbox or auth is wrapped.
+if(typeof dashboard==='function'){dashboard=own(dashboard,['dashboard']);window.dashboard=dashboard;}
+if(typeof sales==='function'){sales=own(sales,['sales']);window.sales=sales;}
+if(typeof stock==='function'){stock=own(stock,['stock']);window.stock=stock;}
+if(typeof purchases==='function'){purchases=own(purchases,['purchases']);window.purchases=purchases;}
+if(typeof suppliers==='function'){suppliers=own(suppliers,['suppliers']);window.suppliers=suppliers;}
+if(typeof inventory==='function'){inventory=own(inventory,['inventory']);window.inventory=inventory;}
+if(typeof transfers==='function'){transfers=own(transfers,['transfers']);window.transfers=transfers;}
+if(typeof clients==='function'){clients=own(clients,['clients']);window.clients=clients;}
+if(typeof expenses==='function'){expenses=own(expenses,['expenses']);window.expenses=expenses;}
+if(typeof treasury==='function'){treasury=own(treasury,['treasury']);window.treasury=treasury;}
+if(typeof accounting==='function'){accounting=own(accounting,['accounting']);window.accounting=accounting;}
+if(typeof receivables==='function'){receivables=own(receivables,['receivables']);window.receivables=receivables;}
+if(typeof payroll==='function'){payroll=own(payroll,['payroll']);window.payroll=payroll;}
+if(typeof reports==='function'){reports=own(reports,['reports']);window.reports=reports;}
+if(typeof analytics==='function'){analytics=own(analytics,['analytics','statistics','stats']);window.analytics=analytics;}
+if(typeof alerts==='function'){alerts=own(alerts,['alerts']);window.alerts=alerts;}
+if(typeof agencies==='function'){agencies=own(agencies,['agencies']);window.agencies=agencies;}
+if(typeof users==='function'){users=own(users,['users']);window.users=users;}
+if(typeof auditPage==='function'){auditPage=own(auditPage,['audit','dgsurveillance']);window.auditPage=auditPage;}
+if(typeof updates==='function'){updates=own(updates,['updates']);window.updates=updates;}
+if(typeof settings==='function'){settings=own(settings,['settings']);window.settings=settings;}
+const painters={lpV25RefreshRhRowsOnly:['payroll'],lpV14MountRH:['payroll'],lpV38MountRhPanels:['payroll'],lpV38InstallRhRefresh:['payroll'],lpF2945DecorateDGPointage:['payroll'],lpC31Render:['accounting'],lp20InstallQuickSale:['sales'],lp87MountSalesHistory:['sales'],lp88PaintSalesHistory:['sales'],lpV36Fix1MountStock:['stock'],lpFix37MountPurchases:['purchases'],lpFix37RenderPurchaseStats:['purchases'],lpV36MountPurchases:['purchases']};
+for(const [name,routes] of Object.entries(painters))if(typeof window[name]==='function')window[name]=own(window[name],routes);
+window.lp95OwnedModules={open};
+})();
+
+/* LP_V95_FIX4_ACCOUNTING_DOCUMENT_SCROLL — mobile Accounting only. */
+(function(){
+ 'use strict';
+ if(document.getElementById('lp95AccountingScroll'))return;
+ const style=document.createElement('style');style.id='lp95AccountingScroll';
+ style.textContent=`
+ @media(max-width:980px){
+  html.lp95-accounting-scroll[data-lp-ui-view="page"]{
+   height:auto!important;max-height:none!important;overflow-y:auto!important;overflow-x:clip!important;touch-action:auto!important;overscroll-behavior-y:auto!important;
+  }
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] body,
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] #appView:not(.hidden),
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] #appView>.main,
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] #content[data-lp95-route="accounting"]{
+   height:auto!important;max-height:none!important;overflow-y:visible!important;overflow-x:clip!important;touch-action:auto!important;overscroll-behavior-y:auto!important;
+  }
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] body{position:static!important;}
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] #content[data-lp95-route="accounting"]{padding-bottom:calc(32px + env(safe-area-inset-bottom,0px))!important;}
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] #content[data-lp95-route="accounting"] .card,
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] #lpC30Comparison,
+  html.lp95-accounting-scroll[data-lp-ui-view="page"] #lpC31FinalAccounting{
+   height:auto!important;max-height:none!important;overflow:visible!important;touch-action:auto!important;
+  }
+ }
+ `;
+ document.head.appendChild(style);
 })();

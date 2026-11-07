@@ -1,16 +1,16 @@
 {
   "schema": 1,
-  "build": 2026400093,
-  "version": "29.6.0.93",
+  "build": 2026400100,
+  "version": "29.6.0.100",
   "base": "Android MASTER - app.js identique",
-  "source_apk_sha256": "61154dbf33f44c1a04fadd3ded203c97068032ec845e943505ed52beac849c80",
+  "source_apk_sha256": "3acf80b1270ea8324d10bd293c20b235b3978723e537d43bc6f1f96b1594f559",
   "files": {
     "index.html": "2e1005916fabfb37312f2e66e22b89513ce2133104acd420e16ce761a58d923a",
-    "app.js": "1c135bf5c82b31b99fe57aef41bc795d9f135c9d1ce3f0ba138bb285b0a7c43d",
+    "app.js": "96ab68b3545ed48777e8553f1bf6a62f29615d2ce794270d0f88d8866cef8cf1",
     "dg-security.js": "0e83b7043fd35d6445a4b874741a8b3b17b14e27f2ed67fec78ebf893faf30e7",
     "platform-update.js": "6e2e0e580266c22d5ce2b757ffdcb1bc5b38dbd3129f2c092de38890c42ccc4f",
     "styles.css": "a83f82707f68b4a2850ce49d9898428ee4246c4dc0047a4136268f7a91ebed53",
     "assets/leader-pharma-logo.png": "13704aa0bf0400d80e2f058a6ddcbca9723db38991cfd5447e61b8e5eb74a466"
   },
-  "source_version_code": 2026300999
+  "source_version_code": 2026301006
 }
