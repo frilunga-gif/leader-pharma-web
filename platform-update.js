@@ -134,7 +134,7 @@
    }else{
     const expected=formDraft.prior?.stock??null;
     formDraft.attempted=true;
-    result=await rpc('lp_save_product_dg_v41',{p_product:p,p_expected_stock:expected,p_change_stock:!formDraft.prior||p.stock!==Number(expected)},who);
+    result=await rpc('lp_save_product_purchase_v94',{p_product:p,p_expected_stock:expected,p_change_stock:!formDraft.prior||p.stock!==Number(expected),p_operation:window.lp94OperationId(p,expected,!formDraft.prior||p.stock!==Number(expected))},who);
    }
    if(key(result)!==key(p)||!Number.isSafeInteger(Number(result.stock)))throw Error('Produit non confirmé. Saisie conservée.');
    if(actor()!==who||draft!==formDraft||agency()!==p.agency)throw Error('Produit reçu au serveur. Rouvrez le stock du compte concerné.');
@@ -174,3 +174,5 @@
  window.lpStockConfirmedV79={read,saveProduct,duplicate,installRows,boot,open};
 })();
 
+
+/* LP_WEB_WINDOWS_PURCHASES_ADAPTER_FIX6 : atomic purchase RPC, persisted retry identity. */
