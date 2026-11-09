@@ -1,4 +1,4 @@
-name: Leader Pharma SUIVI ANDROID - Web Windows FIX4 revisions V90
+name: Leader Pharma SUIVI ANDROID - Web Windows FIX6 Achats
 'on':
   workflow_dispatch: {}
   push:
@@ -18,6 +18,7 @@ concurrency:
 jobs:
   suivre:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v4
       with:
@@ -25,113 +26,116 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: '22'
-    - name: Verifier le depot et reserver un seul suiveur
+    - name: Verifier le depot et conserver un seul suiveur
       env:
         GH_TOKEN: ${{ github.token }}
-      run: "set -euo pipefail\ntest \"$GITHUB_REPOSITORY\" = frilunga-gif/leader-pharma-web\ngh api --paginate \"\
-        repos/$GITHUB_REPOSITORY/actions/workflows?per_page=100\" --jq '.workflows[] | [.path,.state] | @tsv' >\
-        \ /tmp/lp-workflows.tsv\nfor file in Leader-Pharma-WEB-WINDOWS-AUTOMATIQUE.yml Leader-Pharma-WEB-WINDOWS-FIX1-PUBLICATION.yml;\
-        \ do\n  state=\"$(awk -F '\\t' -v path=\".github/workflows/$file\" '$1==path {print $2}' /tmp/lp-workflows.tsv)\"\
-        \n  if [ -z \"$state\" ]; then\n    echo \"Ancien workflow absent : $file\"\n    continue\n  fi\n  case\
-        \ \"$state\" in\n    active)\n      gh workflow disable \"$file\" --repo \"$GITHUB_REPOSITORY\"\n      ;;\n\
-        \    disabled_manually|disabled_inactivity|disabled_fork|deleted)\n      echo \"Ancien suiveur deja desactive\
-        \ : $file\"\n      ;;\n    *)\n      echo \"Etat inattendu du workflow $file : $state\" >&2\n      exit\
-        \ 1\n      ;;\n  esac\ndone\n"
-    - name: Suivre la version Android ou une nouvelle revision V90 sans modifier app.js
+      shell: bash
+      run: |
+        set -euo pipefail
+        test "$GITHUB_REPOSITORY" = frilunga-gif/leader-pharma-web
+        gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows?per_page=100" --jq '.workflows[] | [.path,.state] | @tsv' > /tmp/lp-workflows.tsv
+        for file in Leader-Pharma-WEB-WINDOWS-AUTOMATIQUE.yml Leader-Pharma-WEB-WINDOWS-FIX1-PUBLICATION.yml; do
+         state="$(awk -F '\t' -v path=".github/workflows/$file" '$1==path {print $2}' /tmp/lp-workflows.tsv)"
+         case "$state" in
+          active) gh workflow disable "$file" --repo "$GITHUB_REPOSITORY" ;;
+          ''|disabled_manually|disabled_inactivity|disabled_fork|deleted) echo "Ancien suiveur absent ou desactive : $file" ;;
+          *) echo "Etat inattendu : $state" >&2;exit 1 ;;
+         esac
+        done
+    - name: Preparer le correctif cible et ses tests
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 - <<'FILES'
+        import json,base64
+        from pathlib import Path
+        files=json.loads('{"follow.py": "IiIiRm9sbG93IEFuZHJvaWQgYnl0ZS1mb3ItYnl0ZTsgcmVwYWlyIG9ubHkgdGhlIHBsYXRmb3JtLXNwZWNpZmljIHN0b2NrIGFkYXB0ZXIuIiIiCmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAppbXBvcnQgaGFzaGxpYixqc29uLG9zLHJlLHVybGxpYi5yZXF1ZXN0LHVybGxpYi5wYXJzZSx6aXBmaWxlLGlvLHNodXRpbApCQVNFPSdodHRwczovL2RpbmFpbmdodWZtc3lrYW1ia3l2LnN1cGFiYXNlLmNvJwpGSUxFUz1bJ2luZGV4Lmh0bWwnLCdhcHAuanMnLCdkZy1zZWN1cml0eS5qcycsJ3BsYXRmb3JtLXVwZGF0ZS5qcycsJ3N0eWxlcy5jc3MnLCdhc3NldHMvbGVhZGVyLXBoYXJtYS1sb2dvLnBuZyddClJFUVVJUkVEPVsnTFBfVjc3X05PVEVTX0FHRU5DWV9TVEFSVCcsJ0xFQURFUiBQSEFSTUEgV0VCIFY3NSBSRUNPTk5FWElPTiBGSVgxJywnTEVBREVSIFBIQVJNQSBXRUIgVjc1IEZJWDIgVEFSR0VUIFNFTlNJQkxFJywnbHBQaG90b0NvbnRpbnVpdHlWNzQnLCdWNTAgRklYNiBSSCBBQ1RVQUxJU0FUSU9OJ10KTUFSS0VSPSdMUF9XRUJfV0lORE9XU19QVVJDSEFTRVNfQURBUFRFUl9GSVg2JwpPTEQ9InJlc3VsdD1hd2FpdCBycGMoJ2xwX3NhdmVfcHJvZHVjdF9kZ192NDEnLHtwX3Byb2R1Y3Q6cCxwX2V4cGVjdGVkX3N0b2NrOmV4cGVjdGVkLHBfY2hhbmdlX3N0b2NrOiFmb3JtRHJhZnQucHJpb3J8fHAuc3RvY2shPT1OdW1iZXIoZXhwZWN0ZWQpfSx3aG8pOyIKTkVXPSJyZXN1bHQ9YXdhaXQgcnBjKCdscF9zYXZlX3Byb2R1Y3RfcHVyY2hhc2Vfdjk0Jyx7cF9wcm9kdWN0OnAscF9leHBlY3RlZF9zdG9jazpleHBlY3RlZCxwX2NoYW5nZV9zdG9jazohZm9ybURyYWZ0LnByaW9yfHxwLnN0b2NrIT09TnVtYmVyKGV4cGVjdGVkKSxwX29wZXJhdGlvbjp3aW5kb3cubHA5NE9wZXJhdGlvbklkKHAsZXhwZWN0ZWQsIWZvcm1EcmFmdC5wcmlvcnx8cC5zdG9jayE9PU51bWJlcihleHBlY3RlZCkpfSx3aG8pOyIKZGVmIGRpZ2VzdChyYXcpOnJldHVybiBoYXNobGliLnNoYTI1NihyYXcpLmhleGRpZ2VzdCgpCmRlZiB2ZXJzaW9uKHYpOgogYXNzZXJ0IHJlLmZ1bGxtYXRjaChyJzI5XC42XC4wXC5cZCsnLHN0cih2KSksJ1ZlcnNpb24gaW5hdHRlbmR1ZScKIHJldHVybiB0dXBsZShtYXAoaW50LHYuc3BsaXQoJy4nKSkpCmRlZiBjbGFzc2lmeShtZXRhLGN1cnJlbnQpOgogYXNzZXJ0IG1ldGEuZ2V0KCdvaycpIGlzIFRydWUsJ0NhbmFsIEFuZHJvaWQgaW5kaXNwb25pYmxlJwogdmVyPXZlcnNpb24obWV0YVsndGVjaG5pY2FsX3ZlcnNpb24nXSk7b2xkPXZlcnNpb24oY3VycmVudFsndmVyc2lvbiddKQogYXNzZXJ0IHZlcj49b2xkLCdWZXJzaW9uIEFuZHJvaWQgcGx1cyBhbmNpZW5uZSA6IGFycmV0JwogYXNzZXJ0IHJlLmZ1bGxtYXRjaChyJ1thLWZBLUYwLTldezY0fScsc3RyKG1ldGEuZ2V0KCdzaGEyNTYnLCcnKSkpLCdFbXByZWludGUgQW5kcm9pZCByZXF1aXNlJwogdXJsPXVybGxpYi5wYXJzZS51cmxzcGxpdChtZXRhWydkb3dubG9hZF91cmwnXSkKIGFzc2VydCB1cmwuc2NoZW1lPT0naHR0cHMnIGFuZCB1cmwuaG9zdG5hbWU9PSdkaW5haW5naHVmbXN5a2FtYmt5di5zdXBhYmFzZS5jbycgYW5kIHVybC5wYXRoLnN0YXJ0c3dpdGgoJy9zdG9yYWdlL3YxL29iamVjdC8nKSwnQWRyZXNzZSBBUEsgbm9uIGF1dG9yaXNlZScKIGE9Y3VycmVudC5nZXQoJ3NvdXJjZV92ZXJzaW9uX2NvZGUnKTtiPW1ldGEuZ2V0KCd2ZXJzaW9uX2NvZGUnKQogaWYgYSBpcyBub3QgTm9uZSBhbmQgYiBpcyBub3QgTm9uZToKICBhc3NlcnQgaW50KGIpPj1pbnQoYSksJ1JldG91ciBkZSBjb2RlIHJlZnVzZScKICBpZiBpbnQoYSk9PWludChiKSBhbmQgY3VycmVudC5nZXQoJ3NvdXJjZV9hcGtfc2hhMjU2Jyk6YXNzZXJ0IGN1cnJlbnRbJ3NvdXJjZV9hcGtfc2hhMjU2J10ubG93ZXIoKT09bWV0YVsnc2hhMjU2J10ubG93ZXIoKSwnQ29kZSBBbmRyb2lkIHJldXRpbGlzZScKIHJldHVybiB2ZXIhPW9sZCBvciBzdHIoY3VycmVudC5nZXQoJ3NvdXJjZV9hcGtfc2hhMjU2JywnJykpLmxvd2VyKCkhPW1ldGFbJ3NoYTI1NiddLmxvd2VyKCkKZGVmIHBhdGNoX2FkYXB0ZXIocmF3LGFwcCk6CiB0ZXh0PXJhdy5kZWNvZGUoKTtlbmdpbmU9YXBwLmRlY29kZSgpCiBhc3NlcnQgJ3dpbmRvdy5scDk0T3BlcmF0aW9uSWQ9ZnVuY3Rpb24oJyBpbiBlbmdpbmUgYW5kICdscF9zYXZlX3Byb2R1Y3RfcHVyY2hhc2Vfdjk0JyBpbiBlbmdpbmUsJ01vdGV1ciBhY2hhdHMgVjk0IHJlcXVpcycKIGlmIE1BUktFUiBpbiB0ZXh0OgogIGFzc2VydCBPTEQgbm90IGluIHRleHQgYW5kIHRleHQuY291bnQoTkVXKT09MSwnQWRhcHRhdGV1ciBGSVg2IGluY29oZXJlbnQnCiAgcmV0dXJuIHJhdwogYXNzZXJ0IHRleHQuY291bnQoT0xEKT09MSwnR2VzdGlvbm5haXJlIHBsYXRlZm9ybWUgaW5jb25udSA6IGFycmV0IHNhbnMgcHVibGljYXRpb24nCiB0ZXh0PXRleHQucmVwbGFjZShPTEQsTkVXKSsnXG4vKiAnK01BUktFUisnIDogYXRvbWljIHB1cmNoYXNlIFJQQywgcGVyc2lzdGVkIHJldHJ5IGlkZW50aXR5LiAqL1xuJwogYXNzZXJ0ICdscF9zYXZlX3Byb2R1Y3RfZGdfdjQxJyBub3QgaW4gdGV4dCwnQW5jaWVubmUgc2F1dmVnYXJkZSBlbmNvcmUgcHJlc2VudGUnCiByZXR1cm4gdGV4dC5lbmNvZGUoKQpkZWYgcHJlcGFyZShtZXRhLGN1cnJlbnQsYXBrPU5vbmUpOgogY2hhbmdlZF9hbmRyb2lkPWNsYXNzaWZ5KG1ldGEsY3VycmVudCkKIGRhdGE9e2Y6UGF0aChmKS5yZWFkX2J5dGVzKCkgZm9yIGYgaW4gRklMRVN9CiBpZiBjaGFuZ2VkX2FuZHJvaWQ6CiAgYXNzZXJ0IGFwayBpcyBub3QgTm9uZSBhbmQgZGlnZXN0KGFwayk9PW1ldGFbJ3NoYTI1NiddLmxvd2VyKCksJ0VtcHJlaW50ZSBBUEsgaW5jb3JyZWN0ZScKICB3aXRoIHppcGZpbGUuWmlwRmlsZShpby5CeXRlc0lPKGFwaykpIGFzIHo6CiAgIGFzc2VydCB6LnRlc3R6aXAoKSBpcyBOb25lCiAgIGZvciBuYW1lIGluIFsnYXBwLmpzJywnZGctc2VjdXJpdHkuanMnLCdzdHlsZXMuY3NzJywnYXNzZXRzL2xlYWRlci1waGFybWEtbG9nby5wbmcnXTpkYXRhW25hbWVdPXoucmVhZCgnYXNzZXRzL3B1YmxpYy8nK25hbWUpCiBmb3IgbWFya2VyIGluIFJFUVVJUkVEOmFzc2VydCBtYXJrZXIgaW4gZGF0YVsnYXBwLmpzJ10uZGVjb2RlKCksJ0NvbXBhdGliaWxpdGUgY29tbXVuZSBtYW5xdWFudGUgOiAnK21hcmtlcgogb3JpZ2luYWxfYXBwPWRhdGFbJ2FwcC5qcyddO3BhdGNoZWQ9cGF0Y2hfYWRhcHRlcihkYXRhWydwbGF0Zm9ybS11cGRhdGUuanMnXSxvcmlnaW5hbF9hcHApCiBjaGFuZ2VkPWNoYW5nZWRfYW5kcm9pZCBvciBwYXRjaGVkIT1kYXRhWydwbGF0Zm9ybS11cGRhdGUuanMnXQogaWYgbm90IGNoYW5nZWQ6cmV0dXJuIEZhbHNlCiBkYXRhWydwbGF0Zm9ybS11cGRhdGUuanMnXT1wYXRjaGVkCiBidWlsZD1tYXgoaW50KGN1cnJlbnRbJ2J1aWxkJ10pKzEsMjAyNjQwMDAwMCt2ZXJzaW9uKG1ldGFbJ3RlY2huaWNhbF92ZXJzaW9uJ10pWy0xXSkKIHdvcmtlcj1QYXRoKCdzZXJ2aWNlLXdvcmtlci5qcycpLnJlYWRfdGV4dCgpCiB3b3JrZXIsbj1yZS5zdWJuKHIiY29uc3QgQ0FDSEVfTkFNRT0nbGVhZGVyLXBoYXJtYS13ZWItW14nXSsnOyIsImNvbnN0IENBQ0hFX05BTUU9J2xlYWRlci1waGFybWEtd2ViLSIrc3RyKGJ1aWxkKSsiJzsiLHdvcmtlcixjb3VudD0xKTthc3NlcnQgbj09MSwnQ2FjaGUgd29ya2VyIGluY29ubnUnCiBtPXsnc2NoZW1hJzoxLCdidWlsZCc6YnVpbGQsJ3ZlcnNpb24nOm1ldGFbJ3RlY2huaWNhbF92ZXJzaW9uJ10sJ2Jhc2UnOidBbmRyb2lkIE1BU1RFUiAtIGFwcC5qcyBpZGVudGlxdWUnLCdzb3VyY2VfYXBrX3NoYTI1Nic6bWV0YVsnc2hhMjU2J10ubG93ZXIoKSwncGxhdGZvcm1fYWRhcHRlcl9yZXZpc2lvbic6TUFSS0VSLCdmaWxlcyc6e2Y6ZGlnZXN0KGRhdGFbZl0pIGZvciBmIGluIEZJTEVTfX0KIGlmIG1ldGEuZ2V0KCd2ZXJzaW9uX2NvZGUnKSBpcyBub3QgTm9uZTptWydzb3VyY2VfdmVyc2lvbl9jb2RlJ109aW50KG1ldGFbJ3ZlcnNpb25fY29kZSddKQogYXJjaGl2ZT1QYXRoKCdwbGF0Zm9ybScpL3N0cihidWlsZCk7YXNzZXJ0IG5vdCBhcmNoaXZlLmV4aXN0cygpLCdBcmNoaXZlIGltbXVhYmxlIGRlamEgcHJlc2VudGUnCiBkYXRhWydzZXJ2aWNlLXdvcmtlci5qcyddPXdvcmtlci5lbmNvZGUoKTtkYXRhWydwbGF0Zm9ybS1tYW5pZmVzdC5qc29uJ109anNvbi5kdW1wcyhtLGluZGVudD0yKS5lbmNvZGUoKQogYXNzZXJ0IGRhdGFbJ2FwcC5qcyddPT1vcmlnaW5hbF9hcHAKIGZvciBuYW1lLHJhdyBpbiBkYXRhLml0ZW1zKCk6CiAgZGVzdD1hcmNoaXZlL25hbWU7ZGVzdC5wYXJlbnQubWtkaXIocGFyZW50cz1UcnVlLGV4aXN0X29rPVRydWUpO2Rlc3Qud3JpdGVfYnl0ZXMocmF3KQogZm9yIG5hbWUscmF3IGluIGRhdGEuaXRlbXMoKToKICBkZXN0PVBhdGgobmFtZSk7ZGVzdC5wYXJlbnQubWtkaXIocGFyZW50cz1UcnVlLGV4aXN0X29rPVRydWUpO2Rlc3Qud3JpdGVfYnl0ZXMocmF3KQogUGF0aCgnLm5vamVreWxsJykudG91Y2goKQogcmV0dXJuIFRydWUKCmRlZiBydW4oKToKIGN1cnJlbnQ9anNvbi5sb2FkcyhQYXRoKCdwbGF0Zm9ybS1tYW5pZmVzdC5qc29uJykucmVhZF90ZXh0KCkpCiBmb3IgbmFtZSxoIGluIGN1cnJlbnRbJ2ZpbGVzJ10uaXRlbXMoKTphc3NlcnQgZGlnZXN0KFBhdGgobmFtZSkucmVhZF9ieXRlcygpKT09aCwnTW90ZXVyIGxvY2FsIGluY29oZXJlbnQgOiAnK25hbWUKIHJlcT11cmxsaWIucmVxdWVzdC5SZXF1ZXN0KEJBU0UrJy9mdW5jdGlvbnMvdjEvbGVhZGVyLXBoYXJtYS1tYXN0ZXItdXBkYXRlJyxoZWFkZXJzPXsneC1sZWFkZXItdXBkYXRlJzonTFAtTUFTVEVSLVBSTy0yMDI2JywneC1sZWFkZXItY3VycmVudC12ZXJzaW9uJzonMjkuNi4wLjI4JywnQ2FjaGUtQ29udHJvbCc6J25vLWNhY2hlJ30pCiB3aXRoIHVybGxpYi5yZXF1ZXN0LnVybG9wZW4ocmVxLHRpbWVvdXQ9NjApIGFzIHI6bWV0YT1qc29uLmxvYWQocikKIGFwaz1Ob25lCiBpZiBjbGFzc2lmeShtZXRhLGN1cnJlbnQpOgogIHdpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihtZXRhWydkb3dubG9hZF91cmwnXSx0aW1lb3V0PTEyMCkgYXMgcjphcGs9ci5yZWFkKDY0KjEwMjQqMTAyNCsxKQogIGFzc2VydCBsZW4oYXBrKTw9NjQqMTAyNCoxMDI0LCdBUEsgdHJvcCB2b2x1bWluZXV4JwogY2hhbmdlZD1wcmVwYXJlKG1ldGEsY3VycmVudCxhcGspCiB3aXRoIG9wZW4ob3MuZW52aXJvblsnR0lUSFVCX09VVFBVVCddLCdhJykgYXMgZjpmLndyaXRlKCdjaGFuZ2VkPScrc3RyKGNoYW5nZWQpLmxvd2VyKCkrJ1xuJykKIHByaW50KCdBZGFwdGF0ZXVyIGFjaGF0cyBGSVg2IHByZXBhcmUgOyBhcHAuanMgQW5kcm9pZCBjb25zZXJ2ZS4nIGlmIGNoYW5nZWQgZWxzZSAnRGVqYSBhIGpvdXIgOiBhdWN1biBub3V2ZWF1IGJ1aWxkLicpCmlmIF9fbmFtZV9fPT0nX19tYWluX18nOnJ1bigpCg==", "adapter-test.cjs": "Y29uc3QgZnM9cmVxdWlyZSgnZnMnKSxhc3NlcnQ9cmVxdWlyZSgnYXNzZXJ0L3N0cmljdCcpLHtKU0RPTX09cmVxdWlyZShwcm9jZXNzLmVudi5MUF9KU0RPTXx8Jy90bXAvbHAtd2ViLXB1cmNoYXNlLXRlc3RzL25vZGVfbW9kdWxlcy9qc2RvbScpOwpjb25zdCBhZGFwdGVyPWZzLnJlYWRGaWxlU3luYyhwcm9jZXNzLmFyZ3ZbMl0sJ3V0ZjgnKSxlbmdpbmU9ZnMucmVhZEZpbGVTeW5jKHByb2Nlc3MuYXJndlszXSwndXRmOCcpOwphc3luYyBmdW5jdGlvbiB0ZXN0KHtmYWlsPWZhbHNlLHJvbGU9J0RHJyxhZ2VuY3k9J2thbWluYScsY29zdD0xMDAsc3RvY2s9MTV9PXt9KXsKIGNvbnN0IGQ9bmV3IEpTRE9NKCc8ZGl2IGlkPSJjb250ZW50Ij48ZGl2IGlkPSJzdG9ja0Zvcm0iPjwvZGl2PjxpbnB1dCBpZD0ic3RvY2tTZWFyY2giPjx0YWJsZSBpZD0ic3RvY2tUYWJsZSI+PC90YWJsZT48L2Rpdj4nLHt1cmw6J2h0dHBzOi8vdGVzdC5pbnZhbGlkJyxydW5TY3JpcHRzOidvdXRzaWRlLW9ubHknfSksdz1kLndpbmRvdzsKIE9iamVjdC5kZWZpbmVQcm9wZXJ0eSh3LmRvY3VtZW50LCdyZWFkeVN0YXRlJyx7dmFsdWU6J2NvbXBsZXRlJ30pO3cuc3RydWN0dXJlZENsb25lPXN0cnVjdHVyZWRDbG9uZTt3LkFib3J0Q29udHJvbGxlcj1BYm9ydENvbnRyb2xsZXI7dy5jdXJyZW50VXNlcj17dXNlcm5hbWU6J2RnJyxyb2xlfTt3LmN1cnJlbnRBZ2VuY3k9YWdlbmN5O3cucGFnZT0nc3RvY2snO3cuZGI9e3Byb2R1Y3RzOlt7aWQ6MSxhZ2VuY3ksbmFtZTonUHJvZHVpdCcsbG90OidBJyxiYXJjb2RlOicnLGVhbjonJyxzdG9jazoxMCxjb3N0OjEwMCxwcmljZToyMDAscmV0YWlsUHJpY2U6MjAwLHdob2xlc2FsZVByaWNlOjE1MCxtaW46MSxleHBpcnk6JzIwMjgtMDEtMDEnfV0sX2xwRGF0YUdlbmVyYXRpb246M307CiB3LnRvYXN0PSgpPT57fTt3LmRyYXdTdG9jaz0oKT0+e307dy51aWQ9KCk9PjI7dy5scEdldFNlc3Npb25Ub2tlblYxNj1hc3luYygpPT4gJ3Rlc3QtdG9rZW4nO3cuU1VQQUJBU0U9e3VybDonaHR0cHM6Ly90ZXN0LmludmFsaWQnLGtleTondGVzdCd9O3cuc3RvY2s9KCk9Pnt9Owogdy5wcm9kdWN0Rm9ybT0oKT0+e2NvbnN0IHA9dy5kYi5wcm9kdWN0c1swXTt3LmRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoJyNzdG9ja0Zvcm0nKS5pbm5lckhUTUw9T2JqZWN0LmVudHJpZXMoe3BuYW1lOnAubmFtZSxwbG90OnAubG90LHBiYXJjb2RlOicnLHBzdG9jazpzdG9jayxwY29zdDpjb3N0LHBwcmljZToyMDAscHdob2xlc2FsZToxNTAscG1pbjoxLHBleHA6cC5leHBpcnl9KS5tYXAoKFtrLHZdKT0+YDxpbnB1dCBpZD0iJHtrfSIgdmFsdWU9IiR7dn0iPmApLmpvaW4oJycpKyc8YnV0dG9uIGlkPSJzYXZlUHJvZHVjdCI+RW5yZWdpc3RyZXI8L2J1dHRvbj4nO307CiBjb25zdCBjYWxscz1bXSxsZWRnZXI9bmV3IE1hcCgpO2xldCBmaXJzdD1mYWlsOwogdy5mZXRjaD1hc3luYyh1cmwsb3B0cyk9Pntjb25zdCBuYW1lPXVybC5zcGxpdCgnLycpLnBvcCgpLGJvZHk9SlNPTi5wYXJzZShvcHRzLmJvZHkpO2NhbGxzLnB1c2goe25hbWUsYm9keX0pO2lmKG5hbWU9PT0nbHBfZGF0YV9nZW5lcmF0aW9uX3YzOScpcmV0dXJuIHtvazp0cnVlLGpzb246YXN5bmMoKT0+M307aWYobmFtZT09PSdscF9yZWFkX3N0YXRlX3YzMicpcmV0dXJuIHtvazp0cnVlLGpzb246YXN5bmMoKT0+W3tjb250ZW51Ontwcm9kdWN0czp3LmRiLnByb2R1Y3RzfX1dfTsKIGFzc2VydC5lcXVhbChuYW1lLCdscF9zYXZlX3Byb2R1Y3RfcHVyY2hhc2Vfdjk0JywnYWxsIHN0b2NrIHNhdmVzIG11c3QgdXNlIGF0b21pYyBwdXJjaGFzZSBSUEMnKTthc3NlcnQoYm9keS5wX29wZXJhdGlvbik7bGVkZ2VyLnNldChib2R5LnBfb3BlcmF0aW9uLGJvZHkpO2lmKGZpcnN0KXtmaXJzdD1mYWxzZTt0aHJvdyBFcnJvcignbG9zdCByZXNwb25zZScpO31yZXR1cm4ge29rOnRydWUsanNvbjphc3luYygpPT5ib2R5LnBfcHJvZHVjdH07fTsKIC8vIFVzZSB0aGUgYWN0dWFsIHNoYXJlZC1lbmdpbmUga2V5IGdlbmVyYXRvciwgd2l0aCBpdHMgc2NvcGUgZGVwZW5kZW5jeS4KIGNvbnN0IGE9ZW5naW5lLmluZGV4T2YoJ3dpbmRvdy5scDk0T3BlcmF0aW9uSWQ9ZnVuY3Rpb24oJyksYj1lbmdpbmUuaW5kZXhPZignXG59OycsYSkrMzthc3NlcnQoYT4wJiZiPmEpO3cuc2NvcGU9KCk9PkpTT04uc3RyaW5naWZ5KFt3LmN1cnJlbnRVc2VyLnVzZXJuYW1lLGFnZW5jeSwzXSk7dy5ldmFsKGVuZ2luZS5zbGljZShhLGIpKTsKIHcuZXZhbChhZGFwdGVyKTsKIC8vIFRoZSByZWFsIG1haW4tZW5naW5lIGd1YXJkIG11c3QgZGVmZXIgdG8gdGhlIHByZWxvYWRlZCBwbGF0Zm9ybSBhZGFwdGVyLgogY29uc3Qgb3JpZ2luYWw9dy5scFN0b2NrQ29uZmlybWVkVjc5O2NvbnN0IGEyPWVuZ2luZS5pbmRleE9mKCcvKiBMUF9XRUJfV0lORE9XU19TVE9DS19DT05GSVJNRURfVjc5XzEnKSxiMj1lbmdpbmUuaW5kZXhPZignXG59KSgpOycsYTIpKzc7YXNzZXJ0KGEyPjAmJmIyPmEyKTt3LmV2YWwoZW5naW5lLnNsaWNlKGEyLGIyKSk7YXNzZXJ0LmVxdWFsKHcubHBTdG9ja0NvbmZpcm1lZFY3OSxvcmlnaW5hbCk7CiB3LnByb2R1Y3RGb3JtKDEpO2NvbnN0IGJ1dHRvbj13LmRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoJyNzYXZlUHJvZHVjdCcpOwogaWYocm9sZSE9PSdERycpe2Fzc2VydC5lcXVhbChhd2FpdCB3LmxwU3RvY2tDb25maXJtZWRWNzkuc2F2ZVByb2R1Y3QoYnV0dG9uKSxmYWxzZSk7YXNzZXJ0LmVxdWFsKGNhbGxzLmxlbmd0aCwwKTtkLndpbmRvdy5jbG9zZSgpO3JldHVybjt9CiBpZihmYWlsKXthc3NlcnQuZXF1YWwoYXdhaXQgdy5scFN0b2NrQ29uZmlybWVkVjc5LnNhdmVQcm9kdWN0KGJ1dHRvbiksZmFsc2UpO2Fzc2VydCh3LmRvY3VtZW50LnF1ZXJ5U2VsZWN0b3IoJyNwbmFtZScpKTthc3NlcnQuZXF1YWwoYXdhaXQgdy5scFN0b2NrQ29uZmlybWVkVjc5LnNhdmVQcm9kdWN0KGJ1dHRvbiksdHJ1ZSk7Y29uc3Qgc2F2ZXM9Y2FsbHMuZmlsdGVyKHg9PngubmFtZT09PSdscF9zYXZlX3Byb2R1Y3RfcHVyY2hhc2Vfdjk0Jyk7YXNzZXJ0LmVxdWFsKHNhdmVzLmxlbmd0aCwyKTthc3NlcnQuZXF1YWwoc2F2ZXNbMF0uYm9keS5wX29wZXJhdGlvbixzYXZlc1sxXS5ib2R5LnBfb3BlcmF0aW9uKTthc3NlcnQuZXF1YWwobGVkZ2VyLnNpemUsMSk7fQogZWxzZSB7YnV0dG9uLmNsaWNrKCk7YnV0dG9uLmNsaWNrKCk7Zm9yKGxldCBpPTA7aTwyMCYmIWNhbGxzLnNvbWUoeD0+eC5uYW1lPT09J2xwX3NhdmVfcHJvZHVjdF9wdXJjaGFzZV92OTQnKTtpKyspYXdhaXQgbmV3IFByb21pc2Uoc2V0SW1tZWRpYXRlKTthd2FpdCBuZXcgUHJvbWlzZShzZXRJbW1lZGlhdGUpO2Fzc2VydC5lcXVhbChjYWxscy5maWx0ZXIoeD0+eC5uYW1lPT09J2xwX3NhdmVfcHJvZHVjdF9wdXJjaGFzZV92OTQnKS5sZW5ndGgsMSk7fQogYXNzZXJ0LmVxdWFsKHcuZGIucHJvZHVjdHNbMF0uc3RvY2ssc3RvY2spO2Fzc2VydC5lcXVhbCh3LmRiLnByb2R1Y3RzWzBdLmNvc3QsY29zdCk7YXNzZXJ0LmVxdWFsKHcuZG9jdW1lbnQucXVlcnlTZWxlY3RvcignI3BuYW1lJyksbnVsbCk7ZC53aW5kb3cuY2xvc2UoKTsKfQooYXN5bmMoKT0+e2F3YWl0IHRlc3QoKTthd2FpdCB0ZXN0KHtmYWlsOnRydWV9KTthd2FpdCB0ZXN0KHtjb3N0OjEyMCxzdG9jazoxMH0pO2F3YWl0IHRlc3Qoe3N0b2NrOjd9KTthd2FpdCB0ZXN0KHthZ2VuY3k6J2NlbnRyZSd9KTthd2FpdCB0ZXN0KHtyb2xlOidWZW5kZXVyJ30pO2NvbnNvbGUubG9nKCdQQVNTIHJlYWwgcHJlbG9hZCBhZGFwdGVyICsgZW5naW5lIGd1YXJkOiBhdG9taWMgcHVyY2hhc2VzLCBkb3VibGUtY2xpY2ssIHJldHJ5IGlkZW50aXR5LCBwcmljZS9xdWFudGl0eSBjb3JyZWN0aW9ucywgYWdlbmN5IGFuZCByb2xlIGNoZWNrcycpO30pKCkuY2F0Y2goZT0+e2NvbnNvbGUuZXJyb3IoZSk7cHJvY2Vzcy5leGl0KDEpfSk7Cg==", "test_follow.py": "ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCBpbXBvcnRsaWIudXRpbCx0ZW1wZmlsZSxvcyxqc29uLGhhc2hsaWIsemlwZmlsZSxpbwpzcGVjPWltcG9ydGxpYi51dGlsLnNwZWNfZnJvbV9maWxlX2xvY2F0aW9uKCdmJyxzdHIoUGF0aChfX2ZpbGVfXykud2l0aF9uYW1lKCdmb2xsb3cucHknKSkpO2Y9aW1wb3J0bGliLnV0aWwubW9kdWxlX2Zyb21fc3BlYyhzcGVjKTtzcGVjLmxvYWRlci5leGVjX21vZHVsZShmKQpiYXNlPVBhdGguY3dkKCk7YXBwPVBhdGgob3MuZW52aXJvbi5nZXQoJ0xQX1RFU1RfQVBQJyxzdHIoYmFzZS8nd29yay93ZWItY3VycmVudC1hcHAuanMnKSkpLnJlYWRfYnl0ZXMoKTthZGFwdGVyPVBhdGgob3MuZW52aXJvbi5nZXQoJ0xQX1RFU1RfQURBUFRFUicsc3RyKGJhc2UvJ3dvcmsvd2ViLWN1cnJlbnQtcGxhdGZvcm0tdXBkYXRlLmpzJykpKS5yZWFkX2J5dGVzKCkKaWYgZi5NQVJLRVIuZW5jb2RlKCkgaW4gYWRhcHRlcjoKIGFkYXB0ZXI9YWRhcHRlci5kZWNvZGUoKS5yZXBsYWNlKGYuTkVXLGYuT0xEKS5zcGxpdCgnXG4vKiAnK2YuTUFSS0VSKVswXS5lbmNvZGUoKQp3aXRoIHRlbXBmaWxlLlRlbXBvcmFyeURpcmVjdG9yeSgpIGFzIHQ6CiBvcy5jaGRpcih0KQogdHJ5OgogIGZvciBuYW1lIGluIGYuRklMRVM6CiAgIHA9UGF0aChuYW1lKTtwLnBhcmVudC5ta2RpcihwYXJlbnRzPVRydWUsZXhpc3Rfb2s9VHJ1ZSk7cC53cml0ZV9ieXRlcyhhcHAgaWYgbmFtZT09J2FwcC5qcycgZWxzZSBhZGFwdGVyIGlmIG5hbWU9PSdwbGF0Zm9ybS11cGRhdGUuanMnIGVsc2UgYidmaXh0dXJlJykKICBQYXRoKCdzZXJ2aWNlLXdvcmtlci5qcycpLndyaXRlX3RleHQoImNvbnN0IENBQ0hFX05BTUU9J2xlYWRlci1waGFybWEtd2ViLTIwMjY0MDAxMDEnOyIpCiAgY3VyPXsndmVyc2lvbic6JzI5LjYuMC4xMDEnLCdidWlsZCc6MjAyNjQwMDEwMSwnc291cmNlX2Fwa19zaGEyNTYnOidhJyo2NCwnc291cmNlX3ZlcnNpb25fY29kZSc6MjAyNjMwMTAwNywnZmlsZXMnOntuOmYuZGlnZXN0KFBhdGgobikucmVhZF9ieXRlcygpKSBmb3IgbiBpbiBmLkZJTEVTfX0KICBtZXRhPXsnb2snOlRydWUsJ3RlY2huaWNhbF92ZXJzaW9uJzpjdXJbJ3ZlcnNpb24nXSwndmVyc2lvbl9jb2RlJzpjdXJbJ3NvdXJjZV92ZXJzaW9uX2NvZGUnXSwnc2hhMjU2JzonYScqNjQsJ2Rvd25sb2FkX3VybCc6Zi5CQVNFKycvc3RvcmFnZS92MS9vYmplY3Qvc2lnbi90ZXN0J30KICBhc3NlcnQgbm90IGYuY2xhc3NpZnkobWV0YSxjdXIpCiAgYXNzZXJ0IGYucHJlcGFyZShtZXRhLGN1ciksICdhZGFwdGVyLW9ubHkgY2hhbmdlIG11c3QgcHVibGlzaCB3aXRob3V0IG5ldyBBbmRyb2lkJwogIG09anNvbi5sb2FkcyhQYXRoKCdwbGF0Zm9ybS1tYW5pZmVzdC5qc29uJykucmVhZF90ZXh0KCkpO2Fzc2VydCBtWydidWlsZCddPT0yMDI2NDAwMTAyIGFuZCBtWyd2ZXJzaW9uJ109PWN1clsndmVyc2lvbiddO2Fzc2VydCBQYXRoKCdhcHAuanMnKS5yZWFkX2J5dGVzKCk9PWFwcAogIGZvciBuLGggaW4gbVsnZmlsZXMnXS5pdGVtcygpOmFzc2VydCBmLmRpZ2VzdChQYXRoKG4pLnJlYWRfYnl0ZXMoKSk9PWggYW5kIFBhdGgobikucmVhZF9ieXRlcygpPT1QYXRoKCdwbGF0Zm9ybScsc3RyKG1bJ2J1aWxkJ10pLG4pLnJlYWRfYnl0ZXMoKQogIGFzc2VydCBub3QgZi5wcmVwYXJlKG1ldGEsbSksJ3JlcGVhdGVkIHNjaGVkdWxlIG11c3Qgbm90IHB1Ymxpc2ggYWdhaW4nCiAgYXJjaGl2ZT1QYXRoKCdwbGF0Zm9ybScpL3N0cihtWydidWlsZCddKTtiZWZvcmU9e3N0cihwKTpwLnJlYWRfYnl0ZXMoKSBmb3IgcCBpbiBhcmNoaXZlLnJnbG9iKCcqJykgaWYgcC5pc19maWxlKCl9CiAgYnVmPWlvLkJ5dGVzSU8oKQogIHdpdGggemlwZmlsZS5aaXBGaWxlKGJ1ZiwndycpIGFzIHo6CiAgIGZvciBuIGluIFsnYXBwLmpzJywnZGctc2VjdXJpdHkuanMnLCdzdHlsZXMuY3NzJywnYXNzZXRzL2xlYWRlci1waGFybWEtbG9nby5wbmcnXTp6LndyaXRlc3RyKCdhc3NldHMvcHVibGljLycrbixQYXRoKG4pLnJlYWRfYnl0ZXMoKSkKICByYXc9YnVmLmdldHZhbHVlKCk7ZnV0dXJlPXsqKm1ldGEsJ3RlY2huaWNhbF92ZXJzaW9uJzonMjkuNi4wLjEwMicsJ3ZlcnNpb25fY29kZSc6MjAyNjMwMTAwOCwnc2hhMjU2JzpmLmRpZ2VzdChyYXcpfQogIGFzc2VydCBmLnByZXBhcmUoZnV0dXJlLG0scmF3KTthc3NlcnQgUGF0aCgnYXBwLmpzJykucmVhZF9ieXRlcygpPT1hcHAKICBhc3NlcnQgYWxsKFBhdGgobikucmVhZF9ieXRlcygpPT12IGZvciBuLHYgaW4gYmVmb3JlLml0ZW1zKCkpLCdvbGQgYXJjaGl2ZSBjaGFuZ2VkJwogIGZvciBiYWQgaW4gW3sqKm1ldGEsJ3RlY2huaWNhbF92ZXJzaW9uJzonMjkuNi4wLjk5J30seyoqbWV0YSwnc2hhMjU2JzonYicqNjR9LHsqKm1ldGEsJ2Rvd25sb2FkX3VybCc6J2h0dHBzOi8vZXhhbXBsZS5jb20vYXBrJ31dOgogICB0cnk6Zi5jbGFzc2lmeShiYWQsY3VyKQogICBleGNlcHQgQXNzZXJ0aW9uRXJyb3I6cGFzcwogICBlbHNlOnJhaXNlIEFzc2VydGlvbkVycm9yKCd1bnNhZmUgbWV0YWRhdGEgYWNjZXB0ZWQnKQogIHRyeTpmLnBhdGNoX2FkYXB0ZXIoYid1bmtub3duJyxhcHApCiAgZXhjZXB0IEFzc2VydGlvbkVycm9yOnBhc3MKICBlbHNlOnJhaXNlIEFzc2VydGlvbkVycm9yKCd1bmtub3duIGFkYXB0ZXIgYWNjZXB0ZWQnKQogZmluYWxseTpvcy5jaGRpcihiYXNlKQpwcmludCgnUEFTUyBhZGFwdGVyLW9ubHkgcHVibGljYXRpb24sIGlkZW1wb3RlbnQgc2NoZWR1bGUsIGZ1dHVyZSBBbmRyb2lkIGZvbGxvd2luZywgaW1tdXRhYmxlIGFyY2hpdmVzLCBtYW5pZmVzdHMsIG5vIGRvd25ncmFkZS9jb25mbGljdGluZyBBUEsvdW5rbm93biBhZGFwdGVyJykK"}')
+        for name,data in files.items():
+         p=Path('/tmp/lp-purchase-fix6')/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(base64.b64decode(data))
+        FILES
+    - name: Suivre Android et corriger seulement ladaptateur achats Web Windows
       id: prepare
-      shell: python
-      run: "\"\"\"Follow future Android releases without applying any application patch.\"\"\"\nfrom pathlib import\
-        \ Path\nimport hashlib,json,os,re,urllib.request,urllib.parse,zipfile,io,shutil\n\nBASE='https://dinainghufmsykambkyv.supabase.co'\n\
-        REQUIRED=['LP_V77_NOTES_AGENCY_START','LEADER PHARMA WEB V75 RECONNEXION FIX1','LEADER PHARMA WEB V75 FIX2\
-        \ TARGET SENSIBLE','lpPhotoContinuityV74','V50 FIX6 RH ACTUALISATION']\nFILES=['index.html','app.js','dg-security.js','platform-update.js','styles.css','assets/leader-pharma-logo.png']\n\
-        def version(v):\n    assert re.fullmatch(r'29\\.6\\.0\\.\\d+',str(v)), 'Version inattendue'\n    return\
-        \ tuple(map(int,v.split('.')))\n\ndef classify(meta,current):\n    assert meta.get('ok') is True,'Canal\
-        \ Android indisponible'\n    v=meta.get('technical_version');ver=version(v);old=version(current['version'])\n\
-        \    if ver<=(29,6,0,77) or ver<old:return False\n    assert re.fullmatch(r'[a-fA-F0-9]{64}',str(meta.get('sha256',''))),'Empreinte\
-        \ Android requise'\n    if ver==old and str(current.get('source_apk_sha256','')).lower()==meta['sha256'].lower():return\
-        \ False\n    current_code=current.get('source_version_code');new_code=meta.get('version_code')\n    if current_code\
-        \ is not None and new_code is not None:\n        assert int(new_code)>=int(current_code),'Retour de code\
-        \ Android refuse'\n        if int(new_code)==int(current_code) and current.get('source_apk_sha256'):\n \
-        \           assert current['source_apk_sha256'].lower()==meta['sha256'].lower(),'Code Android reutilise'\n\
-        \    url=urllib.parse.urlsplit(meta['download_url'])\n    assert url.scheme=='https' and url.hostname=='dinainghufmsykambkyv.supabase.co'\
-        \ and url.path.startswith('/storage/v1/object/'),'Adresse APK non autorisee'\n    return True\n\ndef prepare(meta,current,apk):\n\
-        \    assert classify(meta,current)\n    assert hashlib.sha256(apk).hexdigest().lower()==meta['sha256'].lower(),'Empreinte\
-        \ APK incorrecte'\n    with zipfile.ZipFile(io.BytesIO(apk)) as z:\n        assert z.testzip() is None\n\
-        \        app=z.read('assets/public/app.js')\n        text=app.decode('utf-8')\n        for marker in REQUIRED:assert\
-        \ marker in text,'Compatibilite commune manquante : '+marker\n        data={name:z.read('assets/public/'+name)\
-        \ for name in ['app.js','dg-security.js','styles.css','assets/leader-pharma-logo.png']}\n    # Only the\
-        \ web host shell remains platform-specific. Application bytes are identical.\n    r=Path('_next');assert\
-        \ not r.exists();r.mkdir()\n    for name in FILES:\n        dest=r/name;dest.parent.mkdir(parents=True,exist_ok=True)\n\
-        \        if name in data:dest.write_bytes(data[name])\n        else:shutil.copy2(name,dest)\n    shutil.copy2('service-worker.js',r/'service-worker.js')\n\
-        \    build=max(int(current['build'])+1,2026400000+version(meta['technical_version'])[-1])\n    p=r/'service-worker.js';worker,n=re.subn(r\"\
-        const CACHE_NAME='leader-pharma-web-[^']+';\",\"const CACHE_NAME='leader-pharma-web-\"+str(build)+\"';\"\
-        ,p.read_text(),count=1);assert n==1;p.write_text(worker)\n    m={'schema':1,'build':build,'version':meta['technical_version'],'base':'Android\
-        \ MASTER - app.js identique','source_apk_sha256':meta['sha256'].lower(),'files':{f:hashlib.sha256((r/f).read_bytes()).hexdigest()\
-        \ for f in FILES}}\n    if meta.get('version_code') is not None:m['source_version_code']=int(meta['version_code'])\n\
-        \    (r/'platform-manifest.json').write_text(json.dumps(m,indent=2))\n    assert (r/'app.js').read_bytes()==app\n\
-        \    archive=Path('platform')/str(build);assert not archive.exists(),'Archive immuable deja presente'\n\
-        \    archive.mkdir(parents=True)\n    for name in FILES+['service-worker.js','platform-manifest.json']:\n\
-        \        dest=archive/name;dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(r/name,dest)\n   \
-        \     dest=Path(name);dest.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(r/name,dest)\n    shutil.rmtree(r);Path('.nojekyll').touch()\n\
-        \    return m\n\ndef run():\n    current=json.loads(Path('platform-manifest.json').read_text())\n    for\
-        \ name,digest in current['files'].items():assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==digest,'Moteur\
-        \ local incoherent : '+name\n    req=urllib.request.Request(BASE+'/functions/v1/leader-pharma-master-update',headers={'x-leader-update':'LP-MASTER-PRO-2026','x-leader-current-version':'29.6.0.28'})\n\
-        \    with urllib.request.urlopen(req,timeout=60) as r:meta=json.load(r)\n    changed=classify(meta,current)\n\
-        \    if changed:\n        with urllib.request.urlopen(meta['download_url'],timeout=120) as r:\n        \
-        \    apk=r.read(64*1024*1024+1)\n        assert len(apk)<=64*1024*1024,'APK trop volumineux'\n        m=prepare(meta,current,apk)\n\
-        \        print('Moteur Android recopie sans modification : '+m['version'])\n    else:print('Aucune version\
-        \ suivante : versions actuellement en service conservees')\n    with open(os.environ['GITHUB_OUTPUT'],'a')\
-        \ as f:f.write('changed='+str(changed).lower()+'\\n')\n\ndef selftest():\n    current={'version':'29.6.0.90','build':2026400090,'source_apk_sha256':'a'*64,'source_version_code':2026300993}\n\
-        \    meta={'ok':True,'technical_version':'29.6.0.90','sha256':'b'*64,'version_code':2026300995,'download_url':BASE+'/storage/v1/object/sign/fixture.apk'}\n\
-        \    assert classify(meta,current),'Revision V90 nouvelle ignoree'\n    assert not classify({**meta,'sha256':'a'*64,'version_code':2026300993},current),'Revision\
-        \ identique repetee'\n    assert not classify({**meta,'technical_version':'29.6.0.89'},current),'Retour\
-        \ de version'\n    assert classify({**meta,'technical_version':'29.6.0.91'},current)\n    assert classify(meta,{**current,'source_apk_sha256':None,'source_version_code':None}),'Migration\
-        \ ancien manifeste'\n    for bad in [{**meta,'download_url':'https://example.com/x'},{**meta,'sha256':'bad'},{**meta,'version_code':1}]:\n\
-        \        try:classify(bad,current)\n        except (AssertionError,ValueError):pass\n        else:raise\
-        \ AssertionError('Metadonnees invalides acceptees')\n    print('Suivi revisions V90 : tests OK, aucun fichier\
-        \ utilisateur lu')\n\nif __name__=='__main__':\n    selftest()\n    run()\n"
-    - name: Verifier le moteur commun et ses empreintes
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 /tmp/lp-purchase-fix6/follow.py
+    - name: Verifier le moteur intact et le vrai gestionnaire de stock
       if: steps.prepare.outputs.changed == 'true'
-      run: "set -euo pipefail\nnode --check app.js\nnode --check dg-security.js\nnode --check platform-update.js\n\
-        node --check service-worker.js\npython3 - <<'VERIFY'\nimport json,hashlib\nfrom pathlib import Path\nm=json.loads(Path('platform-manifest.json').read_text());archive=Path('platform')/str(m['build'])\n\
-        for name,digest in m['files'].items():\n assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==digest\n\
-        \ assert Path(name).read_bytes()==(archive/name).read_bytes()\nVERIFY\n"
-    - name: Publier uniquement les fichiers du moteur suivant
+      shell: bash
+      run: |
+        set -euo pipefail
+        node --check app.js
+        node --check dg-security.js
+        node --check platform-update.js
+        node --check service-worker.js
+        LP_TEST_APP=app.js LP_TEST_ADAPTER=platform-update.js python3 /tmp/lp-purchase-fix6/test_follow.py
+        npm install --prefix /tmp/lp-web-purchase-tests jsdom@26.1.0 --no-audit --no-fund
+        node /tmp/lp-purchase-fix6/adapter-test.cjs platform-update.js app.js
+        python3 - <<'VERIFY'
+        from pathlib import Path
+        import hashlib,json
+        m=json.loads(Path('platform-manifest.json').read_text());archive=Path('platform')/str(m['build'])
+        assert m['platform_adapter_revision']=='LP_WEB_WINDOWS_PURCHASES_ADAPTER_FIX6'
+        for name,h in m['files'].items():
+         assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==h
+         assert Path(name).read_bytes()==(archive/name).read_bytes()
+        VERIFY
+    - name: Publier les fichiers verifies
       if: steps.prepare.outputs.changed == 'true'
-      run: 'set -euo pipefail
-
-        git config user.name ''github-actions[bot]''
-
-        git config user.email ''41898282+github-actions[bot]@users.noreply.github.com''
-
-        git add .nojekyll index.html app.js dg-security.js platform-update.js styles.css assets/leader-pharma-logo.png
-        service-worker.js platform platform-manifest.json
-
-        if ! git diff --cached --quiet; then git commit -m ''Moteur commun depuis publication Android unique'';
-        git push origin HEAD:main; fi
-
-        '
-    - name: Confirmer ou relancer Pages sans changer ses reglages
+      shell: bash
+      run: |
+        set -euo pipefail
+        git config user.name 'github-actions[bot]'
+        git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+        git add .nojekyll index.html app.js dg-security.js platform-update.js styles.css assets/leader-pharma-logo.png service-worker.js platform platform-manifest.json
+        if ! git diff --cached --quiet; then
+         git commit -m 'FIX6 achats Web Windows : adaptateur atomique, moteur Android intact'
+         git push origin HEAD:main
+        fi
+    - name: Confirmer Pages et les fichiers publics sans changer ses reglages
       env:
         GH_TOKEN: ${{ github.token }}
-      run: "set -euo pipefail\n# Read existing settings only. Changing Pages settings requires administration permissions.\n\
-        gh api \"repos/$GITHUB_REPOSITORY/pages\" > /tmp/pages-settings.json\npython3 - <<'SETTINGS'\nimport json\n\
-        m=json.load(open('/tmp/pages-settings.json'))\nassert m.get('build_type')=='legacy' and m.get('source',{}).get('branch')=='main'\
-        \ and m.get('source',{}).get('path')=='/', 'Pages doit deja publier depuis main / ; verifier Settings >\
-        \ Pages sans modifier le moteur.'\nSETTINGS\npython3 - <<'PENDING'\nimport json,urllib.request,os\nfrom\
-        \ pathlib import Path\nm=json.loads(Path('platform-manifest.json').read_text())\nbase='https://frilunga-gif.github.io/leader-pharma-web/'\n\
-        ready=False\ntry:\n req=urllib.request.Request(base+'platform-manifest.json?verify='+os.environ['GITHUB_RUN_ID'],headers={'Cache-Control':'no-cache'})\n\
-        \ with urllib.request.urlopen(req,timeout=20) as r:live=json.load(r)\n ready=live.get('version')==m['version']\
-        \ and live.get('build')==m['build'] and live.get('files')==m['files']\nexcept Exception:pass\nPath('/tmp/lp-pages-ready').write_text('yes'\
-        \ if ready else 'no')\nPENDING\nif [ \"$(cat /tmp/lp-pages-ready)\" != yes ]; then\n  gh api --method POST\
-        \ \"repos/$GITHUB_REPOSITORY/pages/builds\" > /tmp/pages-build.json\nfi\npython3 - <<'VERIFY'\nimport urllib.request,json,time,os,hashlib\n\
-        from pathlib import Path\nexpected=json.loads(Path('platform-manifest.json').read_text())\nbase='https://frilunga-gif.github.io/leader-pharma-web/'\n\
-        for attempt in range(48):\n try:\n  suffix='?verify='+os.environ['GITHUB_RUN_ID']+'-'+str(attempt)\n  req=urllib.request.Request(base+'platform-manifest.json'+suffix,headers={'Cache-Control':'no-cache'})\n\
-        \  with urllib.request.urlopen(req,timeout=20) as r:live=json.load(r)\n  if live.get('version')==expected['version']\
-        \ and live.get('build')==expected['build'] and live.get('files')==expected['files']:\n   for name,digest\
-        \ in expected['files'].items():\n    with urllib.request.urlopen(base+name+suffix,timeout=30) as r:raw=r.read()\n\
-        \    assert hashlib.sha256(raw).hexdigest()==digest,'Fichier public incoherent : '+name\n   print('WEB ET\
-        \ WINDOWS : moteur '+expected['version']+' reellement publie et toutes empreintes verifiees')\n   break\n\
-        \ except Exception as error:print('Verification publication : '+type(error).__name__)\n time.sleep(5)\n\
-        else:raise SystemExit('Publication Pages non confirmee. Le moteur du depot est conserve ; relancer ce suivi\
-        \ pour reprendre la publication.')\nVERIFY\n"
+      shell: bash
+      run: |
+        set -euo pipefail
+        gh api "repos/$GITHUB_REPOSITORY/pages" > /tmp/pages-settings.json
+        python3 - <<'SETTINGS'
+        import json
+        m=json.load(open('/tmp/pages-settings.json'))
+        assert m.get('build_type')=='legacy' and m.get('source',{}).get('branch')=='main' and m.get('source',{}).get('path')=='/', 'Pages doit deja publier depuis main / ; reglages conserves.'
+        SETTINGS
+        python3 - <<'PENDING'
+        import json,urllib.request,os
+        from pathlib import Path
+        m=json.loads(Path('platform-manifest.json').read_text());ready=False
+        try:
+         req=urllib.request.Request('https://frilunga-gif.github.io/leader-pharma-web/platform-manifest.json?verify='+os.environ['GITHUB_RUN_ID'],headers={'Cache-Control':'no-cache'})
+         with urllib.request.urlopen(req,timeout=20) as r:live=json.load(r)
+         ready=all(live.get(k)==m.get(k) for k in ['version','build','files','platform_adapter_revision'])
+        except Exception:pass
+        Path('/tmp/lp-pages-ready').write_text('yes' if ready else 'no')
+        PENDING
+        if [ "$(cat /tmp/lp-pages-ready)" != yes ]; then
+         gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds" > /tmp/pages-build.json
+        fi
+        python3 - <<'PUBLIC'
+        import json,urllib.request,os,hashlib,time
+        from pathlib import Path
+        expected=json.loads(Path('platform-manifest.json').read_text());base='https://frilunga-gif.github.io/leader-pharma-web/'
+        for attempt in range(48):
+         try:
+          suffix='?verify='+os.environ['GITHUB_RUN_ID']+'-'+str(attempt)
+          req=urllib.request.Request(base+'platform-manifest.json'+suffix,headers={'Cache-Control':'no-cache'})
+          with urllib.request.urlopen(req,timeout=20) as r:live=json.load(r)
+          if all(live.get(k)==expected.get(k) for k in ['version','build','files','platform_adapter_revision']):
+           for name,digest in expected['files'].items():
+            with urllib.request.urlopen(base+name+suffix,timeout=30) as r:raw=r.read()
+            assert hashlib.sha256(raw).hexdigest()==digest,'Fichier public incoherent : '+name
+           with urllib.request.urlopen(base+'service-worker.js'+suffix,timeout=30) as r:worker=r.read()
+           assert worker==Path('service-worker.js').read_bytes(),'Cache public non confirme'
+           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:f.write('FIX6 achats Web/Windows publie et empreintes publiques verifiees. Version Android '+expected['version']+' conservee, revision plateforme '+str(expected['build'])+'. Accepter la mise a jour proposee puis reouvrir le stock. Aucun stock ni achat historique modifie par ce workflow. Les huit entrees Kamina deja manquantes restent a rapprocher separement, sans ressaisie du stock.\n')
+           print('WEB WINDOWS : adaptateur achats FIX6 et moteur commun reellement publies');break
+         except Exception as error:print('Verification publication : '+type(error).__name__)
+         time.sleep(5)
+        else:raise SystemExit('Publication Pages non confirmee. Relancer ce suivi pour reprendre.')
+        PUBLIC
