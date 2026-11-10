@@ -137523,7 +137523,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.101 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.102 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137538,9 +137538,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.101 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.102 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.101 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.102 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138648,7 +138648,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.101 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.102 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138817,14 +138817,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.101 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.102 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.101 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.102 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138988,7 +138988,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.101 MASTER PRO
+   - affiche partout F29.6.0.102 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -138997,7 +138997,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.101 MASTER PRO';
+    'F29.6.0.102 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139334,9 +139334,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.101';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.102';
 
-  const MASTER_DISPLAY = 'F29.6.0.101 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.102 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139607,9 +139607,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.101';
+  const CURRENT_NUMERIC = '29.6.0.102';
 
-  const DISPLAY = 'F29.6.0.101 MASTER PRO';
+  const DISPLAY = 'F29.6.0.102 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140828,7 +140828,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.101 MASTER PRO'
+          : 'F29.6.0.102 MASTER PRO'
       );
 
       try{
@@ -141406,7 +141406,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.101 MASTER PRO'
+          : 'F29.6.0.102 MASTER PRO'
       );
 
       feedback(
@@ -142585,10 +142585,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.101';
+    '29.6.0.102';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.101 MASTER PRO';
+    'F29.6.0.102 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142743,7 +142743,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.101 MASTER PRO' && tech){
+    if(display === 'F29.6.0.102 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -143083,7 +143083,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.101 MASTER PRO';
+    'F29.6.0.102 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -147246,12 +147246,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.101';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.101 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.102';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.102 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.101 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.102 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.101 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.102 V11 ACTIF');
 })();
 
 
@@ -147260,7 +147260,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.101 MASTER PRO';
+  const DISPLAY='F29.6.0.102 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147284,7 +147284,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.101';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.102';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -147327,6 +147327,7 @@ function suppliersPage53(){
     '/rest/v1/rpc/lp_save_product_dg_v41',
     '/rest/v1/rpc/lp_save_product_purchase_v94',
     '/rest/v1/rpc/lp_purchases_read_v94',
+    '/rest/v1/rpc/lp_user_rescue_v95',
     '/rest/v1/rpc/lp_set_product_expiry_dg',
   ];
   let sessionEpoch=0;
@@ -148629,7 +148630,7 @@ async function download(p,rows){
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.101.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.102.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
@@ -150280,4 +150281,79 @@ window.lp95OwnedModules={open};
  document.head.appendChild(style);
 })();
 
-/* LP_V95_FIX5_RELEASE_IDENTITY_ALIGNED: 29.6.0.101 */
+/* LP_V95_FIX5_RELEASE_IDENTITY_ALIGNED: 29.6.0.102 */
+
+/* LP_V95_FIX7_USER_DATA_RESCUE: explicit candidate submission, never restores business records. */
+(function(){
+'use strict';
+const norm=v=>String(v??'').trim().toLowerCase(),str=v=>String(v??''),get=id=>window.document?.getElementById(id);
+const actor=()=>typeof currentUser==='undefined'?null:currentUser;
+const scope=()=>JSON.stringify([actor()?.username,actor()?.name,actor()?.role,typeof db==='undefined'?'':db._lpDataGeneration]);
+const dg=()=>norm(actor()?.role)==='dg';
+const visible=()=>!!window.document?.documentElement&&typeof page!=='undefined'&&page==='sales'&&!!norm(actor()?.username)&&!!norm(actor()?.role)&&document.documentElement.getAttribute('data-lp-ui-view')!=='menu';
+let busy=false,timer=0;
+function owns(r,k,u){
+ const ids=k==='sales'?[r.sellerUsername,r.sellerKey]:[r.username,r.user_key,r.userKey,r.lpUser,r.login,r.agentUsername,r.agent_user,r.user,r.createdBy];
+ const explicit=ids.map(norm).filter(Boolean),keys=[norm(u.username),norm(u.user_key||u.userKey)].filter(Boolean);
+ if(explicit.length)return explicit.every(x=>keys.includes(x));
+ const names=k==='sales'?[r.sellerName,r.seller]:[r.display_name,r.userName,r.agentName,r.name];
+ const name=norm(u.name||u.display_name);
+ return !!name&&names.some(x=>norm(x)===name)&&(db.users||[]).filter(x=>x.active!==false&&norm(x.name||x.display_name)===name).length===1;
+}
+function collect(){
+ const u=actor();if(!u||!norm(u.username))throw Error('Compte non identifié.');
+ const p={schema:95,capturedAt:new Date().toISOString(),sourceVersion:window.LP_INSTALLED_TECHNICAL_VERSION||'inconnue'};
+ for(const k of ['sales','attendance','userReports','dailyUserNotes'])p[k]=(db[k]||[]).filter(r=>r&&owns(r,k,u));
+ // Candidates kept by V92 may be the only surviving copy of older local sales.
+ try{const old=JSON.parse(localStorage.getItem('lp92_legacy_sale_candidates')||'[]');for(const r of old)if(owns(r,'sales',u)&&!p.sales.some(x=>str(x.id)===str(r.id)&&norm(x.agency)===norm(r.agency)))p.sales.push(r);}catch{}
+ const copy=JSON.parse(JSON.stringify(p));
+ if(Object.values(copy).filter(Array.isArray).some(x=>x.length>2000))throw Error('Trop de documents. Données conservées ; contactez le DG.');
+ if(new TextEncoder().encode(JSON.stringify(copy)).length>8*1024*1024)throw Error('Copie trop volumineuse. Données conservées ; contactez le DG.');
+ return copy;
+}
+const message=t=>{const e=get('lpRescue95Status'),card=get('lpRescue95');if(visible()&&card?.dataset.owner===scope()&&e)e.textContent=t;};
+async function rpc(action,id,payload,expected=scope()){
+ const token=await window.lpGetSessionTokenV16();if(scope()!==expected)throw Error('Le compte a changé. Rouvrez la rubrique.');const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),45000);
+ try{const r=await fetch(SUPABASE.url.replace(/\/$/,'')+'/rest/v1/rpc/lp_user_rescue_v95',{method:'POST',headers:{apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({p_action:action,p_id:id||null,p_payload:payload||null}),signal:controller.signal});const data=await r.json();if(!r.ok)throw Error(data.message||'Réception non confirmée');return data;}finally{clearTimeout(timeout);}
+}
+async function send(){
+ if(busy||!visible())return;const who=scope(),u=actor();if(!u)return;
+ busy=true;const b=get('lpRescue95Send');if(b)b.disabled=true;
+ try{
+  const key='lp95RescuePackage:'+norm(u.username);let pack;
+  try{pack=JSON.parse(localStorage.getItem(key)||'null');}catch{}
+  if(!pack||pack.confirmed){const payload=collect();if(!['sales','attendance','userReports','dailyUserNotes'].some(k=>payload[k].length))throw Error('Aucun document local personnel trouvé.');pack={id:crypto.randomUUID(),payload,confirmed:false};localStorage.setItem(key,JSON.stringify(pack));}
+  // Re-use an unconfirmed original exactly after timeout; never replace it with a newer snapshot.
+  if(navigator.onLine===false)throw Error('Hors ligne : copie locale conservée. Réessayez avec Internet.');
+  message('Copie locale conservée. Transmission au DG…');
+  const data=await rpc('submit',pack.id,pack.payload,who);
+  if(data.ok!==true||data.id!==pack.id||data.status!=='received_for_review')throw Error('Réception non confirmée');
+  pack.confirmed=true;pack.receivedAt=data.received_at;localStorage.setItem(key,JSON.stringify(pack));
+  if(scope()===who)message('Copie reçue au serveur pour examen par le DG. Ventes, stock et pointages inchangés. Référence : '+pack.id);
+ }catch(e){if(scope()===who)message('Envoi non confirmé. '+(e.name==='AbortError'?'Délai dépassé ; réessayez. La copie est conservée.':str(e.message)));}
+ finally{busy=false;if(b?.isConnected&&scope()===who)b.disabled=false;}
+}
+async function received(){
+ if(busy||!dg()||!visible())return;const who=scope();busy=true;message('Lecture des copies reçues…');
+ try{const data=await rpc('list');if(scope()!==who||!dg())return;
+ const host=get('lpRescue95Received');if(!host)return;host.replaceChildren();
+ for(const r of data.rows||[]){const p=document.createElement('p');p.textContent=str(r.display_name)+' ('+str(r.username)+') — '+str(r.received_at)+' — '+str(r.counts?.sales||0)+' vente(s), '+str(r.counts?.attendance||0)+' pointage(s), '+str((r.counts?.userReports||0)+(r.counts?.dailyUserNotes||0))+' rapport(s)/note(s). Référence : '+str(r.id);host.append(p);}
+ message((data.rows||[]).length+' copie(s) reçue(s) pour rapprochement. Aucune restauration automatique.');
+ }catch(e){if(scope()===who)message('Lecture non confirmée : '+str(e.message));}finally{busy=false;}
+}
+function mount(){
+ if(!visible()){get('lpRescue95')?.remove();return;}
+ const root=get('content');if(!root)return;let card=get('lpRescue95');
+ if(card&&card.dataset.owner===scope())return;if(card)card.remove();
+ card=document.createElement('section');card.id='lpRescue95';card.className='card';card.dataset.owner=scope();
+ const title=document.createElement('h2');title.textContent=dg()?'Données envoyées au DG':'Envoyer mes données au DG';card.append(title);
+ const p=document.createElement('p');p.textContent='Transmettre une copie de vos ventes, pointages et rapports locaux pour vérification, toutes agences confondues. La réception ne valide ni ne recrée aucune opération.';card.append(p);
+ const b=document.createElement('button');b.id='lpRescue95Send';b.type='button';b.textContent='Envoyer mes données au DG';b.onclick=send;card.append(b);
+ const status=document.createElement('p');status.id='lpRescue95Status';status.setAttribute('role','status');status.style.minHeight='3em';card.append(status);
+ if(dg()){const read=document.createElement('button');read.textContent='Voir les copies reçues';read.type='button';read.onclick=received;card.append(read);const list=document.createElement('div');list.id='lpRescue95Received';card.append(list);}
+ root.prepend(card);
+}
+const observer=new MutationObserver(()=>{if(timer)return;timer=setTimeout(()=>{timer=0;mount();},150);});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
+const menuObserver=new MutationObserver(()=>mount());menuObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-lp-ui-view']});
+window.lpUserRescue95={collect,send,received,mount};mount();
+})();
