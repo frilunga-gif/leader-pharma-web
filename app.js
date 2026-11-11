@@ -137523,7 +137523,7 @@ console.log(MARK);
   console.log(MARK);
 })();
 /* ============================================================
-   LEADER PHARMA F29.6.0.102 MASTER PRO FINAL
+   LEADER PHARMA F29.6.0.103 MASTER PRO FINAL
    ------------------------------------------------------------
    SURCOUCHE PROFESSIONNELLE ADDITIVE UNIQUEMENT :
    - Centre de contrôle DG MASTER PRO
@@ -137538,9 +137538,9 @@ console.log(MARK);
 (function(){
   'use strict';
 
-  const MASTER_VERSION = 'F29.6.0.102 MASTER PRO';
+  const MASTER_VERSION = 'F29.6.0.103 MASTER PRO';
   const MASTER_MARKER =
-    'LEADER PHARMA F29.6.0.102 MASTER PRO FINAL CIBLE ACTIF';
+    'LEADER PHARMA F29.6.0.103 MASTER PRO FINAL CIBLE ACTIF';
 
   window.LP_MASTER_PRO_VERSION = MASTER_VERSION;
 
@@ -138648,7 +138648,7 @@ console.log(MARK);
 })();
 (function(){
 'use strict';
-const OFFICIAL_VERSION = 'F29.6.0.102 MASTER PRO';
+const OFFICIAL_VERSION = 'F29.6.0.103 MASTER PRO';
 const MARKER='LEADER PHARMA F29.6.0.1 MASTER PRO FINITION UNIQUE CIBLE ACTIF';
 let dailyBusy=false,dailyCheckedDay='';
 
@@ -138817,14 +138817,14 @@ console.log(MARKER);
    ------------------------------------------------------------
    CORRECTIF VISUEL UNIQUE :
    - remplace uniquement les anciens libellés visibles
-     "V1.5.10" / "1.5.10" par "F29.6.0.102 MASTER PRO"
+     "V1.5.10" / "1.5.10" par "F29.6.0.103 MASTER PRO"
    - aucun changement de moteur, données ou logique métier
    ============================================================ */
 
 (function(){
   'use strict';
 
-  const OFFICIAL_VERSION = 'F29.6.0.102 MASTER PRO';
+  const OFFICIAL_VERSION = 'F29.6.0.103 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.2 LIBELLE VERSION OFFICIELLE CIBLE ACTIF';
@@ -138988,7 +138988,7 @@ console.log(MARKER);
    CORRECTIF VISUEL UNIQUE :
    - intercepte tout ancien libellé V1.5.10 / 1.5.10
      ajouté tardivement dans l'interface
-   - affiche partout F29.6.0.102 MASTER PRO
+   - affiche partout F29.6.0.103 MASTER PRO
    - aucune modification du moteur de mise à jour
    - aucune modification des données ou modules métier
    ============================================================ */
@@ -138997,7 +138997,7 @@ console.log(MARKER);
   'use strict';
 
   const OFFICIAL =
-    'F29.6.0.102 MASTER PRO';
+    'F29.6.0.103 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.3 VERSION VISUELLE ABSOLUE CIBLE ACTIF';
@@ -139334,9 +139334,9 @@ console.log(MARKER);
   const MASTER_ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const MASTER_CURRENT_NUMERIC = '29.6.0.102';
+  const MASTER_CURRENT_NUMERIC = '29.6.0.103';
 
-  const MASTER_DISPLAY = 'F29.6.0.102 MASTER PRO';
+  const MASTER_DISPLAY = 'F29.6.0.103 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.4 CANAL MISE A JOUR FINAL CIBLE ACTIF';
@@ -139607,9 +139607,9 @@ console.log(MARKER);
   const ENDPOINT =
     'https://dinainghufmsykambkyv.supabase.co/functions/v1/leader-pharma-master-update';
 
-  const CURRENT_NUMERIC = '29.6.0.102';
+  const CURRENT_NUMERIC = '29.6.0.103';
 
-  const DISPLAY = 'F29.6.0.102 MASTER PRO';
+  const DISPLAY = 'F29.6.0.103 MASTER PRO';
 
   const MARKER =
     'LEADER PHARMA F29.6.0.5 BOUTON UPDATE UNIQUE FINAL CIBLE ACTIF';
@@ -140828,7 +140828,7 @@ console.log(MARKER);
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.102 MASTER PRO'
+          : 'F29.6.0.103 MASTER PRO'
       );
 
       try{
@@ -141406,7 +141406,7 @@ busy = false;
         release[0] &&
         release[0].current_version
           ? release[0].current_version
-          : 'F29.6.0.102 MASTER PRO'
+          : 'F29.6.0.103 MASTER PRO'
       );
 
       feedback(
@@ -142585,10 +142585,10 @@ busy = false;
     'LP-MASTER-PRO-2026';
 
   const LP_CENTRAL_TECH_VERSION =
-    '29.6.0.102';
+    '29.6.0.103';
 
   const LP_CENTRAL_DISPLAY =
-    'F29.6.0.102 MASTER PRO';
+    'F29.6.0.103 MASTER PRO';
 
   const LP_CENTRAL_CHECK_EVERY =
     6 * 60 * 60 * 1000;
@@ -142743,7 +142743,7 @@ busy = false;
       'Nouvelle version'
     ).trim();
 
-    if(display === 'F29.6.0.102 MASTER PRO' && tech){
+    if(display === 'F29.6.0.103 MASTER PRO' && tech){
       return 'F' + tech + ' MASTER PRO';
     }
 
@@ -143083,7 +143083,7 @@ busy = false;
     'LEADER PHARMA F29.6.0.15 UPDATE UTILISATEURS PARAMETRES ACTIF';
 
   const LP_USER_UPDATE_VERSION =
-    'F29.6.0.102 MASTER PRO';
+    'F29.6.0.103 MASTER PRO';
 
   let lpUserUpdateMountTimer = null;
   let lpUserUpdateBusy = false;
@@ -144986,7 +144986,7 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
     <div class="lp43-row"><span>Commandée / reçue</span><b>${l.orderedQty} / ${l.receivedQty}</b></div>
     <div class="lp43-row"><span>Lot / péremption</span><b>${esc43(l.lot)} / ${esc43(l.expiry||'Sans péremption')}</b></div>
     <div class="lp43-row"><span>Prix d'achat unitaire (dépôt/gros)</span><b>${cash(l.cost)}</b></div>
-    <div class="lp43-row"><span>Prix de vente détail proposé</span><b>${cash(l.salePrice||0)}</b></div>
+    <div class="lp43-row"><span>Prix de vente détail proposé</span><b>${cash(l.salePrice||0)}</b></div><div class="lp43-row"><span>Prix de vente gros proposé</span><b>${l.wholesalePrice===undefined?"Conserver le prix du lot":cash(l.wholesalePrice)}</b></div>
     ${l.manualProduct?'<div class="lp43-row"><span>Produit</span><b>Nouveau produit • validation DG obligatoire</b></div>':''}
     <div class="lp43-row"><span>Sous-total</span><b>${cash(l.total)}</b></div>
     ${removable?`<button class="secondary" data-lp43-remove="${i}" style="margin-top:8px">Retirer ce produit</button>`:''}
@@ -145027,6 +145027,7 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
     const receivedQty=Number(document.getElementById('buyQty')?.value||0);
     const cost=Number(document.getElementById('buyCost')?.value||0);
     const salePrice=Number(document.getElementById('buySalePrice')?.value||0);
+    const wholesalePrice=Number(document.getElementById('buyWholesalePrice')?.value??product?.wholesalePrice??cost);
     const lot=String(document.getElementById('buyLot')?.value||'').trim();
     const noExpiry=!!document.getElementById('buyNoExpiry')?.checked;
     const expiry=noExpiry?'':String(document.getElementById('buyExpiry')?.value||'').trim();
@@ -145038,6 +145039,7 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
     if(!(receivedQty>0)||receivedQty>orderedQty)throw new Error('Quantité reçue invalide');
     if(!(cost>=0))throw new Error("Prix d'achat unitaire invalide");
     if(!(salePrice>=0))throw new Error('Prix de vente détail invalide');
+    if(!Number.isFinite(wholesalePrice)||wholesalePrice<0)throw new Error('Prix de vente gros invalide');
     if(!lot)throw new Error('Numéro de lot obligatoire');
     if(!noExpiry&&!expiry)throw new Error('Péremption obligatoire ou cochez sans péremption');
 
@@ -145046,7 +145048,7 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
       productId:manualProduct?('new-'+newid()):product.id,
       productName:manualProduct?manualProductName:product.name,
       manualProduct,
-      orderedQty,receivedQty,cost,salePrice,lot,expiry,noExpiry,
+      orderedQty,receivedQty,cost,salePrice,wholesalePrice,lot,expiry,noExpiry,
       total:receivedQty*cost
     };
   }
@@ -145106,42 +145108,8 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
     }catch(e){state.busy=false;notify(e.message||'Échec de transmission');}
   }
 
-  function sameProduct(base,line){return String(base.agency||'')===String(currentAgency||'')&&norm(base.name)===norm(line.productName)&&norm(base.lot)===norm(line.lot);}
-  function applyStockLine(line){
-    const existing=(db.products||[]).find(p=>sameProduct(p,line));
-    if(existing){
-      existing.cost=Number(line.cost||0);
-      if(Number.isFinite(Number(line.salePrice)))existing.price=Number(line.salePrice||0);
-      existing.lot=line.lot;
-      if(line.expiry)existing.expiry=line.expiry;
-      return existing;
-    }
-
-    const base=(db.products||[]).find(p=>String(p.id)===String(line.productId));
-
-    if(!base&&line.manualProduct){
-      const created={
-        id:line.productId||newid(),agency:currentAgency,
-        name:line.productName,lot:line.lot,expiry:line.expiry||'',
-        cost:Number(line.cost||0),price:Number(line.salePrice||0),
-        stock:0,min:0
-      };
-      db.products.push(created);
-      return created;
-    }
-
-    if(!base)throw new Error('Produit introuvable : '+line.productName);
-
-    const created={
-      ...base,id:newid(),agency:currentAgency,
-      name:line.productName,lot:line.lot,expiry:line.expiry||'',
-      cost:Number(line.cost||0),
-      price:Number.isFinite(Number(line.salePrice))?Number(line.salePrice||0):Number(base.price||0),
-      stock:0
-    };
-    db.products.push(created);
-    return created;
-  }
+  function sameProduct(base,line){return String(base.agency||'')===String(currentAgency||'')&&window.lpProductIdentity95.name(base.name)===window.lpProductIdentity95.name(line.productName)&&String(base.lot||'').trim().toLowerCase()===String(line.lot||'').trim().toLowerCase()&&String(base.expiry||'')===String(line.expiry||'');}
+  function applyStockLine(line){return window.lpProductIdentity95.receive(db.products,line,currentAgency,newid);}
   async function centralCurrent(product,agency){
     const token=String(window.lpDGAccessToken||'').trim();if(!token)throw new Error('Session DG centrale absente : reconnectez le DG');
     const headers={apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'};
@@ -145171,19 +145139,20 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
     try{
       (b.lines||[]).forEach(line=>{if(line&&line.manualProduct===true)return;if(!(db.products||[]).some(p=>String(p.id)===String(line.productId))&&!(db.products||[]).some(p=>sameProduct(p,line)))throw new Error('Produit introuvable : '+line.productName);});
       let targets=Array.isArray(b.centralTargets)&&b.centralTargets.length?b.centralTargets:null;
+      if(targets&&b.stockProtocol!=='v95-fix8')throw new Error('Ancienne réception partielle : rapprochement DG nécessaire, aucun stock rejoué.');
       if(!targets){
         targets=[];const running=new Map();
         for(const line of (b.lines||[])){
           const p=applyStockLine(line),key=String(p.id);let base=running.has(key)?running.get(key):await centralCurrent(p,b.agency);
           const desired=Number(base||0)+Number(line.receivedQty||0);running.set(key,desired);targets.push({productId:p.id,stock:desired});
         }
-        b.centralTargets=targets;b.centralStartedAt=now();b.centralError='';persist();
+        b.stockProtocol='v95-fix8';b.centralTargets=targets;b.centralStartedAt=now();b.centralError='';persist();
       }
       try{if(typeof syncTimer!=='undefined'&&syncTimer){clearTimeout(syncTimer);syncTimer=null;}}catch(e){}
       const applied=targets.map(t=>{const p=(db.products||[]).find(x=>String(x.id)===String(t.productId));if(!p)throw new Error('Produit cible introuvable');p.stock=Number(t.stock||0);return p;});
-      for(let i=0;i<applied.length;i++)await setCentralStock(applied[i],b.agency,targets[i].stock);
+      for(let i=0;i<applied.length;i++)await window.lpReceivePurchaseLine95(applied[i],b,i);
       if(typeof lp171019CentralPull==='function')await lp171019CentralPull();
-      if(!(db.purchases||[]).some(x=>String(x.sourceBatchId||'')===String(b.id)))(b.lines||[]).forEach((line,index)=>{const p=applied[index];(db.purchases||(db.purchases=[])).push({id:newid(),ref:b.ref+'-'+String(index+1).padStart(2,'0'),batchRef:b.ref,date:day(),agency:b.agency,supplierId:b.supplierId,productId:p.id,productName:line.productName,qty:Number(line.receivedQty||0),orderedQty:Number(line.orderedQty||0),receivedQty:Number(line.receivedQty||0),remainingQty:Math.max(0,Number(line.orderedQty||0)-Number(line.receivedQty||0)),cost:Number(line.cost||0),salePrice:Number(line.salePrice||p.price||0),total:Number(line.total||0),supplierNameManual:b.supplierNameManual||'',orderedByName:b.orderedByName||b.createdBy,receivedByName:b.receivedByName||b.createdBy,payment:b.payment,paidAmount:0,balance:0,orderRef:b.orderRef,orderDate:b.orderDate,supplierInvoice:b.supplierInvoice,invoiceDate:b.invoiceDate,lot:line.lot,expiry:line.expiry||'',receiptStatus:Number(line.receivedQty||0)<Number(line.orderedQty||0)?'Partielle':'Complète',validationStatus:'Validé DG',createdBy:b.createdBy,validatedBy:actor(),validatedAt:now(),sourceBatchId:b.id,receptions:[]});});
+      if(!(db.purchases||[]).some(x=>String(x.sourceBatchId||'')===String(b.id)))(b.lines||[]).forEach((line,index)=>{const p=applied[index];(db.purchases||(db.purchases=[])).push({id:newid(),ref:b.ref+'-'+String(index+1).padStart(2,'0'),batchRef:b.ref,date:day(),agency:b.agency,supplierId:b.supplierId,productId:p.id,productName:line.productName,qty:Number(line.receivedQty||0),orderedQty:Number(line.orderedQty||0),receivedQty:Number(line.receivedQty||0),remainingQty:Math.max(0,Number(line.orderedQty||0)-Number(line.receivedQty||0)),cost:Number(line.cost||0),salePrice:Number(line.salePrice||p.price||0),wholesalePrice:Number(p.wholesalePrice??line.wholesalePrice??line.cost??0),total:Number(line.total||0),supplierNameManual:b.supplierNameManual||'',orderedByName:b.orderedByName||b.createdBy,receivedByName:b.receivedByName||b.createdBy,payment:b.payment,paidAmount:0,balance:0,orderRef:b.orderRef,orderDate:b.orderDate,supplierInvoice:b.supplierInvoice,invoiceDate:b.invoiceDate,lot:line.lot,expiry:line.expiry||'',receiptStatus:Number(line.receivedQty||0)<Number(line.orderedQty||0)?'Partielle':'Complète',validationStatus:'Validé DG',createdBy:b.createdBy,validatedBy:actor(),validatedAt:now(),sourceBatchId:b.id,receptions:[]});});
       if(!b.financeApplied){
         if(Number(b.paidAmount||0)>0)(db.treasury||(db.treasury=[])).push({id:newid(),date:day(),agency:b.agency,type:'Sortie',category:'Achat',desc:b.ref+' • '+b.supplierInvoice+' • '+(b.lines||[]).length+' produit(s)',amount:Number(b.paidAmount||0),sourceBatchId:b.id});
         if(Number(b.balance||0)>0)(db.debts||(db.debts=[])).push({id:newid(),date:day(),agency:b.agency,supplierId:b.supplierId,ref:b.ref,amount:Number(b.total||0),paid:Number(b.paidAmount||0),balance:Number(b.balance||0),status:'Ouvert',orderRef:b.orderRef,supplierInvoice:b.supplierInvoice,sourceBatchId:b.id});
@@ -145708,6 +145677,7 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
           if(!wasManual){
             if(cost)cost.value='';
             if(sale)sale.value='';
+            const wholesale=document.getElementById('buyWholesalePrice');if(wholesale)wholesale.value='';
             const lot=document.getElementById('buyLot');if(lot)lot.value='';
             const exp=document.getElementById('buyExpiry');if(exp)exp.value='';
             const noExp=document.getElementById('buyNoExpiry');if(noExp)noExp.checked=false;
@@ -145715,6 +145685,7 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
         }else{
           const p=(db.products||[]).find(x=>String(x.id)===String(product.value));
           if(p&&sale)sale.value=Number(p.price||0);
+          const wholesale=document.getElementById('buyWholesalePrice');if(p&&wholesale)wholesale.value=Number(p.wholesalePrice??p.cost??0);
         }
 
         product.dataset.lp50ManualActive=manual?'1':'0';
@@ -145736,11 +145707,11 @@ lp171019CentralPull.__lpFix9Base=basePull;try{window.lp171019CentralPull=lp17101
         const box=document.createElement('div');
         box.className='field';
         box.id='lp50SalePriceField';
-        box.innerHTML='<label>Prix de vente détail proposé *</label><input id="buySalePrice" type="number" min="0" inputmode="decimal" placeholder="Prix détail"><div class="muted" style="margin-top:4px">Le prix officiel ne change qu’après validation du DG.</div>';
+        box.innerHTML='<label>Prix de vente détail proposé *</label><input id="buySalePrice" type="number" min="0" inputmode="decimal" placeholder="Prix détail"><label>Prix de vente gros proposé *</label><input id="buyWholesalePrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Prix gros"><div class="muted" style="margin-top:4px">Le prix officiel ne change qu’après validation du DG.</div>';
         field.insertAdjacentElement('afterend',box);
 
         const p=(db.products||[]).find(x=>String(x.id)===String(product?.value||''));
-        if(p)document.getElementById('buySalePrice').value=Number(p.price||0);
+        if(p){document.getElementById('buySalePrice').value=Number(p.price||0);document.getElementById('buyWholesalePrice').value=Number(p.wholesalePrice??p.cost??0);}
       }
     }
 
@@ -147246,12 +147217,12 @@ function suppliersPage53(){
 /* LEADER PHARMA VERSION APK / SERVEUR ALIGNEE V11 */
 (function(){
   'use strict';
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.102';
-  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.102 MASTER PRO';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.103';
+  window.LP_INSTALLED_DISPLAY_VERSION='F29.6.0.103 MASTER PRO';
   try{
-    if(typeof db!=='undefined'&&db){db.version='F29.6.0.102 MASTER PRO';if(typeof save==='function')save();}
+    if(typeof db!=='undefined'&&db){db.version='F29.6.0.103 MASTER PRO';if(typeof save==='function')save();}
   }catch(e){}
-  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.102 V11 ACTIF');
+  console.log('LEADER PHARMA VERSION APK SERVEUR ALIGNEE 29.6.0.103 V11 ACTIF');
 })();
 
 
@@ -147260,7 +147231,7 @@ function suppliersPage53(){
   'use strict';
   if(window.__LP_VERSION_UNIQUE_V12__)return;
   window.__LP_VERSION_UNIQUE_V12__=true;
-  const DISPLAY='F29.6.0.102 MASTER PRO';
+  const DISPLAY='F29.6.0.103 MASTER PRO';
 
   function corrigerTexte(root){
     try{
@@ -147284,7 +147255,7 @@ function suppliersPage53(){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});
   else schedule();
   new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.102';
+  window.LP_INSTALLED_TECHNICAL_VERSION='29.6.0.103';
   window.LP_INSTALLED_DISPLAY_VERSION=DISPLAY;
   try{if(typeof db!=='undefined'&&db){db.version=DISPLAY;if(typeof save==='function')save();}}catch(e){}
   console.log('LEADER PHARMA MASTER PRO AFFICHAGE UNIQUE PARTOUT V12 ACTIF');
@@ -147328,6 +147299,7 @@ function suppliersPage53(){
     '/rest/v1/rpc/lp_save_product_purchase_v94',
     '/rest/v1/rpc/lp_purchases_read_v94',
     '/rest/v1/rpc/lp_user_rescue_v95',
+    '/rest/v1/rpc/lp_receive_purchase_line_v95',
     '/rest/v1/rpc/lp_set_product_expiry_dg',
   ];
   let sessionEpoch=0;
@@ -148630,7 +148602,7 @@ async function download(p,rows){
  const saver=window.Capacitor?.Plugins?.LeaderFile;
  const isNative=typeof window.Capacitor?.isNativePlatform==='function'?window.Capacitor.isNativePlatform():!!saver;
  if(isNative){
-  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.102.');
+  if(!saver||typeof saver.saveCsv!=='function')throw new Error('Enregistrement CSV natif indisponible. Installez la mise à jour complète F29.6.0.103.');
   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Conversion CSV impossible.'));reader.readAsDataURL(blob);});
   await saver.saveCsv({filename,base64});
   return 'CSV enregistré dans Téléchargements/LeaderPharma/'+filename;
@@ -149580,7 +149552,7 @@ function install(){
   table=document.createElement('table');const cols=document.createElement('colgroup');
   for(const width of [26,17,15,10,7,16,9]){const col=document.createElement('col');col.style.width=width+'%';cols.append(col);}table.append(cols);
   const head=document.createElement('thead'),row=document.createElement('tr');
-  for(const label of ['Produit','Lot','Prix','Stock','Min','Péremption','']){const th=document.createElement('th');th.textContent=label;row.append(th);}head.append(row);table.append(head);
+  for(const label of ['Produit','Lot','Détail / Gros','Stock','Min','Péremption','']){const th=document.createElement('th');th.textContent=label;row.append(th);}head.append(row);table.append(head);
   body=document.createElement('tbody');table.append(body);empty=document.createElement('tr');const cell=document.createElement('td');cell.colSpan=7;cell.textContent='Aucun produit trouvé';empty.append(cell);empty.hidden=true;body.append(empty);
   host.replaceChildren(table);
  }
@@ -149601,11 +149573,13 @@ function install(){
     e={row,cells,name,badge,button,product:p,searchName:''};button.onclick=()=>productForm(e.product.id);entries.set(key,e);body.insertBefore(row,empty);
    }
    e.product=p;
-   const values95=[p.name,p.lot,p.price,p.stock,p.min,p.expiry];
+   const values95=[p.name,p.lot,p.price,p.stock,p.min,p.expiry,p.wholesalePrice,p.retailPrice,p.cost];
    if(!e.values95||values95.some((v,i)=>v!==e.values95[i])){
     if(!e.values95||p.name!==e.values95[0])e.searchName=normalize95(p.name);
     setText(e.name,p.name);setText(e.cells[1],p.lot||'—');
-    if(!e.values95||p.price!==e.values95[2])setText(e.cells[2],money(p.price));
+    if(!e.values95||p.price!==e.values95[2]||p.retailPrice!==e.values95[7])e.retail95=money(p.retailPrice??p.price);
+    if(!e.values95||p.wholesalePrice!==e.values95[6]||p.cost!==e.values95[8])e.wholesale95=money(p.wholesalePrice??p.cost??0);
+    setText(e.cells[2],e.retail95+' / '+e.wholesale95);
     setText(e.badge,p.stock);setText(e.cells[4],p.min);setText(e.cells[5],p.expiry||'—');
     const cls='badge'+(p.stock<=p.min?' danger':'');if(e.badge.className!==cls)e.badge.className=cls;
     e.values95=values95;
@@ -149613,6 +149587,7 @@ function install(){
    const hidden=!matches95(e.searchName,query);if(e.row.hidden!==hidden)e.row.hidden=hidden;if(!hidden)visible++;
   }
   for(const [id,e] of entries)if(!seen.has(id)){e.row.remove();entries.delete(id);}
+  if(window.lpProductIdentity95)window.lpProductIdentity95.render(rows,entries,body,host);
   if(empty.hidden!==(visible>0))empty.hidden=visible>0;
   if(query!==lastQuery)host.scrollTop=0;lastQuery=query;
  }
@@ -150281,7 +150256,7 @@ window.lp95OwnedModules={open};
  document.head.appendChild(style);
 })();
 
-/* LP_V95_FIX5_RELEASE_IDENTITY_ALIGNED: 29.6.0.102 */
+/* LP_V95_FIX5_RELEASE_IDENTITY_ALIGNED: 29.6.0.103 */
 
 /* LP_V95_FIX7_USER_DATA_RESCUE: explicit candidate submission, never restores business records. */
 (function(){
@@ -150357,3 +150332,67 @@ const observer=new MutationObserver(()=>{if(timer)return;timer=setTimeout(()=>{t
 const menuObserver=new MutationObserver(()=>mount());menuObserver.observe(document.documentElement,{attributes:true,attributeFilter:['data-lp-ui-view']});
 window.lpUserRescue95={collect,send,received,mount};mount();
 })();
+
+/* LP_V95_FIX8_PRODUCT_IDENTITY_AND_LOT_GROUPS */
+(function(){
+'use strict';
+const text=v=>String(v??''),name=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,''),agency=v=>text(v).trim().toLowerCase(),lot=v=>text(v).trim().toLowerCase();
+function key(p){return agency(p.agency)+'|'+name(p.name);}
+function receive(products,line,a,newid){
+ const scoped=products.filter(p=>agency(p.agency)===agency(a));
+ const selected=scoped.find(p=>text(p.id)===text(line.productId));
+ if(selected&&name(selected.name)!==name(line.productName))throw Error('Le nom du produit sélectionné a changé. Actualisez la réception.');
+ const candidates=scoped.filter(p=>name(p.name)===name(line.productName)&&lot(p.lot)===lot(line.lot)&&text(p.expiry)===text(line.expiry));
+ let found=candidates.find(p=>text(p.id)===text(line.productId));
+ if(!found&&candidates.length>1)throw Error('Plusieurs références pour ce produit et ce lot. Sélectionnez la référence exacte avant validation.');
+ if(!found)found=candidates[0];
+ if(!found){
+  if(!selected&&!line.manualProduct)throw Error('Produit introuvable : '+text(line.productName));
+  found={...(selected||{}),id:newid(),agency:a,name:selected?.name||text(line.productName).trim(),lot:text(line.lot).trim(),expiry:text(line.expiry),stock:0,min:selected?.min||0};
+  products.push(found);
+ }
+ found.wholesalePrice=Number(line.wholesalePrice??found.wholesalePrice??line.cost??0);
+ found.cost=Number(line.cost||0);
+ if(Number.isFinite(Number(line.salePrice))){found.price=Number(line.salePrice);found.retailPrice=Number(line.salePrice);}
+ if(line.wholesalePrice!==undefined&&Number.isFinite(Number(line.wholesalePrice)))found.wholesalePrice=Number(line.wholesalePrice);
+ return found;
+}
+let active=null,scope='',headers=new Map(),expanded=new Set();
+const fmt=v=>Number(v||0).toLocaleString('fr-FR')+' FC';
+function render(rows,entries,body,host){
+ const s=JSON.stringify([typeof currentUser==='undefined'?'':currentUser?.username,typeof currentAgency==='undefined'?'':currentAgency]);
+ if(active!==host||scope!==s){active=host;scope=s;headers=new Map();expanded=new Set();}
+ const groups=new Map();for(const p of rows){if(!name(p.name))continue;const k=key(p);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(p);}
+ const keep=new Set();
+ for(const [k,ps] of groups){
+  if(ps.length<2)continue;keep.add(k);
+  const es=ps.map(p=>entries.get(text(p.id))).filter(Boolean);if(!es.length)continue;
+  const matched=es.some(e=>!e.row.hidden);let g=headers.get(k);
+  if(!g){const row=document.createElement('tr');row.dataset.lpProductGroup=k;const cells=Array.from({length:7},()=>document.createElement('td'));cells.forEach(c=>row.append(c));const b=document.createElement('button');b.type='button';b.className='secondary';b.style.cssText='white-space:normal;display:block;margin-top:6px;min-height:44px';b.onclick=()=>{expanded.has(k)?expanded.delete(k):expanded.add(k);if(typeof drawStock==='function')drawStock(document.getElementById('stockSearch')?.value||'');};const title=document.createElement('strong');cells[0].append(title,b);g={row,cells,b,title};headers.set(k,g);}
+  body.insertBefore(g.row,es[0].row);g.row.hidden=!matched;
+  const sum=ps.reduce((v,p)=>v+Number(p.stock||0),0),retail=[...new Set(ps.map(p=>Number(p.retailPrice??p.price??0)))],wholesale=[...new Set(ps.map(p=>Number(p.wholesalePrice??p.cost??0)))];
+  const values=[ps[0].name,ps.length+' lots',retail.length===1?fmt(retail[0]):'Détail selon lot',sum,'—','Voir les lots'];
+  values[2]+=' / '+(wholesale.length===1?fmt(wholesale[0]):'Gros selon lot');
+  values.forEach((v,i)=>{const cell=i===0?g.title:g.cells[i];if(cell.textContent!==text(v))cell.textContent=text(v);});
+  const label=expanded.has(k)?'Masquer lots':'Voir lots ('+ps.length+')';if(g.b.textContent!==label)g.b.textContent=label;g.b.setAttribute('aria-expanded',String(expanded.has(k)));
+  for(const e of es)e.row.hidden=!matched||!expanded.has(k)||e.row.hidden;
+ }
+ for(const [k,g] of headers)if(!keep.has(k)){g.row.remove();headers.delete(k);expanded.delete(k);}
+ const title=host.closest('.card')?.querySelector('h2,h3');if(title){const intro=title.nextElementSibling;if(intro?.tagName==='P'&&intro.textContent.includes('Chaque lot'))intro.textContent='Une ligne par produit affiche le stock total. Ouvrez les lots pour voir les péremptions, les prix et modifier la référence exacte.';}
+}
+window.lpProductIdentity95={name,key,receive,render};
+})();
+
+/* LP_V95_FIX8_RECEIPT_ONCE */
+window.lpReceivePurchaseLine95=async function(product,batch,index){
+ const who=currentUser;if(String(who?.role).trim().toLowerCase()!=='dg')throw Error('Validation réservée au DG');
+ const token=await window.lpGetSessionTokenV16();if(currentUser!==who)throw Error('Compte changé');
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),45000);
+ try{
+ const response=await fetch(SUPABASE.url.replace(/\/$/,'')+'/rest/v1/rpc/lp_receive_purchase_line_v95',{method:'POST',signal:controller.signal,headers:{apikey:SUPABASE.key,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({p_batch_id:String(batch.id),p_line_index:index,p_product:product})});
+ const confirmed=await response.json();if(!response.ok)throw Error(confirmed.message||'Réception non confirmée');
+ if(String(confirmed.id)!==String(product.id)||String(confirmed.agency)!==String(batch.agency)||!Number.isSafeInteger(confirmed.stock))throw Error('Produit non confirmé');
+ if(currentUser!==who)throw Error('Réception enregistrée. Rouvrez le compte DG.');
+ Object.assign(product,confirmed);return confirmed.stock;
+ }finally{clearTimeout(timer);}
+};
